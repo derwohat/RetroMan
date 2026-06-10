@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/config";
+import { auth } from "@/lib/auth/middleware-config";
 import { NextResponse } from "next/server";
 
 const PUBLIC_ROUTES = ["/login", "/api/auth"];
