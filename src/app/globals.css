@@ -222,6 +222,14 @@
   animation: fieldSaved 800ms ease forwards;
 }
 
+/* ─── Slogan Glow ────────────────────────────────────────── */
+.slogan-glow {
+  color: var(--neon-cyan);
+  text-shadow:
+    0 0 8px var(--neon-cyan),
+    0 0 16px color-mix(in srgb, var(--neon-cyan) 50%, transparent);
+}
+
 /* ─── Hover Scale for Grid Items ─────────────────────────── */
 .media-card {
   transition: transform 150ms ease, box-shadow 200ms ease;

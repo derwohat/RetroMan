@@ -38,13 +38,18 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background grid-bg px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-4">
-          <Image src="/logo.png" alt="RetroMan" width={64} height={64} priority />
-          <h1 className="text-primary neon-glow text-sm tracking-widest uppercase font-heading">
-            RetroMan
-          </h1>
-          <p className="text-muted-foreground text-xs text-center">
-            Deine physische Mediensammlung
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative w-64 h-24">
+            <Image
+              src="/logo.png"
+              alt="RetroMan"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <p className="slogan-glow text-xs tracking-widest italic">
+            Rewind your world!
           </p>
         </div>
 
