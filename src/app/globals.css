@@ -1,0 +1,234 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-press-start);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-yellow: var(--neon-yellow);
+  --color-condition-mint: var(--condition-mint);
+  --color-condition-good: var(--condition-good);
+  --color-condition-fair: var(--condition-fair);
+  --color-condition-poor: var(--condition-poor);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* ─── Light Theme ─────────────────────────────────────────── */
+:root {
+  --background: #faf8ff;
+  --foreground: #1a1625;
+  --card: #f0ecf9;
+  --card-foreground: #1a1625;
+  --popover: #faf8ff;
+  --popover-foreground: #1a1625;
+  --primary: #d4177a;
+  --primary-foreground: #ffffff;
+  --secondary: #f0ecf9;
+  --secondary-foreground: #1a1625;
+  --muted: #f5f3fa;
+  --muted-foreground: #6b6679;
+  --accent: #0d9488;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: #e5e0f0;
+  --input: #e5e0f0;
+  --ring: #d4177a;
+  --radius: 0.5rem;
+  --neon-pink: #d4177a;
+  --neon-cyan: #0d9488;
+  --neon-yellow: #ca8a04;
+  --condition-mint: #22c55e;
+  --condition-good: #ffd700;
+  --condition-fair: #f97316;
+  --condition-poor: #ef4444;
+  --sidebar: #f0ecf9;
+  --sidebar-foreground: #1a1625;
+  --sidebar-primary: #d4177a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #faf8ff;
+  --sidebar-accent-foreground: #1a1625;
+  --sidebar-border: #e5e0f0;
+  --sidebar-ring: #d4177a;
+  --chart-1: #d4177a;
+  --chart-2: #0d9488;
+  --chart-3: #ca8a04;
+  --chart-4: #7c3aed;
+  --chart-5: #2563eb;
+}
+
+/* ─── Dark Theme (Synthwave) ──────────────────────────────── */
+.dark {
+  --background: #0d0b1e;
+  --foreground: #e8e6f2;
+  --card: #161429;
+  --card-foreground: #e8e6f2;
+  --popover: #2a2545;
+  --popover-foreground: #e8e6f2;
+  --primary: #ff2d95;
+  --primary-foreground: #0d0b1e;
+  --secondary: #2a2545;
+  --secondary-foreground: #e8e6f2;
+  --muted: #232040;
+  --muted-foreground: #9896a8;
+  --accent: #00f5d4;
+  --accent-foreground: #0d0b1e;
+  --destructive: #ef4444;
+  --border: #3d3860;
+  --input: #3d3860;
+  --ring: #ff2d95;
+  --neon-pink: #ff2d95;
+  --neon-cyan: #00f5d4;
+  --neon-yellow: #ffd700;
+  --condition-mint: #22c55e;
+  --condition-good: #ffd700;
+  --condition-fair: #f97316;
+  --condition-poor: #ef4444;
+  --sidebar: #0d0b1e;
+  --sidebar-foreground: #e8e6f2;
+  --sidebar-primary: #ff2d95;
+  --sidebar-primary-foreground: #0d0b1e;
+  --sidebar-accent: #2a2545;
+  --sidebar-accent-foreground: #e8e6f2;
+  --sidebar-border: #3d3860;
+  --sidebar-ring: #ff2d95;
+  --chart-1: #ff2d95;
+  --chart-2: #00f5d4;
+  --chart-3: #ffd700;
+  --chart-4: #a855f7;
+  --chart-5: #3b82f6;
+}
+
+/* ─── Base ────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-press-start), monospace;
+  }
+}
+
+/* ─── Neon Effects (Dark Mode only) ──────────────────────── */
+.dark .neon-glow {
+  text-shadow:
+    0 0 5px var(--neon-pink),
+    0 0 10px var(--neon-pink),
+    0 0 20px var(--neon-pink);
+}
+
+.dark .neon-glow-cyan {
+  text-shadow:
+    0 0 5px var(--neon-cyan),
+    0 0 10px var(--neon-cyan),
+    0 0 20px var(--neon-cyan);
+}
+
+.dark .neon-border {
+  box-shadow:
+    0 0 5px var(--neon-pink),
+    0 0 10px var(--neon-pink),
+    inset 0 0 5px rgba(255, 45, 149, 0.2);
+}
+
+/* ─── CRT Scanlines (Dark Mode) ──────────────────────────── */
+.dark .scanlines {
+  position: relative;
+}
+.dark .scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Synthwave Grid Background ──────────────────────────── */
+.dark .grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 45, 149, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 45, 149, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ─── Field Interaction (Auto-Save UX) ───────────────────── */
+/* Orange ring while focused */
+.retro-field:focus,
+.retro-field:focus-within {
+  outline: none;
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3) !important;
+}
+
+/* Green flash on save (triggered by JS adding .field-saved class) */
+@keyframes fieldSaved {
+  0%   { border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4); }
+  70%  { border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4); }
+  100% { border-color: var(--border); box-shadow: none; }
+}
+.field-saved {
+  animation: fieldSaved 800ms ease forwards;
+}
+
+/* ─── Hover Scale for Grid Items ─────────────────────────── */
+.media-card {
+  transition: transform 150ms ease, box-shadow 200ms ease;
+}
+.media-card:hover {
+  transform: scale(1.05);
+}
+.dark .media-card:hover {
+  box-shadow: 0 0 12px rgba(255, 45, 149, 0.3);
+}

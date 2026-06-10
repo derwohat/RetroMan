@@ -1,0 +1,263 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MediaType {
+  MUSIC
+  VIDEO
+  GAME
+  BOOK
+  CONSOLE
+  CUSTOM
+}
+
+enum Condition {
+  MINT
+  VERY_GOOD
+  GOOD
+  USED
+  POOR
+}
+
+enum ItemStatus {
+  OPENED
+  SEALED
+  GRADED
+}
+
+enum CollectionStatus {
+  OWNED
+  WISHLIST
+}
+
+enum ViewType {
+  SHELF
+  SPINE
+  CDWALL
+  SIMPLE
+  TABLE
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+enum DateFormat {
+  EUROPEAN
+  AMERICAN
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  BOOLEAN
+  TEXTAREA
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
+  passwordHash       String
+  mustChangePassword Boolean   @default(true)
+  mfaEnabled         Boolean   @default(false)
+  mfaSecret          String?
+  role               Role      @default(USER)
+  preferredLanguage  String    @default("de")
+  preferredRegion    String    @default("PAL-EU")
+  dateFormat         DateFormat @default(EUROPEAN)
+  gdprConsentAt      DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  items              Item[]
+  viewSettings       CollectionViewSettings[]
+  collectionSettings CollectionSettings[]
+}
+
+// ─── App-wide settings (singleton row) ───────────────────────────────────────
+
+model AppSettings {
+  id               String  @id @default("singleton")
+  tmdbApiKey       String?
+  igdbClientId     String?
+  igdbSecret       String?
+  discogsApiKey    String?
+  pricechartingKey String?
+  theGamesDbKey    String?
+  mobyGamesKey     String?
+  donationUrl      String?
+  githubUrl        String?
+  requireMfa       Boolean @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+// ─── Categories & Fields ──────────────────────────────────────────────────────
+
+model Category {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  icon      String?
+  mediaType MediaType
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  fields           CategoryField[]
+  items            Item[]
+  viewSettings     CollectionViewSettings[]
+  collectionSettings CollectionSettings[]
+}
+
+model CategoryField {
+  id         String    @id @default(cuid())
+  categoryId String
+  name       String
+  fieldKey   String
+  fieldType  FieldType
+  options    String[]  @default([])
+  order      Int       @default(0)
+  required   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  category     Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  customValues ItemCustomField[]
+
+  @@unique([categoryId, fieldKey])
+}
+
+// ─── Items ────────────────────────────────────────────────────────────────────
+
+model Item {
+  id               String           @id @default(cuid())
+  userId           String
+  categoryId       String
+  title            String
+  year             Int?
+  purchaseDate     DateTime?
+  purchasePrice    Decimal?         @db.Decimal(10, 2)
+  store            String?
+  condition        Condition?
+  itemStatus       ItemStatus?
+  location         String?
+  quantity         Int              @default(1)
+  barcode          String?
+  description      String?
+  notes            String?
+  rating           Int?
+  collectionStatus CollectionStatus @default(OWNED)
+  isFavorite       Boolean          @default(false)
+  externalId       String?
+  externalSource   String?
+  metadata         Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     Category          @relation(fields: [categoryId], references: [id])
+  images       ItemImage[]
+  tags         ItemTag[]
+  grading      GradingInfo?
+  customFields ItemCustomField[]
+}
+
+model ItemImage {
+  id        String   @id @default(cuid())
+  itemId    String
+  url       String?
+  filePath  String?
+  order     Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model ItemCustomField {
+  id      String @id @default(cuid())
+  itemId  String
+  fieldId String
+  value   String
+
+  item  Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  field CategoryField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, fieldId])
+}
+
+// ─── Tags ─────────────────────────────────────────────────────────────────────
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  items ItemTag[]
+}
+
+model ItemTag {
+  itemId String
+  tagId  String
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+}
+
+// ─── Grading ──────────────────────────────────────────────────────────────────
+
+model GradingInfo {
+  id            String    @id @default(cuid())
+  itemId        String    @unique
+  service       String
+  score         String
+  gradedAt      DateTime?
+  caseImagePath String?
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+// ─── View & Collection Settings ───────────────────────────────────────────────
+
+model CollectionViewSettings {
+  id          String    @id @default(cuid())
+  userId      String
+  categoryId  String
+  viewType    ViewType
+  visibleTags String[]  @default([])
+  sortBy      String    @default("title")
+  sortOrder   SortOrder @default(ASC)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, viewType])
+}
+
+model CollectionSettings {
+  id             String  @id @default(cuid())
+  userId         String
+  categoryId     String
+  regionOverride String?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+}
