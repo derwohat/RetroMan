@@ -5,10 +5,13 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur">
       {/* Logo + Title */}
-      <div className="flex items-center min-w-[160px]">
-        <div className="relative w-32 h-8">
+      <div className="flex flex-col justify-center min-w-[180px]">
+        <div className="relative w-44 h-10">
           <Image src="/logo.png" alt="RetroMan" fill className="object-contain object-left" />
         </div>
+        <span className="slogan-glow text-[8px] tracking-widest italic pl-0.5">
+          Rewind your world!
+        </span>
       </div>
 
       {/* Search */}
