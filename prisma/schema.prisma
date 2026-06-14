@@ -104,26 +104,69 @@ model AppSettings {
   pricechartingKey String?
   theGamesDbKey    String?
   mobyGamesKey     String?
+  googleSearchKey  String?
+  googleSearchCx   String?
   donationUrl      String?
   githubUrl        String?
   requireMfa       Boolean @default(false)
-  updatedAt        DateTime @updatedAt
+  fontSize          String  @default("medium")
+  interfaceLanguage String  @default("de")
+  updatedAt         DateTime @updatedAt
 }
 
 // ─── Categories & Fields ──────────────────────────────────────────────────────
 
-model Category {
-  id        String          @id @default(cuid())
-  name      String          @unique
-  icon      String?
-  mediaType MediaType
-  order     Int             @default(0)
-  createdAt DateTime        @default(now())
+model TagGroup {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
 
-  fields           CategoryField[]
-  items            Item[]
-  viewSettings     CollectionViewSettings[]
+  values     TagValue[]
+  itemTags   ItemTag[]
+  categories CategoryTagGroup[]
+}
+
+model TagValue {
+  id        String   @id @default(cuid())
+  groupId   String
+  value     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  group    TagGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  itemTags ItemTag[]
+
+  @@unique([groupId, value])
+}
+
+model CategoryTagGroup {
+  id         String   @id @default(cuid())
+  categoryId String
+  groupId    String
+  showInView Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  group    TagGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, groupId])
+}
+
+model Category {
+  id                   String          @id @default(cuid())
+  name                 String          @unique
+  icon                 String?
+  mediaType            MediaType
+  customMediaTypeLabel String?
+  order                Int             @default(0)
+  createdAt            DateTime        @default(now())
+
+  fields             CategoryField[]
+  items              Item[]
+  viewSettings       CollectionViewSettings[]
   collectionSettings CollectionSettings[]
+  tagGroups          CategoryTagGroup[]
 }
 
 model CategoryField {
@@ -202,22 +245,18 @@ model ItemCustomField {
   @@unique([itemId, fieldId])
 }
 
-// ─── Tags ─────────────────────────────────────────────────────────────────────
-
-model Tag {
-  id    String    @id @default(cuid())
-  name  String    @unique
-  items ItemTag[]
-}
+// ─── Item ↔ Tag linking ───────────────────────────────────────────────────────
 
 model ItemTag {
-  itemId String
-  tagId  String
+  itemId     String
+  tagValueId String
+  groupId    String
 
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tagValue TagValue @relation(fields: [tagValueId], references: [id], onDelete: Cascade)
+  tagGroup TagGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  @@id([itemId, tagId])
+  @@id([itemId, tagValueId])
 }
 
 // ─── Grading ──────────────────────────────────────────────────────────────────

@@ -204,6 +204,22 @@
 }
 
 /* ─── Field Interaction (Auto-Save UX) ───────────────────── */
+/* Base field appearance */
+.retro-field {
+  display: block;
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background-color: var(--muted);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.retro-field::placeholder {
+  color: var(--muted-foreground);
+}
+
 /* Orange ring while focused */
 .retro-field:focus,
 .retro-field:focus-within {
@@ -222,12 +238,24 @@
   animation: fieldSaved 800ms ease forwards;
 }
 
+/* ─── Search field: slogan as glowing placeholder ────────── */
+.search-slogan-placeholder::placeholder {
+  color: var(--neon-cyan);
+  font-style: italic;
+  letter-spacing: 0.1em;
+  text-shadow:
+    0 0 5px var(--neon-cyan),
+    0 0 10px var(--neon-cyan),
+    0 0 20px var(--neon-cyan);
+}
+
 /* ─── Slogan Glow ────────────────────────────────────────── */
 .slogan-glow {
   color: var(--neon-cyan);
   text-shadow:
-    0 0 8px var(--neon-cyan),
-    0 0 16px color-mix(in srgb, var(--neon-cyan) 50%, transparent);
+    0 0 5px var(--neon-cyan),
+    0 0 10px var(--neon-cyan),
+    0 0 20px var(--neon-cyan);
 }
 
 /* ─── Hover Scale for Grid Items ─────────────────────────── */
@@ -240,3 +268,64 @@
 .dark .media-card:hover {
   box-shadow: 0 0 12px rgba(255, 45, 149, 0.3);
 }
+
+/* ─── Select element readability ─────────────────────────── */
+select {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+select:focus {
+  outline: none;
+}
+select option,
+select option:checked {
+  background-color: var(--card);
+  color: var(--foreground);
+  padding: 4px 8px;
+}
+
+/* ─── Inline editable fields (item detail) ───────────────── */
+.inline-field-idle {
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+  min-height: 2rem;
+  display: block;
+  width: 100%;
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+.inline-field-idle:hover {
+  background-color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.inline-field-idle:focus,
+.inline-field-idle:focus-within {
+  outline: none;
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25) !important;
+  background-color: var(--muted) !important;
+  cursor: text;
+}
+/* Select within inline fields keeps a solid background */
+select.inline-field-idle {
+  background-color: var(--muted);
+  cursor: pointer;
+}
+
+/* Sustained green after auto-save */
+.inline-field-saved {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25) !important;
+}
+
+/* ─── Font size classes ──────────────────────────────────── */
+.font-size-small  { font-size: 13px; }
+.font-size-medium { font-size: 15px; }
+.font-size-large  { font-size: 17px; }
+.font-size-small  .text-xs  { font-size: 11px; }
+.font-size-large  .text-xs  { font-size: 13px; }
+.font-size-small  .text-sm  { font-size: 12px; }
+.font-size-large  .text-sm  { font-size: 16px; }

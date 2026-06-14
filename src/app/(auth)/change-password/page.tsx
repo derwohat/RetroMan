@@ -48,10 +48,10 @@ export default function ChangePasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-background grid-bg px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <div className="relative w-48 h-18">
+          <div className="relative w-full h-48">
             <Image src="/logo.png" alt="RetroMan" fill className="object-contain" priority />
           </div>
-          <p className="slogan-glow text-xs tracking-widest italic">Rewind your world!</p>
+          <p className="slogan-glow text-sm tracking-widest italic">Rewind your world!</p>
           <p className="text-muted-foreground text-xs">
             Bitte wähle ein neues Passwort für deinen Account.
           </p>

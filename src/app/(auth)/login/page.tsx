@@ -39,7 +39,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="relative w-64 h-24">
+          <div className="relative w-full h-48">
             <Image
               src="/logo.png"
               alt="RetroMan"
@@ -48,7 +48,7 @@ export default function LoginPage() {
               priority
             />
           </div>
-          <p className="slogan-glow text-xs tracking-widest italic">
+          <p className="slogan-glow text-sm tracking-widest italic">
             Rewind your world!
           </p>
         </div>

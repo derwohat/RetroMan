@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 // AUTH BYPASS — development/UI testing only
 // TODO: re-enable auth before production
-export function middleware(_req: NextRequest) {
+export function proxy(_req: NextRequest) {
   return NextResponse.next();
 }
 
