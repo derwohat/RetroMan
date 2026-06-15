@@ -1,5 +1,5 @@
-# Production compose — uses pre-built image from ghcr.io (no local build needed)
-# For Synology Container Manager / Dockhand — single file, no extra files needed.
+# Production compose - uses pre-built image from ghcr.io (no local build needed)
+# For Synology Container Manager / Dockhand - single file, no extra files needed.
 #
 # Setup:
 #   1. Replace all example values below with your own
@@ -15,7 +15,7 @@ services:
       # Example: MeinSicheresPasswort42!
       POSTGRES_PASSWORD: CHANGE_ME
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "postgres_data:/var/lib/postgresql/data"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U retroman"]
       interval: 10s
@@ -34,15 +34,15 @@ services:
       # IP or hostname of this machine (with port)
       # Example: http://192.168.1.100:7007
       NEXTAUTH_URL: http://CHANGE_ME:7007
-      # Random secret — generate with: openssl rand -base64 32
+      # Random secret - generate with: openssl rand -base64 32
       # Example: hX3kL9mZqR7vW2nYpT5uA8eB6cD4fG0j1iO+sN/KQw=
       NEXTAUTH_SECRET: CHANGE_ME
-      # Exactly 64 hex characters — generate with: openssl rand -hex 32
+      # Exactly 64 hex characters - generate with: openssl rand -hex 32
       # Example: a3f8c2d1e4b5a6f7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1
       ENCRYPTION_KEY: CHANGE_ME_64HEX
       NODE_ENV: production
     volumes:
-      - uploads:/app/uploads
+      - "uploads:/app/uploads"
     depends_on:
       db:
         condition: service_healthy
