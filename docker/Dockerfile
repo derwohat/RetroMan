@@ -36,12 +36,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma: CLI binary, engines, schema, and generated client
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma           ./node_modules/.bin/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma                ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/engines       ./node_modules/@prisma/engines
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client        ./node_modules/@prisma/client
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/adapter-pg   ./node_modules/@prisma/adapter-pg
+# Copy Prisma: CLI, all @prisma/* sub-packages, schema, and generated client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma  ./node_modules/.bin/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma       ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma      ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated                      ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations                  ./prisma/migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma               ./prisma/schema.prisma
