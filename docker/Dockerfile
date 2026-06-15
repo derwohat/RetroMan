@@ -36,10 +36,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma migration tools in an ISOLATED directory (/migrate) so they never
-# conflict with the subset of node_modules bundled by Next.js standalone.
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma  /migrate/node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma /migrate/node_modules/@prisma
+# Full node_modules for the Prisma CLI (isolated from standalone's node_modules).
+# Copying everything avoids chasing transitive dependency chains.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules         /migrate/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations    /migrate/migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma /migrate/schema.prisma
 
