@@ -41,6 +41,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules         /migrate/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations    /migrate/migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma /migrate/schema.prisma
+# Prisma v7 requires datasource.url in a config file for migrate deploy
+COPY --chown=nextjs:nodejs docker/prisma.config.js /migrate/prisma.config.js
 
 # Generated Prisma client + seed + bcryptjs (all needed by the running app)
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated        ./src/generated
