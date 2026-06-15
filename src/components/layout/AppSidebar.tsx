@@ -63,8 +63,6 @@ export function AppSidebar() {
       .catch(() => {});
   }, []);
 
-  const totalItems = collections.reduce((s, c) => s + c._count.items, 0);
-
   function navLink(href: string, icon: React.ReactNode, label: string, exact = false) {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
     return (
@@ -181,7 +179,7 @@ export function AppSidebar() {
       {!collapsed && (
         <div className="border-t border-border p-3 shrink-0">
           <p className="text-[9px] text-muted-foreground">
-            {totalItems} {totalItems === 1 ? t.nav.item : t.nav.items} gesamt
+            RetroMan v{process.env.NEXT_PUBLIC_APP_VERSION}
           </p>
         </div>
       )}

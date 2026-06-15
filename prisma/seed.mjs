@@ -63,9 +63,15 @@ async function main() {
     }
     console.log(`✓ ${DEFAULT_CATEGORIES.length} categories synced`);
 
-    // Ensure each category has a default collection
-    const { rows: cats } = await client.query(`SELECT id, name, "order" FROM "Category" ORDER BY "order"`);
-    for (const cat of cats) {
+    // Create default collections for CDs, PC-Spiele and Blu-ray only
+    const DEFAULT_COLLECTIONS = ["CDs", "PC-Spiele", "Blu-ray"];
+    for (const collName of DEFAULT_COLLECTIONS) {
+      const { rows: cats } = await client.query(
+        `SELECT id, "order" FROM "Category" WHERE name=$1 LIMIT 1`,
+        [collName]
+      );
+      if (cats.length === 0) continue;
+      const cat = cats[0];
       const { rows } = await client.query(
         `SELECT id FROM "Collection" WHERE "categoryId"=$1 LIMIT 1`,
         [cat.id]
@@ -73,9 +79,9 @@ async function main() {
       if (rows.length === 0) {
         await client.query(
           `INSERT INTO "Collection" (id, name, "categoryId", "order") VALUES ($1,$2,$3,$4)`,
-          [cat.id, cat.name, cat.id, cat.order]
+          [cuid(), collName, cat.id, cat.order]
         );
-        console.log(`✓ Created default collection "${cat.name}"`);
+        console.log(`✓ Created default collection "${collName}"`);
       }
     }
 

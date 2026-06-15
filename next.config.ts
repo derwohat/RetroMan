@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { version } from "./package.json";
 
 const securityHeaders = [
   { key: "X-Content-Type-Options",    value: "nosniff" },
@@ -10,6 +11,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  env: { NEXT_PUBLIC_APP_VERSION: version },
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "bcryptjs"],
   experimental: {
     turbopackFileSystemCacheForDev: false,
