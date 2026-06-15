@@ -31,13 +31,31 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built app
+# Copy built Next.js app (standalone mode)
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy Prisma: CLI binary, engines, schema, and generated client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma           ./node_modules/.bin/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma                ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client        ./node_modules/@prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/adapter-pg   ./node_modules/@prisma/adapter-pg
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma               ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/src/generated                      ./src/generated
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations                  ./prisma/migrations
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma               ./prisma/schema.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/seed.mjs                    ./prisma/seed.mjs
+
+# Copy bcryptjs (needed by seed at runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs              ./node_modules/bcryptjs
+
 # Uploads directory (mapped as Docker volume)
 RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
+
+# Entrypoint: runs migrations + seed then starts the server
+COPY docker/entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 USER nextjs
 
@@ -45,4 +63,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["/app/entrypoint.sh"]
