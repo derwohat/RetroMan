@@ -108,21 +108,21 @@ async function main() {
       console.log(`✓ Tag group "${groupDef.name}" synced`);
     }
 
-    // AppSettings singleton
+    // AppSettings singleton (updatedAt has no DB default — must be provided)
     await client.query(
-      `INSERT INTO "AppSettings" (id) VALUES ('singleton') ON CONFLICT (id) DO NOTHING`
+      `INSERT INTO "AppSettings" (id, "updatedAt") VALUES ('singleton', NOW()) ON CONFLICT (id) DO NOTHING`
     );
     console.log(`✓ AppSettings singleton ensured`);
 
-    // Admin user (first time only)
+    // Admin user (first time only — updatedAt has no DB default)
     const { rows: users } = await client.query(
       `SELECT email FROM "User" WHERE email='admin@retroman.local' LIMIT 1`
     );
     if (users.length === 0) {
       const passwordHash = await bcrypt.hash("admin1234", 12);
       await client.query(
-        `INSERT INTO "User" (id, email, name, "passwordHash", role, "mustChangePassword")
-         VALUES ($1,$2,$3,$4,$5,$6)`,
+        `INSERT INTO "User" (id, email, name, "passwordHash", role, "mustChangePassword", "updatedAt")
+         VALUES ($1,$2,$3,$4,$5,$6, NOW())`,
         [cuid(), "admin@retroman.local", "Admin", passwordHash, "ADMIN", true]
       );
       console.log(`✓ Admin user created: admin@retroman.local`);
