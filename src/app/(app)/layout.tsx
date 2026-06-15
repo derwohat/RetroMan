@@ -1,9 +1,14 @@
+import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { FontSizeProvider } from "@/components/FontSizeProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { prisma } from "@/lib/db/prisma";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const userCount = await prisma.user.count();
+  if (userCount === 0) redirect("/setup");
+
   return (
     <LanguageProvider>
       <div className="flex h-screen flex-col bg-background grid-bg">

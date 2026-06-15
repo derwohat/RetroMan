@@ -1,6 +1,5 @@
 // Production seed — uses pg directly to avoid Prisma TypeScript client at runtime.
 import pg from "pg";
-import bcrypt from "bcryptjs";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -114,22 +113,7 @@ async function main() {
     );
     console.log(`✓ AppSettings singleton ensured`);
 
-    // Admin user (first time only — updatedAt has no DB default)
-    const { rows: users } = await client.query(
-      `SELECT email FROM "User" WHERE email='admin@retroman.local' LIMIT 1`
-    );
-    if (users.length === 0) {
-      const passwordHash = await bcrypt.hash("admin1234", 12);
-      await client.query(
-        `INSERT INTO "User" (id, email, name, "passwordHash", role, "mustChangePassword", "updatedAt")
-         VALUES ($1,$2,$3,$4,$5,$6, NOW())`,
-        [cuid(), "admin@retroman.local", "Admin", passwordHash, "ADMIN", true]
-      );
-      console.log(`✓ Admin user created: admin@retroman.local`);
-      console.log(`  Temporary password: admin1234  (must be changed on first login)`);
-    } else {
-      console.log(`✓ Admin user exists: ${users[0].email}`);
-    }
+    // No default admin — first-run setup is done via the /setup page in the web UI.
   } finally {
     client.release();
     await pool.end();
