@@ -162,11 +162,9 @@ model Category {
   order                Int             @default(0)
   createdAt            DateTime        @default(now())
 
-  fields             CategoryField[]
-  items              Item[]
-  viewSettings       CollectionViewSettings[]
-  collectionSettings CollectionSettings[]
-  tagGroups          CategoryTagGroup[]
+  fields      CategoryField[]
+  collections Collection[]
+  tagGroups   CategoryTagGroup[]
 }
 
 model CategoryField {
@@ -180,10 +178,25 @@ model CategoryField {
   required   Boolean   @default(false)
   createdAt  DateTime  @default(now())
 
-  category     Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category     Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   customValues ItemCustomField[]
 
   @@unique([categoryId, fieldKey])
+}
+
+// ─── Collections ──────────────────────────────────────────────────────────────
+
+model Collection {
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  category           Category                 @relation(fields: [categoryId], references: [id])
+  items              Item[]
+  viewSettings       CollectionViewSettings[]
+  collectionSettings CollectionSettings[]
 }
 
 // ─── Items ────────────────────────────────────────────────────────────────────
@@ -191,7 +204,7 @@ model CategoryField {
 model Item {
   id               String           @id @default(cuid())
   userId           String
-  categoryId       String
+  collectionId     String
   title            String
   year             Int?
   purchaseDate     DateTime?
@@ -214,7 +227,7 @@ model Item {
   updatedAt        DateTime         @updatedAt
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category     Category          @relation(fields: [categoryId], references: [id])
+  collection   Collection        @relation(fields: [collectionId], references: [id])
   images       ItemImage[]
   tags         ItemTag[]
   grading      GradingInfo?
@@ -275,28 +288,28 @@ model GradingInfo {
 // ─── View & Collection Settings ───────────────────────────────────────────────
 
 model CollectionViewSettings {
-  id          String    @id @default(cuid())
-  userId      String
-  categoryId  String
-  viewType    ViewType
-  visibleTags String[]  @default([])
-  sortBy      String    @default("title")
-  sortOrder   SortOrder @default(ASC)
+  id           String    @id @default(cuid())
+  userId       String
+  collectionId String
+  viewType     ViewType
+  visibleTags  String[]  @default([])
+  sortBy       String    @default("title")
+  sortOrder    SortOrder @default(ASC)
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, categoryId, viewType])
+  @@unique([userId, collectionId, viewType])
 }
 
 model CollectionSettings {
   id             String  @id @default(cuid())
   userId         String
-  categoryId     String
+  collectionId   String
   regionOverride String?
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, categoryId])
+  @@unique([userId, collectionId])
 }

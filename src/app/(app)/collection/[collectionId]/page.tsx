@@ -28,11 +28,17 @@ type Category = {
   fields: CategoryField[];
   tagGroups: CategoryTagGroup[];
 };
+type Collection = {
+  id: string;
+  name: string;
+  categoryId: string;
+  category: Category;
+};
 
 export default function CollectionPage() {
-  const { categoryId } = useParams<{ categoryId: string }>();
+  const { collectionId } = useParams<{ collectionId: string }>();
 
-  const [category, setCategory]        = useState<Category | null>(null);
+  const [collection, setCollection]    = useState<Collection | null>(null);
   const [items, setItems]              = useState<ViewItem[]>([]);
   const [loading, setLoading]          = useState(true);
   const [activeView, setActiveView]    = useState<ViewType>("SHELF");
@@ -42,24 +48,24 @@ export default function CollectionPage() {
   const tagPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/categories")
+    fetch("/api/collections")
       .then((r) => r.json())
-      .then((cats: Category[]) => setCategory(cats.find((c) => c.id === categoryId) ?? null));
-  }, [categoryId]);
+      .then((cols: Collection[]) => setCollection(cols.find((c) => c.id === collectionId) ?? null));
+  }, [collectionId]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(`view_${categoryId}`) as ViewType | null;
+    const stored = localStorage.getItem(`view_${collectionId}`) as ViewType | null;
     if (stored) setActiveView(stored);
 
-    fetch(`/api/collection-settings/${categoryId}`)
+    fetch(`/api/collection-settings/${collectionId}`)
       .then((r) => r.json())
       .then((s) => {
-        const view = (localStorage.getItem(`view_${categoryId}`) as ViewType | null) ?? s.viewType ?? "SHELF";
+        const view = (localStorage.getItem(`view_${collectionId}`) as ViewType | null) ?? s.viewType ?? "SHELF";
         setActiveView(view);
         setVisibleTags(s.visibleTags ?? []);
       })
       .catch(() => {});
-  }, [categoryId]);
+  }, [collectionId]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -71,15 +77,15 @@ export default function CollectionPage() {
 
   const loadItems = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/items?categoryId=${categoryId}`);
+    const res = await fetch(`/api/items?collectionId=${collectionId}`);
     if (res.ok) setItems(await res.json());
     setLoading(false);
-  }, [categoryId]);
+  }, [collectionId]);
 
   useEffect(() => { loadItems(); }, [loadItems]);
 
   async function saveViewSettings(view: ViewType, tags: string[]) {
-    await fetch(`/api/collection-settings/${categoryId}`, {
+    await fetch(`/api/collection-settings/${collectionId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ viewType: view, visibleTags: tags }),
@@ -88,7 +94,7 @@ export default function CollectionPage() {
 
   function handleViewChange(view: ViewType) {
     setActiveView(view);
-    localStorage.setItem(`view_${categoryId}`, view);
+    localStorage.setItem(`view_${collectionId}`, view);
     saveViewSettings(view, visibleTags);
   }
 
@@ -97,6 +103,8 @@ export default function CollectionPage() {
     setVisibleTags(next);
     saveViewSettings(activeView, next);
   }
+
+  const category = collection?.category ?? null;
 
   const availableViews = category
     ? VIEW_AVAILABILITY[category.mediaType] ?? ["SHELF", "SIMPLE", "TABLE"]
@@ -119,14 +127,14 @@ export default function CollectionPage() {
         <div>
           <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest flex items-center gap-2">
             <CategoryIcon icon={category?.icon ?? null} className="h-4 w-4" />
-            {category?.name ?? "Sammlung"}
+            {collection?.name ?? "Sammlung"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {loading ? "Lade…" : `${items.length} ${items.length === 1 ? "Item" : "Items"}`}
           </p>
         </div>
 
-        {/* Toolbar: view switcher + tag settings + add button */}
+        {/* Toolbar */}
         <div className="flex items-center gap-2">
           {/* View switcher */}
           <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted p-1">
@@ -195,9 +203,10 @@ export default function CollectionPage() {
         </>
       )}
 
-      {showForm && category && (
+      {showForm && collection && category && (
         <ItemForm
           category={category}
+          collectionId={collection.id}
           item={null}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); loadItems(); }}

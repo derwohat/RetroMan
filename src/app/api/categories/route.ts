@@ -6,7 +6,6 @@ export async function GET() {
     const categories = await prisma.category.findMany({
       include: {
         fields: { orderBy: { order: "asc" } },
-        _count: { select: { items: true } },
         tagGroups: {
           select: {
             groupId: true,

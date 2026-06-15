@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 import "@/lib/auth/types";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -40,6 +41,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        const key = `login:${(credentials.email as string).toLowerCase()}`;
+        const { ok, retryAfterSecs } = rateLimit(key);
+        if (!ok) {
+          throw new Error(`Zu viele Anmeldeversuche. Bitte in ${retryAfterSecs} Sekunden erneut versuchen.`);
+        }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string, deletedAt: null },

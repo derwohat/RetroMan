@@ -19,10 +19,11 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const categoryId = searchParams.get("categoryId");
+  const collectionId = searchParams.get("collectionId");
   const search = searchParams.get("search") ?? "";
   const condition = searchParams.get("condition");
   const collectionStatus = searchParams.get("collectionStatus");
+  const isFavorite = searchParams.get("isFavorite");
   const sortBy = searchParams.get("sortBy") ?? "title";
   const sortOrder = (searchParams.get("sortOrder") ?? "asc") as "asc" | "desc";
 
@@ -32,17 +33,19 @@ export async function GET(req: NextRequest) {
   const items = await prisma.item.findMany({
     where: {
       userId,
-      ...(categoryId ? { categoryId } : {}),
+      ...(collectionId ? { collectionId } : {}),
       ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(condition ? { condition: condition as any } : {}),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(collectionStatus ? { collectionStatus: collectionStatus as any } : {}),
+      ...(isFavorite === "true" ? { isFavorite: true } : {}),
     },
     include: {
       images: { orderBy: { order: "asc" } },
       tags: { include: { tagValue: true, tagGroup: true } },
       customFields: { include: { field: true } },
+      collection: { select: { id: true, name: true, category: { select: { id: true, icon: true, mediaType: true } } } },
     },
     orderBy: { [safeSort]: sortOrder },
   });
@@ -56,10 +59,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   // tags as array of { tagValueId, groupId }
-  const { categoryId, title, imageUrl, tags, ...rest } = body;
+  const { collectionId, title, imageUrl, tags, ...rest } = body;
 
-  if (!categoryId || !title?.trim()) {
-    return NextResponse.json({ error: "Kategorie und Titel erforderlich." }, { status: 400 });
+  if (!collectionId || !title?.trim()) {
+    return NextResponse.json({ error: "Sammlung und Titel erforderlich." }, { status: 400 });
   }
 
   const itemData: Record<string, unknown> = {};
@@ -72,7 +75,7 @@ export async function POST(req: NextRequest) {
   const item = await prisma.item.create({
     data: {
       userId,
-      categoryId,
+      collectionId,
       title: title.trim(),
       ...itemData,
       ...(imageUrl ? { images: { create: [{ url: imageUrl, order: 0, isPrimary: true }] } } : {}),

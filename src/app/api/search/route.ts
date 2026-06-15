@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       title: { contains: q, mode: "insensitive" },
     },
     include: {
-      category: { select: { id: true, name: true, icon: true } },
+      collection: { include: { category: { select: { id: true, name: true, icon: true } } } },
       images:  { orderBy: { order: "asc" } },
       tags:    { include: { tagValue: true, tagGroup: true } },
       customFields: { include: { field: true } },
@@ -39,9 +39,9 @@ export async function GET(req: NextRequest) {
 
   const results = items.map((item) => ({
     ...item,
-    categoryId:   item.category.id,
-    categoryName: item.category.name,
-    categoryIcon: item.category.icon ?? "box",
+    categoryId:   item.collection.category.id,
+    categoryName: item.collection.category.name,
+    categoryIcon: item.collection.category.icon ?? "box",
   }));
 
   return NextResponse.json(results);

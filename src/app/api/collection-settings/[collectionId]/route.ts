@@ -16,15 +16,15 @@ async function getUserId(): Promise<string | null> {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ collectionId: string }> },
 ) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { categoryId } = await params;
+  const { collectionId } = await params;
 
   const settings = await prisma.collectionViewSettings.findFirst({
-    where: { userId, categoryId },
+    where: { userId, collectionId },
     orderBy: { id: "asc" },
   });
 
@@ -38,18 +38,18 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ collectionId: string }> },
 ) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { categoryId } = await params;
+  const { collectionId } = await params;
   const body = await req.json();
   const { viewType, visibleTags, sortBy, sortOrder } = body;
 
   const settings = await prisma.collectionViewSettings.upsert({
-    where: { userId_categoryId_viewType: { userId, categoryId, viewType } },
-    create: { userId, categoryId, viewType, visibleTags, sortBy, sortOrder },
+    where: { userId_collectionId_viewType: { userId, collectionId, viewType } },
+    create: { userId, collectionId, viewType, visibleTags, sortBy, sortOrder },
     update: { visibleTags, sortBy, sortOrder },
   });
 

@@ -43,22 +43,27 @@ function IconChevronRight() {
   );
 }
 
-type Category = { id: string; name: string; icon: string | null; _count: { items: number } };
+type Collection = { id: string; name: string; category: { icon: string | null }; _count: { items: number } };
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [counts, setCounts] = useState({ favorites: 0, wishlist: 0 });
   const pathname = usePathname();
   const { t } = useTranslations();
 
   useEffect(() => {
-    fetch("/api/categories")
+    fetch("/api/collections")
       .then((r) => (r.ok ? r.json() : []))
-      .then((cats: Category[]) => setCategories(cats))
+      .then((cols: Collection[]) => setCollections(cols))
+      .catch(() => {});
+    fetch("/api/counts")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setCounts(d); })
       .catch(() => {});
   }, []);
 
-  const totalItems = categories.reduce((s, c) => s + c._count.items, 0);
+  const totalItems = collections.reduce((s, c) => s + c._count.items, 0);
 
   function navLink(href: string, icon: React.ReactNode, label: string, exact = false) {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -111,15 +116,15 @@ export function AppSidebar() {
           </svg>
         ), t.nav.collections, true)}
 
-        {/* Individual categories */}
-        {categories.map((cat) => {
-          const href = `/collection/${cat.id}`;
+        {/* Individual collections */}
+        {collections.map((col) => {
+          const href = `/collection/${col.id}`;
           const isActive = pathname.startsWith(href);
           return (
             <Link
-              key={cat.id}
+              key={col.id}
               href={href}
-              title={collapsed ? cat.name : undefined}
+              title={collapsed ? col.name : undefined}
               className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary border-r-2 border-primary"
@@ -127,13 +132,13 @@ export function AppSidebar() {
               }`}
             >
               <span className="shrink-0">
-                <CategoryIcon icon={cat.icon} className="h-4 w-4" />
+                <CategoryIcon icon={col.category.icon} className="h-4 w-4" />
               </span>
               {!collapsed && (
-                <span className="flex-1 truncate text-xs">{cat.name}</span>
+                <span className="flex-1 truncate text-xs">{col.name}</span>
               )}
-              {!collapsed && cat._count.items > 0 && (
-                <span className="text-[9px] text-muted-foreground tabular-nums">{cat._count.items}</span>
+              {!collapsed && col._count.items > 0 && (
+                <span className="text-[9px] text-muted-foreground tabular-nums">{col._count.items}</span>
               )}
             </Link>
           );
@@ -143,8 +148,32 @@ export function AppSidebar() {
         <div className="my-2 mx-3 border-t border-border/50" />
 
         {/* Other pages */}
-        {navLink("/wishlist",  <IconWishlist />,  t.nav.wishlist)}
-        {navLink("/favorites", <IconFavorites />, t.nav.favorites)}
+        {/* Wishlist with count */}
+        {(() => {
+          const href = "/wishlist";
+          const isActive = pathname.startsWith(href);
+          return (
+            <Link href={href} className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+              <span className="shrink-0"><IconWishlist /></span>
+              {!collapsed && <span className="flex-1 truncate text-xs">{t.nav.wishlist}</span>}
+              {!collapsed && counts.wishlist > 0 && <span className="text-[9px] text-muted-foreground tabular-nums">{counts.wishlist}</span>}
+            </Link>
+          );
+        })()}
+
+        {/* Favorites with count */}
+        {(() => {
+          const href = "/favorites";
+          const isActive = pathname.startsWith(href);
+          return (
+            <Link href={href} className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+              <span className="shrink-0"><IconFavorites /></span>
+              {!collapsed && <span className="flex-1 truncate text-xs">{t.nav.favorites}</span>}
+              {!collapsed && counts.favorites > 0 && <span className="text-[9px] text-muted-foreground tabular-nums">{counts.favorites}</span>}
+            </Link>
+          );
+        })()}
+
         {navLink("/stats",     <IconStats />,     t.nav.stats)}
       </nav>
 

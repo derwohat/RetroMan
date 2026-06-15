@@ -4,25 +4,25 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 
-type Category = {
+type Collection = {
   id: string;
   name: string;
-  icon: string | null;
+  category: { icon: string | null };
   _count: { items: number };
 };
 
 export default function DashboardPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((cats: Category[]) => { setCategories(cats); setLoading(false); })
+    fetch("/api/collections")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((cols: Collection[]) => { setCollections(cols); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
-  const totalItems = categories.reduce((sum, c) => sum + c._count.items, 0);
+  const totalItems = collections.reduce((sum, c) => sum + c._count.items, 0);
 
   return (
     <div className="space-y-6">
@@ -32,35 +32,35 @@ export default function DashboardPage() {
         </h2>
         {!loading && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {totalItems} {totalItems === 1 ? "Item" : "Items"} in {categories.length} {categories.length === 1 ? "Sammlung" : "Sammlungen"}
+            {totalItems} {totalItems === 1 ? "Item" : "Items"} in {collections.length} {collections.length === 1 ? "Sammlung" : "Sammlungen"}
           </p>
         )}
       </div>
 
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-          {categories.map((cat) => (
+          {collections.map((col) => (
             <Link
-              key={cat.id}
-              href={`/collection/${cat.id}`}
+              key={col.id}
+              href={`/collection/${col.id}`}
               className="media-card group flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-8 transition hover:border-primary hover:bg-primary/5"
             >
-              <CategoryIcon icon={cat.icon} className="h-16 w-16" />
+              <CategoryIcon icon={col.category.icon} className="h-16 w-16" />
               <div className="text-center">
-                <p className="text-sm font-medium text-foreground group-hover:text-primary transition">{cat.name}</p>
+                <p className="text-sm font-medium text-foreground group-hover:text-primary transition">{col.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {cat._count.items} {cat._count.items === 1 ? "Item" : "Items"}
+                  {col._count.items} {col._count.items === 1 ? "Item" : "Items"}
                 </p>
               </div>
             </Link>
           ))}
 
-          {categories.length === 0 && (
+          {collections.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <CategoryIcon icon={null} className="h-16 w-16 opacity-20 mb-4" />
               <p className="text-sm text-muted-foreground">Noch keine Sammlungen angelegt.</p>
-              <Link href="/admin/categories" className="mt-3 text-xs text-primary hover:underline">
-                Kategorien im Admin-Bereich verwalten →
+              <Link href="/admin/collections" className="mt-3 text-xs text-primary hover:underline">
+                Sammlungen im Admin-Bereich verwalten →
               </Link>
             </div>
           )}

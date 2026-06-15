@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { formatPrice } from "@/lib/format";
 import { CONDITION_COLORS, CONDITION_LABELS, type ViewProps } from "./types";
 
-type SortKey = "title" | "year" | "condition" | "rating" | "purchasePrice";
+type SortKey = "title" | "year" | "condition" | "purchasePrice";
 
 function getImageUrl(item: ViewProps["items"][number]) {
   const primary = item.images.find((i) => i.isPrimary) ?? item.images[0];
@@ -14,7 +13,6 @@ function getImageUrl(item: ViewProps["items"][number]) {
 }
 
 export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups: _chipGroups }: ViewProps) {
-  const { categoryId } = useParams<{ categoryId: string }>();
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -28,7 +26,6 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
     let bv: string | number | null = null;
     if (sortKey === "title")         { av = a.title;         bv = b.title; }
     else if (sortKey === "year")     { av = a.year;          bv = b.year; }
-    else if (sortKey === "rating")   { av = a.rating;        bv = b.rating; }
     else if (sortKey === "purchasePrice") { av = a.purchasePrice; bv = b.purchasePrice; }
     else if (sortKey === "condition") {
       const order = ["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"];
@@ -69,7 +66,6 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
               <Th label="Titel"      sortable sk="title" />
               <Th label="Jahr"       sortable sk="year" />
               <Th label="Zustand"    sortable sk="condition" />
-              <Th label="Bewertung"  sortable sk="rating" />
               <Th label="Preis"      sortable sk="purchasePrice" />
               {extraFields.map((f) => (
                 <Th key={f.fieldKey} label={f.name} />
@@ -86,7 +82,7 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
                 >
                   {/* Thumbnail */}
                   <td className="px-3 py-2">
-                    <Link href={`/collection/${categoryId}/${item.id}`}>
+                    <Link href={`/collection/${item.collectionId}/${item.id}`}>
                       <div className="w-8 h-10 rounded overflow-hidden bg-muted flex items-center justify-center shrink-0 hover:ring-1 hover:ring-primary transition">
                         {imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -100,7 +96,7 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
 
                   {/* Title */}
                   <td className="px-3 py-2 max-w-[220px]">
-                    <Link href={`/collection/${categoryId}/${item.id}`} className="flex items-center gap-1.5 hover:text-primary transition">
+                    <Link href={`/collection/${item.collectionId}/${item.id}`} className="flex items-center gap-1.5 hover:text-primary transition">
                       {item.isFavorite && <span className="text-xs">❤️</span>}
                       <span className="font-medium text-foreground truncate">{item.title}</span>
                     </Link>
@@ -117,16 +113,6 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
                       <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? "border-border text-muted-foreground"}`}>
                         {CONDITION_LABELS[item.condition]}
                       </span>
-                    ) : "—"}
-                  </td>
-
-                  {/* Rating */}
-                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                    {item.rating ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-yellow-400 text-xs">★</span>
-                        <span className="text-xs">{item.rating}/10</span>
-                      </div>
                     ) : "—"}
                   </td>
 

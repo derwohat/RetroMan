@@ -12,6 +12,7 @@ const de = {
   admin: {
     title: "Admin",
     users: "Benutzer",
+    collections: "Sammlungen",
     categories: "Kategorien",
     tags: "Tags",
     settings: "Einstellungen",
@@ -71,6 +72,7 @@ export const translations: Record<Locale, Translations> = {
     admin: {
       title: "Admin",
       users: "Users",
+      collections: "Collections",
       categories: "Categories",
       tags: "Tags",
       settings: "Settings",
@@ -125,6 +127,7 @@ export const translations: Record<Locale, Translations> = {
     admin: {
       title: "Admin",
       users: "Utilisateurs",
+      collections: "Collections",
       categories: "Catégories",
       tags: "Tags",
       settings: "Paramètres",

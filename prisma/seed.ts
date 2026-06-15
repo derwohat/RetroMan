@@ -64,6 +64,18 @@ async function main() {
   }
   console.log(`✓ ${DEFAULT_CATEGORIES.length} categories synced`);
 
+  // ── Ensure each category has at least one default collection ──────────────────
+  const allCategories = await prisma.category.findMany({ orderBy: { order: "asc" } });
+  for (const cat of allCategories) {
+    const existing = await prisma.collection.findFirst({ where: { categoryId: cat.id } });
+    if (!existing) {
+      await prisma.collection.create({
+        data: { id: cat.id, name: cat.name, categoryId: cat.id, order: cat.order },
+      });
+      console.log(`✓ Created default collection "${cat.name}"`);
+    }
+  }
+
   // ── Upsert default tag groups ─────────────────────────────────────────────────
   for (const groupDef of DEFAULT_TAG_GROUPS) {
     const group = await prisma.tagGroup.upsert({

@@ -28,12 +28,12 @@ export const VIEW_ICONS: Record<ViewType, string> = {
 
 export type ViewItem = {
   id: string;
+  collectionId: string;
   title: string;
   year: number | null;
   condition: string | null;
   isFavorite: boolean;
   collectionStatus: string;
-  rating: number | null;
   purchasePrice: number | null;
   store: string | null;
   location: string | null;

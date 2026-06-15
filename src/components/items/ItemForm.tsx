@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { isoToDE, deToISO } from "@/lib/format";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import { BarcodeScanner } from "./BarcodeScanner";
 
 type CategoryField = {
   id: string;
@@ -35,7 +36,6 @@ export type FormItem = {
   barcode: string | null;
   description: string | null;
   notes: string | null;
-  rating: number | null;
   purchaseDate: string | null;
   purchasePrice: number | null;
   store: string | null;
@@ -44,11 +44,13 @@ export type FormItem = {
 };
 
 type CoverResult = { url: string; label: string; source: string };
+type MetadataResult = { title: string; year: number | null; description: string | null; imageUrl: string | null; externalId: string; externalSource: string };
 type TagValue = { id: string; value: string };
 type TagGroup = { id: string; name: string; values: TagValue[] };
 
 interface Props {
   category: Category;
+  collectionId: string;
   item: FormItem | null;
   onClose: () => void;
   onSaved: () => void;
@@ -119,7 +121,7 @@ function GermanDateInput({ value, onChange }: { value: string; onChange: (iso: s
 
 
 // ── Main form ─────────────────────────────────────────────────────────────────
-export function ItemForm({ category, item, onClose, onSaved }: Props) {
+export function ItemForm({ category, collectionId, item, onClose, onSaved }: Props) {
   const primaryImage = item?.images.find((i) => i.isPrimary) ?? item?.images[0];
 
   const [form, setForm] = useState({
@@ -134,7 +136,6 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
     barcode:          item?.barcode ?? "",
     description:      item?.description ?? "",
     notes:            item?.notes ?? "",
-    rating:           item?.rating?.toString() ?? "",
     purchaseDate:     item?.purchaseDate ? item.purchaseDate.split("T")[0] : "",
     purchasePrice:    item?.purchasePrice?.toString() ?? "",
     store:            item?.store ?? "",
@@ -149,14 +150,23 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
   const [coverResults, setCoverResults]   = useState<CoverResult[]>([]);
   const [coverLoading, setCoverLoading]   = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [showScanner, setShowScanner]     = useState(false);
+  const [barcodeLoading, setBarcodeLoading] = useState(false);
+  const [metaResults, setMetaResults]     = useState<MetadataResult[]>([]);
+  const [metaLoading, setMetaLoading]     = useState(false);
+  const [showMeta, setShowMeta]           = useState(false);
   const [tagGroups, setTagGroups]         = useState<TagGroup[]>([]);
   const fileRef     = useRef<HTMLInputElement>(null);
   const pickerRef   = useRef<HTMLDivElement>(null);
+  const metaRef     = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
         setShowCoverPicker(false);
+      }
+      if (metaRef.current && !metaRef.current.contains(e.target as Node)) {
+        setShowMeta(false);
       }
     }
     document.addEventListener("mousedown", handler);
@@ -174,6 +184,32 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  async function searchMetadata() {
+    if (!form.title.trim()) return;
+    setShowMeta(true);
+    setMetaLoading(true);
+    setMetaResults([]);
+    const p = new URLSearchParams({ title: form.title.trim(), mediaType: category.mediaType ?? "CUSTOM" });
+    if (form.year) p.set("year", form.year);
+    try {
+      const res = await fetch(`/api/metadata/search?${p}`);
+      if (res.ok) setMetaResults(await res.json());
+    } finally {
+      setMetaLoading(false);
+    }
+  }
+
+  function applyMetadata(r: MetadataResult) {
+    setForm((f) => ({
+      ...f,
+      title:       r.title,
+      year:        r.year?.toString() ?? f.year,
+      description: r.description ?? f.description,
+      imageUrl:    r.imageUrl ?? f.imageUrl,
+    }));
+    setShowMeta(false);
+  }
+
   async function searchCovers() {
     if (!form.title.trim()) return;
     setShowCoverPicker(true);
@@ -186,6 +222,23 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
       if (res.ok) setCoverResults(await res.json());
     } finally {
       setCoverLoading(false);
+    }
+  }
+
+  async function handleBarcodeDetected(ean: string) {
+    setShowScanner(false);
+    set("barcode", ean);
+    setBarcodeLoading(true);
+    try {
+      const res = await fetch(`/api/barcode?ean=${encodeURIComponent(ean)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.title && !form.title.trim()) set("title", data.title);
+        if (data.year && !form.year) set("year", data.year);
+        if (data.imageUrl && !form.imageUrl) set("imageUrl", data.imageUrl);
+      }
+    } finally {
+      setBarcodeLoading(false);
     }
   }
 
@@ -210,7 +263,7 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
     setError("");
 
     const body = {
-      categoryId:       category.id,
+      collectionId,
       title:            form.title.trim(),
       year:             form.year ? parseInt(form.year) : null,
       condition:        form.condition || null,
@@ -222,7 +275,6 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
       barcode:          form.barcode || null,
       description:      form.description || null,
       notes:            form.notes || null,
-      rating:           form.rating ? parseInt(form.rating) : null,
       purchaseDate:     form.purchaseDate || null,
       purchasePrice:    form.purchasePrice ? parseFloat(form.purchasePrice) : null,
       store:            form.store || null,
@@ -247,7 +299,14 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <>
+    {showScanner && (
+      <BarcodeScanner
+        onDetected={handleBarcodeDetected}
+        onClose={() => setShowScanner(false)}
+      />
+    )}
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-xl rounded-xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]"
@@ -269,16 +328,73 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-          {/* Title */}
-          <Field label="Titel *">
-            <input
-              required
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-              className="retro-field w-full"
-              placeholder="Titel des Items"
-            />
-          </Field>
+          {/* Title + Metadata search */}
+          <div ref={metaRef} className="relative">
+            <Field label="Titel *">
+              <div className="flex gap-1.5">
+                <input
+                  required
+                  value={form.title}
+                  onChange={(e) => set("title", e.target.value)}
+                  className="retro-field flex-1"
+                  placeholder="Titel des Items"
+                />
+                {category.mediaType && category.mediaType !== "CUSTOM" && (
+                  <button
+                    type="button"
+                    onClick={searchMetadata}
+                    disabled={!form.title.trim() || metaLoading}
+                    title="Metadaten suchen"
+                    className="rounded border border-border px-2.5 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-40"
+                  >
+                    {metaLoading ? (
+                      <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
+            </Field>
+
+            {showMeta && (
+              <div className="absolute left-0 top-full z-30 mt-1 w-full rounded-lg border border-border bg-card shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto">
+                {metaLoading && (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <span className="ml-2 text-xs text-muted-foreground">Suche…</span>
+                  </div>
+                )}
+                {!metaLoading && metaResults.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-4 text-center">Keine Ergebnisse.</p>
+                )}
+                {!metaLoading && metaResults.map((r, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => applyMetadata(r)}
+                    className="flex w-full items-center gap-3 rounded-md p-2 text-left hover:bg-muted transition"
+                  >
+                    {r.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r.imageUrl} alt="" className="w-8 h-10 object-cover rounded shrink-0" />
+                    ) : (
+                      <div className="w-8 h-10 rounded bg-muted shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground truncate">{r.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.year ?? "—"} · {r.externalSource}</p>
+                      {r.description && (
+                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{r.description}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Cover */}
           <Field label="Cover">
@@ -485,19 +601,46 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
               />
             </Field>
             <Field label="Barcode (EAN)">
-              <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
-                className="retro-field w-full font-mono" placeholder="4005209124270"
-              />
+              <div className="flex gap-1.5">
+                <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
+                  className="retro-field flex-1 font-mono" placeholder="4005209124270"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  disabled={barcodeLoading}
+                  title="Barcode scannen"
+                  className="rounded border border-border px-2 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
+                >
+                  {barcodeLoading ? (
+                    <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12v.01M12 4h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </Field>
           </div>
 
 
 
+          {/* Description */}
+          <Field label="Beschreibung">
+            <textarea
+              value={form.description} onChange={(e) => set("description", e.target.value)}
+              rows={2}
+              className="retro-field w-full resize-none"
+              placeholder="Kurzbeschreibung (wird ggf. aus Metadaten-Suche gefüllt)"
+            />
+          </Field>
+
           {/* Notes */}
           <Field label="Notizen">
             <textarea
               value={form.notes} onChange={(e) => set("notes", e.target.value)}
-              rows={3}
+              rows={2}
               className="retro-field w-full resize-none"
               placeholder="Zustand, Besonderheiten, Seriennummer…"
             />
@@ -523,6 +666,7 @@ export function ItemForm({ category, item, onClose, onSaved }: Props) {
         </div>
       </form>
     </div>
+    </>
   );
 }
 

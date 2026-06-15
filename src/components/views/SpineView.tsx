@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { CONDITION_COLORS, type ViewProps } from "./types";
 
 const SPINE_COLORS = [
@@ -29,7 +28,6 @@ function getImageUrl(item: ViewProps["items"][number]) {
 }
 
 export function SpineView({ items, visibleTags, chipGroups: _chipGroups }: ViewProps) {
-  const { categoryId } = useParams<{ categoryId: string }>();
   return (
     <div className="space-y-1">
       {items.map((item) => {
@@ -45,7 +43,7 @@ export function SpineView({ items, visibleTags, chipGroups: _chipGroups }: ViewP
             className="group relative flex items-stretch rounded-md border border-border bg-card overflow-hidden h-14 hover:h-16 transition-all duration-150"
           >
             {/* Spine strip */}
-            <Link href={`/collection/${categoryId}/${item.id}`} className={`relative w-10 shrink-0 bg-gradient-to-b ${color} flex items-center justify-center overflow-hidden`}>
+            <Link href={`/collection/${item.collectionId}/${item.id}`} className={`relative w-10 shrink-0 bg-gradient-to-b ${color} flex items-center justify-center overflow-hidden`}>
               {imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
@@ -58,7 +56,7 @@ export function SpineView({ items, visibleTags, chipGroups: _chipGroups }: ViewP
             {/* Title (rotated) — visible as vertical text strip concept: just show normal horizontally here since rows are horizontal */}
             <div className="flex flex-1 items-center gap-3 px-3 min-w-0">
               <div className="flex-1 min-w-0">
-                <Link href={`/collection/${categoryId}/${item.id}`} className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors">{item.title}</Link>
+                <Link href={`/collection/${item.collectionId}/${item.id}`} className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors">{item.title}</Link>
                 <div className="flex items-center gap-2 mt-0.5">
                   {item.year && <span className="text-[10px] text-muted-foreground">{item.year}</span>}
                   {chips.map((chip, i) => (
@@ -68,12 +66,6 @@ export function SpineView({ items, visibleTags, chipGroups: _chipGroups }: ViewP
                 </div>
               </div>
 
-              {item.rating && (
-                <div className="shrink-0 flex items-center gap-0.5">
-                  <span className="text-yellow-400 text-xs">★</span>
-                  <span className="text-[11px] text-muted-foreground">{item.rating}</span>
-                </div>
-              )}
             </div>
 
           </div>

@@ -11,6 +11,13 @@ function IconUsers() {
     </svg>
   );
 }
+function IconCollections() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+  );
+}
 function IconCategories() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -46,10 +53,11 @@ export function AdminSidebar() {
   const { t } = useTranslations();
 
   const NAV = [
-    { href: "/admin/users",      icon: <IconUsers />,      label: t.admin.users },
-    { href: "/admin/categories", icon: <IconCategories />, label: t.admin.categories },
-    { href: "/admin/tags",       icon: <IconTags />,       label: t.admin.tags },
-    { href: "/admin/settings",   icon: <IconSettings />,   label: t.admin.settings },
+    { href: "/admin/users",       icon: <IconUsers />,       label: t.admin.users },
+    { href: "/admin/collections", icon: <IconCollections />, label: t.admin.collections },
+    { href: "/admin/categories",  icon: <IconCategories />,  label: t.admin.categories },
+    { href: "/admin/tags",        icon: <IconTags />,        label: t.admin.tags },
+    { href: "/admin/settings",    icon: <IconSettings />,    label: t.admin.settings },
   ];
 
   return (

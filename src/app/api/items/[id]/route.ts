@@ -28,13 +28,18 @@ export async function GET(
       include: {
         images: { orderBy: { order: "asc" } },
         tags: { include: { tagValue: true, tagGroup: true } },
-        category: {
+        collection: {
           include: {
-            fields: { orderBy: { order: "asc" } },
-            tagGroups: { select: { groupId: true, showInView: true } },
+            category: {
+              include: {
+                fields: { orderBy: { order: "asc" } },
+                tagGroups: { select: { groupId: true, showInView: true } },
+              },
+            },
           },
         },
         customFields: { include: { field: true } },
+        grading: true,
       },
     });
 
@@ -54,7 +59,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { imageUrl, tags, customFields: customFieldsInput, categoryId: _catId, userId: _uid, ...rest } = body;
+  const { imageUrl, tags, customFields: customFieldsInput, collectionId: _colId, userId: _uid, ...rest } = body;
 
   const data: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(rest)) {
