@@ -36,17 +36,17 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma: CLI, all @prisma/* sub-packages, schema, and generated client
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma  ./node_modules/.bin/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma       ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma      ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/src/generated                      ./src/generated
-COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations                  ./prisma/migrations
-COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma               ./prisma/schema.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma/seed.mjs                    ./prisma/seed.mjs
+# Prisma migration tools in an ISOLATED directory (/migrate) so they never
+# conflict with the subset of node_modules bundled by Next.js standalone.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma  /migrate/node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma /migrate/node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations    /migrate/migrations
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma /migrate/schema.prisma
 
-# Copy bcryptjs (needed by seed at runtime)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs              ./node_modules/bcryptjs
+# Generated Prisma client + seed + bcryptjs (all needed by the running app)
+COPY --from=builder --chown=nextjs:nodejs /app/src/generated        ./src/generated
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/seed.mjs      ./prisma/seed.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # Uploads directory (mapped as Docker volume)
 RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads

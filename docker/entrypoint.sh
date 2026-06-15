@@ -2,10 +2,10 @@
 set -e
 
 echo "RetroMan — running database migrations..."
-./node_modules/.bin/prisma migrate deploy
+node /migrate/node_modules/prisma/build/index.js migrate deploy --schema=/migrate/schema.prisma
 
 echo "RetroMan — seeding database..."
-node prisma/seed.mjs
+node /app/prisma/seed.mjs
 
 echo "RetroMan — starting server..."
-exec node server.js
+exec node /app/server.js
