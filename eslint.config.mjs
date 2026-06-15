@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
       // effect callbacks, helper components inside component bodies).
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/static-components": "off",
+      // German UI text legitimately contains " characters.
+      "react/no-unescaped-entities": "off",
     },
   },
 ]);
