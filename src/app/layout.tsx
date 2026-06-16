@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   title: "RetroMan",
   description: "Your personal physical media collection manager",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
