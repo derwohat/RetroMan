@@ -138,8 +138,9 @@ const SERVICES = [
     steps: [
       "Gehe zu programmablesearchengine.google.com",
       '"Hinzufügen" klicken und eine neue Suchmaschine erstellen',
-      'Bei "Zu durchsuchende Seiten": * eintragen (gesamtes Web)',
-      "Nach der Erstellung: Bearbeiten → Grundlagen → Search Engine ID kopieren",
+      'Bei "Zu durchsuchende Seiten": eine beliebige URL eintragen (z.B. example.com)',
+      "Nach der Erstellung: Suchmaschine bearbeiten → Einstellungen → 'Gesamtes Web durchsuchen' aktivieren",
+      "Grundlagen → Search Engine ID kopieren",
       "In den erweiterten Einstellungen: Bildersuche aktivieren",
     ],
     url: "https://programmablesearchengine.google.com/",
