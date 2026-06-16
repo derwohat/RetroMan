@@ -128,23 +128,13 @@ export default function AdminSettingsPage() {
     showSaved("Key gelöscht");
   }
 
-  async function saveAppSettings() {
-    setSaving("app");
+  async function saveSetting(patch: Record<string, unknown>) {
     await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        requireMfa,
-        donationUrl: donationUrl || null,
-        fontSize,
-        interfaceLanguage,
-      }),
+      body: JSON.stringify(patch),
     });
-    setSaving(null);
-    // Apply font size immediately
-    document.documentElement.classList.remove("font-size-small", "font-size-medium", "font-size-large");
-    document.documentElement.classList.add(`font-size-${fontSize}`);
-    showSaved("Einstellungen gespeichert");
+    showSaved("Gespeichert");
   }
 
   return (
@@ -268,7 +258,7 @@ export default function AdminSettingsPage() {
               {(["de", "en", "fr"] as const).map((lang) => (
                 <button
                   key={lang}
-                  onClick={() => setInterfaceLanguage(lang)}
+                  onClick={() => { setInterfaceLanguage(lang); saveSetting({ interfaceLanguage: lang }); }}
                   className={`flex-1 rounded-md border py-2 text-xs transition ${
                     interfaceLanguage === lang
                       ? "border-primary bg-primary/10 text-primary"
@@ -291,7 +281,12 @@ export default function AdminSettingsPage() {
               {(["small", "medium", "large"] as const).map((s) => (
                 <button
                   key={s}
-                  onClick={() => setFontSize(s)}
+                  onClick={() => {
+                    setFontSize(s);
+                    document.documentElement.classList.remove("font-size-small", "font-size-medium", "font-size-large");
+                    document.documentElement.classList.add(`font-size-${s}`);
+                    saveSetting({ fontSize: s });
+                  }}
                   className={`flex-1 rounded-md border py-2 text-xs transition ${
                     fontSize === s
                       ? "border-primary bg-primary/10 text-primary"
@@ -312,14 +307,18 @@ export default function AdminSettingsPage() {
               <p className="text-xs text-muted-foreground">Alle Konten müssen 2-Faktor-Authentifizierung aktivieren</p>
             </div>
             <button
-              onClick={() => setRequireMfa((v) => !v)}
+              onClick={() => { const next = !requireMfa; setRequireMfa(next); saveSetting({ requireMfa: next }); }}
               className={`relative w-11 h-6 rounded-full transition-colors border border-border ${requireMfa ? "bg-primary" : "bg-muted"}`}
             >
               <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${requireMfa ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="border-t border-border" />
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Spenden</p>
+            <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
               Spenden-URL (Ko-fi, PayPal, etc.)
             </label>
@@ -327,18 +326,29 @@ export default function AdminSettingsPage() {
               type="url"
               value={donationUrl}
               onChange={(e) => setDonationUrl(e.target.value)}
+              onBlur={(e) => saveSetting({ donationUrl: e.target.value || null })}
               placeholder="https://ko-fi.com/..."
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
+          </div>
 
-          <button
-            onClick={saveAppSettings}
-            disabled={saving === "app"}
-            className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
-          >
-            {saving === "app" ? "Speichern…" : "Einstellungen speichern"}
-          </button>
+          <div className="border-t border-border pt-4 space-y-2">
+            <p className="text-sm font-medium text-foreground">GitHub</p>
+            <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+            <a
+              href="https://github.com/derwohat/RetroMan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              github.com/derwohat/RetroMan
+            </a>
+            </div>
+          </div>
         </div>
       </section>
     </div>
