@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
+import { existsSync } from "fs";
 
 const UPLOAD_DIR =
   process.env.NODE_ENV === "production"
@@ -28,5 +29,19 @@ export async function POST(req: NextRequest) {
   const bytes = await file.arrayBuffer();
   await writeFile(join(UPLOAD_DIR, filename), Buffer.from(bytes));
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: `/api/uploads/${filename}` });
+}
+
+export async function DELETE(req: NextRequest) {
+  const { url } = await req.json() as { url?: string };
+  if (!url) return NextResponse.json({ success: false });
+
+  const filename = url.split("/").pop();
+  if (!filename || filename.includes("..")) return NextResponse.json({ success: false });
+
+  const filePath = join(UPLOAD_DIR, filename);
+  if (existsSync(filePath)) {
+    await unlink(filePath).catch(() => {});
+  }
+  return NextResponse.json({ success: true });
 }

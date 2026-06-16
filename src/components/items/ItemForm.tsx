@@ -265,6 +265,11 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     setUploading(false);
     if (res.ok) {
       const { url } = await res.json();
+      // Delete previous upload from disk if it was a local upload
+      const prev = form.imageUrl;
+      if (prev?.startsWith("/api/uploads/") || prev?.startsWith("/uploads/")) {
+        fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: prev }) }).catch(() => {});
+      }
       set("imageUrl", url);
     }
   }

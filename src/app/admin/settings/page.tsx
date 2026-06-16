@@ -3,15 +3,9 @@
 import { useState, useEffect } from "react";
 
 type Settings = {
-  tmdbApiKey: boolean;
-  igdbClientId: boolean;
-  igdbSecret: boolean;
   discogsApiKey: boolean;
-  pricechartingKey: boolean;
   theGamesDbKey: boolean;
-  mobyGamesKey: boolean;
-  googleSearchKey: boolean;
-  googleSearchCx: boolean;
+  tmdbApiKey: boolean;
   requireMfa: boolean;
   donationUrl: string | null;
   githubUrl: string | null;
@@ -21,52 +15,11 @@ type Settings = {
 
 const SERVICES = [
   {
-    key: "tmdbApiKey" as const,
-    label: "TMDB",
-    subtitle: "The Movie Database",
-    icon: "🎬",
-    description: "Metadaten für Filme und Serien — Titel, Cover und Beschreibung auf Deutsch.",
-    steps: [
-      "Registriere dich kostenlos auf themoviedb.org",
-      'Gehe zu Einstellungen → API → "API-Schlüssel anfragen"',
-      'Wähle "Developer" und fülle das Formular aus',
-      "Kopiere den API Read Access Token (v4) oder den API Key (v3 auth)",
-    ],
-    url: "https://www.themoviedb.org/settings/api",
-  },
-  {
-    key: "igdbClientId" as const,
-    label: "IGDB Client ID",
-    subtitle: "Twitch Developer",
-    icon: "🎮",
-    description: "Spieledatenbank von Twitch — PAL-Region, Cover, Release-Daten.",
-    steps: [
-      "Melde dich bei dev.twitch.tv an (kostenlos mit Twitch-Account)",
-      '"Register Your Application" klicken',
-      "Kategorie: Website Integration, OAuth Redirect: http://localhost",
-      "Kopiere die Client ID",
-    ],
-    url: "https://dev.twitch.tv/console",
-  },
-  {
-    key: "igdbSecret" as const,
-    label: "IGDB Client Secret",
-    subtitle: "Twitch Developer",
-    icon: "🎮",
-    description: "Zum Client ID gehörendes Secret für IGDB OAuth-Authentifizierung.",
-    steps: [
-      "Öffne deine App unter dev.twitch.tv/console/apps",
-      '"Manage" → "New Secret" klicken',
-      "Kopiere das generierte Secret (wird nur einmal angezeigt!)",
-    ],
-    url: "https://dev.twitch.tv/console/apps",
-  },
-  {
     key: "discogsApiKey" as const,
     label: "Discogs",
     subtitle: "Personal Access Token",
     icon: "💿",
-    description: "Musik-Datenbank für CDs, Vinyl, MCs — inklusive länderspezifischer Pressungen.",
+    description: "Musik-Datenbank für CDs, Vinyl, MCs — Suche und Cover für alle Musiksammlungen.",
     steps: [
       "Registriere dich kostenlos auf discogs.com",
       "Gehe zu discogs.com/settings/developers",
@@ -76,25 +29,11 @@ const SERVICES = [
     url: "https://www.discogs.com/settings/developers",
   },
   {
-    key: "pricechartingKey" as const,
-    label: "Pricecharting",
-    subtitle: "API Key",
-    icon: "💰",
-    description: "Marktpreise für Spiele — PAL-Sektion für europäische Preise verfügbar.",
-    steps: [
-      "Registriere dich auf pricecharting.com",
-      "Sende eine E-Mail an api@pricecharting.com",
-      "Beschreibe deinen Verwendungszweck (private Sammelverwaltung)",
-      "Der Key wird manuell zugesendet",
-    ],
-    url: "https://www.pricecharting.com/api",
-  },
-  {
     key: "theGamesDbKey" as const,
     label: "TheGamesDB",
     subtitle: "API Key",
     icon: "🕹️",
-    description: "Cover-Fallback für Retro-Spiele — starke regionale Box-Art-Abdeckung.",
+    description: "Spiele-Datenbank — Suche, Cover und Metadaten für alle Spielesammlungen.",
     steps: [
       "Registriere dich auf thegamesdb.net",
       "Navigiere zu deinem Profil → API-Bereich",
@@ -103,47 +42,18 @@ const SERVICES = [
     url: "https://thegamesdb.net",
   },
   {
-    key: "mobyGamesKey" as const,
-    label: "MobyGames",
-    subtitle: "API Key",
-    icon: "👾",
-    description: "Umfangreiche Retro-Datenbank — zweiter Cover-Fallback für seltene Titel.",
+    key: "tmdbApiKey" as const,
+    label: "TMDB",
+    subtitle: "The Movie Database",
+    icon: "🎬",
+    description: "Film-Datenbank — Suche, Cover und Beschreibungen für alle Filmsammlungen.",
     steps: [
-      "Registriere dich kostenlos auf mobygames.com",
-      "Gehe zu mobygames.com/info/api",
-      "Beantrage einen kostenlosen Developer Key",
+      "Registriere dich kostenlos auf themoviedb.org",
+      'Gehe zu Einstellungen → API → "API-Schlüssel anfragen"',
+      'Wähle "Developer" und fülle das Formular aus',
+      "Kopiere den API Read Access Token (v4)",
     ],
-    url: "https://www.mobygames.com/info/api/",
-  },
-  {
-    key: "googleSearchKey" as const,
-    label: "Google Suche — API Key",
-    subtitle: "Custom Search JSON API",
-    icon: "🔍",
-    description: "Universeller Cover-Fallback via Google Bildersuche — funktioniert für alle Medientypen wenn keine spezifische API konfiguriert ist. Kostenlos bis 100 Anfragen/Tag.",
-    steps: [
-      "Gehe zu console.cloud.google.com und erstelle ein Projekt",
-      'Aktiviere die "Custom Search API" unter APIs & Dienste',
-      "Erstelle unter APIs & Dienste → Anmeldedaten einen API-Schlüssel",
-      "Kopiere den API-Schlüssel hier ein",
-    ],
-    url: "https://console.cloud.google.com/apis/library/customsearch.googleapis.com",
-  },
-  {
-    key: "googleSearchCx" as const,
-    label: "Google Suche — Search Engine ID",
-    subtitle: "Custom Search Engine (cx)",
-    icon: "🔍",
-    description: 'Die ID deiner Google Custom Search Engine. Muss auf "Gesamtes Web durchsuchen" konfiguriert sein mit aktivierter Bildersuche.',
-    steps: [
-      "Gehe zu programmablesearchengine.google.com",
-      '"Hinzufügen" klicken und eine neue Suchmaschine erstellen',
-      'Bei "Zu durchsuchende Seiten": eine beliebige URL eintragen (z.B. example.com)',
-      "Nach der Erstellung: Suchmaschine bearbeiten → Einstellungen → 'Gesamtes Web durchsuchen' aktivieren",
-      "Grundlagen → Search Engine ID kopieren",
-      "In den erweiterten Einstellungen: Bildersuche aktivieren",
-    ],
-    url: "https://programmablesearchengine.google.com/",
+    url: "https://www.themoviedb.org/settings/api",
   },
 ];
 

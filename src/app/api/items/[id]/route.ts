@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unlink } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+
+const UPLOAD_DIR =
+  process.env.NODE_ENV === "production"
+    ? "/app/uploads"
+    : join(process.cwd(), "public", "uploads");
+
+async function deleteUploadFile(url: string) {
+  if (!url.startsWith("/api/uploads/") && !url.startsWith("/uploads/")) return;
+  const filename = url.split("/").pop();
+  if (!filename || filename.includes("..")) return;
+  const filePath = join(UPLOAD_DIR, filename);
+  if (existsSync(filePath)) await unlink(filePath).catch(() => {});
+}
 
 async function getUserId(): Promise<string | null> {
   if (process.env.NODE_ENV !== "production") {
@@ -123,6 +139,14 @@ export async function DELETE(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+
+  const item = await prisma.item.findFirst({ where: { id, userId }, include: { images: true } });
+  if (item) {
+    for (const img of item.images) {
+      await deleteUploadFile(img.url ?? img.filePath ?? "");
+    }
+  }
+
   await prisma.item.delete({ where: { id, userId } });
   return NextResponse.json({ success: true });
 }
