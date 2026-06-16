@@ -173,7 +173,7 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setImportMsg(`${data.created} Items importiert, ${data.skipped} übersprungen.`);
+        setImportMsg(`${data.created} Einträge importiert, ${data.skipped} übersprungen.`);
       } else {
         setImportError(data.error ?? "Import fehlgeschlagen.");
       }
@@ -313,7 +313,7 @@ export default function ProfilePage() {
       <Section title="Daten Export &amp; Import">
         <div className="space-y-4">
           <div>
-            <p className="text-xs text-muted-foreground mb-3">Alle deine Items als Datei exportieren:</p>
+            <p className="text-xs text-muted-foreground mb-3">Alle deine Einträge als Datei exportieren:</p>
             <div className="flex flex-wrap gap-2">
               <a
                 href="/api/export?format=json"
@@ -333,7 +333,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="border-t border-border pt-4">
-            <p className="text-xs text-muted-foreground mb-3">Items aus einer RetroMan-JSON-Exportdatei importieren:</p>
+            <p className="text-xs text-muted-foreground mb-3">Einträge aus einer RetroMan-JSON-Exportdatei importieren:</p>
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
@@ -347,7 +347,7 @@ export default function ProfilePage() {
               {importMsg && <span className="text-xs text-green-500">{importMsg}</span>}
               {importError && <span className="text-xs text-destructive">{importError}</span>}
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Nur das RetroMan-JSON-Format wird unterstützt. Maximal 5.000 Items pro Import.</p>
+            <p className="mt-2 text-[10px] text-muted-foreground">Nur das RetroMan-JSON-Format wird unterstützt. Maximal 5.000 Einträge pro Import.</p>
           </div>
         </div>
       </Section>

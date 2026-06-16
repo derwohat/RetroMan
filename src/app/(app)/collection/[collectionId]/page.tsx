@@ -19,7 +19,7 @@ import {
   type CategoryField,
 } from "@/components/views/types";
 
-type CategoryTagGroup = { groupId: string; showInView: boolean; group: { id: string; name: string } };
+type CategoryTagGroup = { groupId: string; showInView: boolean; group: { id: string; name: string; color: string; linkedField?: string | null } };
 type Category = {
   id: string;
   name: string;
@@ -117,7 +117,7 @@ export default function CollectionPage() {
     fields: category?.fields ?? [],
     chipGroups: (category?.tagGroups ?? [])
       .filter((tg) => tg.showInView)
-      .map((tg) => ({ groupId: tg.groupId, name: tg.group.name })),
+      .map((tg) => ({ groupId: tg.groupId, name: tg.group.name, color: tg.group.color ?? "#ff2d95", linkedField: tg.group.linkedField })),
   };
 
   return (
@@ -130,7 +130,7 @@ export default function CollectionPage() {
             {collection?.name ?? "Sammlung"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {loading ? "Lade…" : `${items.length} ${items.length === 1 ? "Item" : "Items"}`}
+            {loading ? "Lade…" : `${items.length} ${items.length === 1 ? "Eintrag" : "Einträge"}`}
           </p>
         </div>
 

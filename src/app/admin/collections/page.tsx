@@ -112,7 +112,7 @@ function CollectionRow({
           </button>
         )}
         <p className="text-[10px] text-muted-foreground mt-0.5">
-          {collection.category.name} · {collection._count.items} {collection._count.items === 1 ? "Item" : "Items"}
+          {collection.category.name} · {collection._count.items} {collection._count.items === 1 ? "Eintrag" : "Einträge"}
         </p>
       </div>
 
@@ -329,7 +329,7 @@ export default function AdminCollectionsPage() {
               Sammlung <span className="font-medium text-foreground">„{deleteTarget.name}"</span> löschen?{" "}
               {deleteTarget._count.items > 0 && (
                 <span className="text-destructive">
-                  Enthält {deleteTarget._count.items} {deleteTarget._count.items === 1 ? "Item" : "Items"}, die ebenfalls gelöscht werden.
+                  Enthält {deleteTarget._count.items} {deleteTarget._count.items === 1 ? "Eintrag" : "Einträge"}, die ebenfalls gelöscht werden.
                 </span>
               )}
             </p>

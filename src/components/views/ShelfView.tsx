@@ -15,9 +15,13 @@ export function ShelfView({ items, categoryIcon, chipGroups }: ViewProps) {
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       {items.map((item) => {
         const imageUrl = getImageUrl(item);
-        const chips = chipGroups.flatMap(({ groupId }) =>
-          item.tags.filter((t) => t.groupId === groupId).map((t) => t.tagValue.value)
-        );
+        const chips = chipGroups.flatMap(({ groupId, color, linkedField }) => {
+          if (linkedField) {
+            const val = item[linkedField as keyof typeof item] as string | null | undefined;
+            return val ? [{ value: val, color }] : [];
+          }
+          return item.tags.filter((t) => t.groupId === groupId).map((t) => ({ value: t.tagValue.value, color }));
+        });
 
         return (
           <div key={item.id} className="media-card group relative flex flex-col rounded-lg border border-border bg-card overflow-hidden">
@@ -29,17 +33,9 @@ export function ShelfView({ items, categoryIcon, chipGroups }: ViewProps) {
               ) : (
                 <CategoryIcon icon={categoryIcon} className="h-10 w-10 opacity-20" />
               )}
-
-              {/* Condition — top LEFT */}
-              {item.condition && (
-                <span className={`absolute top-1.5 left-1.5 rounded-full border px-1.5 py-0.5 text-[9px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? "border-border text-muted-foreground"}`}>
-                  {CONDITION_LABELS[item.condition] ?? item.condition}
-                </span>
-              )}
               {item.isFavorite && (
                 <span className="absolute bottom-1.5 left-1.5 text-sm leading-none">❤️</span>
               )}
-
             </Link>
 
             {/* Info */}
@@ -47,11 +43,16 @@ export function ShelfView({ items, categoryIcon, chipGroups }: ViewProps) {
               <div className="space-y-1">
                 <Link href={`/collection/${item.collectionId}/${item.id}`} className="text-sm font-medium text-foreground line-clamp-2 leading-tight hover:text-primary transition-colors">{item.title}</Link>
                 {item.year && <p className="text-xs text-muted-foreground">{item.year}</p>}
+                {item.condition && (
+                  <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? "border-border text-muted-foreground"}`}>
+                    {CONDITION_LABELS[item.condition] ?? item.condition}
+                  </span>
+                )}
               </div>
               {chips.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-auto pt-1.5">
                   {chips.map((chip, i) => (
-                    <span key={i} className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">{chip}</span>
+                    <span key={i} className="rounded-full border px-1.5 py-0.5 text-[9px] font-medium" style={{ borderColor: `${chip.color}50`, backgroundColor: `${chip.color}18`, color: chip.color }}>{chip.value}</span>
                   ))}
                 </div>
               )}

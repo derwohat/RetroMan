@@ -32,7 +32,7 @@ export default function DashboardPage() {
         </h2>
         {!loading && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {totalItems} {totalItems === 1 ? "Item" : "Items"} in {collections.length} {collections.length === 1 ? "Sammlung" : "Sammlungen"}
+            {totalItems} {totalItems === 1 ? "Eintrag" : "Einträge"} in {collections.length} {collections.length === 1 ? "Sammlung" : "Sammlungen"}
           </p>
         )}
       </div>
@@ -49,7 +49,7 @@ export default function DashboardPage() {
               <div className="text-center">
                 <p className="text-sm font-medium text-foreground group-hover:text-primary transition">{col.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {col._count.items} {col._count.items === 1 ? "Item" : "Items"}
+                  {col._count.items} {col._count.items === 1 ? "Eintrag" : "Einträge"}
                 </p>
               </div>
             </Link>

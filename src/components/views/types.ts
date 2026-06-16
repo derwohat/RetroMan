@@ -59,7 +59,7 @@ export type CategoryField = {
 };
 
 export const CONDITION_LABELS: Record<string, string> = {
-  MINT: "Mint", VERY_GOOD: "Very Good", GOOD: "Good", USED: "Used", POOR: "Poor",
+  MINT: "Mint", VERY_GOOD: "Sehr gut", GOOD: "Gut", USED: "Gebraucht", POOR: "Schlecht",
 };
 
 export const CONDITION_COLORS: Record<string, string> = {
@@ -75,5 +75,5 @@ export interface ViewProps {
   categoryIcon: string;
   visibleTags: string[];
   fields: CategoryField[];
-  chipGroups: Array<{ groupId: string; name: string }>;
+  chipGroups: Array<{ groupId: string; name: string; color: string; linkedField?: string | null }>;
 }

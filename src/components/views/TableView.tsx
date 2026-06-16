@@ -135,7 +135,7 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={6 + extraFields.length} className="px-3 py-10 text-center text-sm text-muted-foreground">
-                  Keine Items vorhanden.
+                  Keine Einträge vorhanden.
                 </td>
               </tr>
             )}

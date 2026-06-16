@@ -400,7 +400,7 @@ function SortableCategory({
                     onChange={() => onToggleTagGroupVisibility(cat.id, tg.groupId)}
                     className="rounded"
                   />
-                  In Ansicht zeigen
+                  Dashboard
                 </label>
                 <button
                   onClick={() => onRemoveTagGroup(cat.id, tg.groupId)}
@@ -690,7 +690,7 @@ export default function AdminCategoriesPage() {
               <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Die Kategorie und alle zugehörigen Felder und Items werden <span className="text-destructive font-medium">dauerhaft und unwiderruflich gelöscht</span>.
+              Die Kategorie und alle zugehörigen Felder und Einträge werden <span className="text-destructive font-medium">dauerhaft und unwiderruflich gelöscht</span>.
             </p>
             <div className="flex gap-2">
               <button

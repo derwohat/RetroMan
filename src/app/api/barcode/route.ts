@@ -42,7 +42,9 @@ async function lookupOpenEanDb(ean: string): Promise<BarcodeResult | null> {
 }
 
 export async function GET(req: NextRequest) {
-  const ean = new URL(req.url).searchParams.get("ean")?.trim() ?? "";
+  const { searchParams } = new URL(req.url);
+  const ean = searchParams.get("ean")?.trim() ?? "";
+
   if (!ean || !/^\d{8,14}$/.test(ean)) {
     return NextResponse.json({ error: "Ungültiger EAN/Barcode." }, { status: 400 });
   }

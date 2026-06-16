@@ -39,12 +39,13 @@ export type FormItem = {
   purchaseDate: string | null;
   purchasePrice: number | null;
   store: string | null;
+  videoFormat: string | null;
   tags: Array<{ tag: { id: string; name: string } }>;
   images: Array<{ url: string | null; isPrimary: boolean }>;
 };
 
 type CoverResult = { url: string; label: string; source: string };
-type MetadataResult = { title: string; year: number | null; description: string | null; imageUrl: string | null; externalId: string; externalSource: string };
+type MetadataResult = { title: string; year: number | null; description: string | null; imageUrl: string | null; externalId: string; externalSource: string; metadata: Record<string, unknown> | null };
 type TagValue = { id: string; value: string };
 type TagGroup = { id: string; name: string; values: TagValue[] };
 
@@ -71,6 +72,8 @@ const ITEM_STATUSES = [
 ];
 
 const STANDARD_GROUP_NAMES = ["Shops", "Lagerort"];
+
+const VIDEO_FORMATS = ["VHS", "DVD", "Blu-ray", "Ultra HD 4K", "LaserDisc", "HD DVD"];
 
 // ── German date input (TT.MM.JJJJ) with calendar picker ──────────────────────
 function GermanDateInput({ value, onChange }: { value: string; onChange: (iso: string) => void }) {
@@ -140,6 +143,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     purchasePrice:    item?.purchasePrice?.toString() ?? "",
     store:            item?.store ?? "",
     imageUrl:         primaryImage?.url ?? "",
+    videoFormat:      item?.videoFormat ?? "",
   });
 
   const [extraTagValues, setExtraTagValues] = useState<Record<string, string>>({});
@@ -154,7 +158,9 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
   const [barcodeLoading, setBarcodeLoading] = useState(false);
   const [metaResults, setMetaResults]     = useState<MetadataResult[]>([]);
   const [metaLoading, setMetaLoading]     = useState(false);
+  const [metaError, setMetaError]         = useState<string | null>(null);
   const [showMeta, setShowMeta]           = useState(false);
+  const [selectedMeta, setSelectedMeta]   = useState<{ externalId: string; externalSource: string; metadata: Record<string, unknown> | null } | null>(null);
   const [tagGroups, setTagGroups]         = useState<TagGroup[]>([]);
   const fileRef      = useRef<HTMLInputElement>(null);
   const pickerRef    = useRef<HTMLDivElement>(null);
@@ -191,11 +197,21 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     setShowMeta(true);
     setMetaLoading(true);
     setMetaResults([]);
+    setMetaError(null);
     const p = new URLSearchParams({ title: q, mediaType: category.mediaType });
     if (form.year) p.set("year", form.year);
     try {
       const res = await fetch(`/api/metadata/search?${p}`);
-      if (res.ok) setMetaResults(await res.json());
+      const data = await res.json();
+      if (res.ok) {
+        setMetaResults(Array.isArray(data) ? data : []);
+      } else if (data?.error === "no_key") {
+        setMetaError(`Kein ${data.source}-API-Key hinterlegt. Bitte in Admin → Einstellungen eintragen.`);
+      } else {
+        setMetaError("Suche fehlgeschlagen.");
+      }
+    } catch {
+      setMetaError("Suche nicht erreichbar.");
     } finally {
       setMetaLoading(false);
     }
@@ -220,6 +236,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
       description: r.description ?? f.description,
       imageUrl:    r.imageUrl ?? f.imageUrl,
     }));
+    setSelectedMeta({ externalId: r.externalId, externalSource: r.externalSource, metadata: r.metadata });
     setShowMeta(false);
   }
 
@@ -243,10 +260,18 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     set("barcode", ean);
     setBarcodeLoading(true);
     try {
-      const res = await fetch(`/api/barcode?ean=${encodeURIComponent(ean)}`);
+      const p = new URLSearchParams({ ean });
+      if (category.mediaType) p.set("mediaType", category.mediaType);
+      const res = await fetch(`/api/barcode?${p}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.title && !form.title.trim()) set("title", data.title);
+        const title = data.title as string | undefined;
+        if (title && !form.title.trim()) {
+          set("title", title);
+          if (category.mediaType && category.mediaType !== "CUSTOM") {
+            searchMetadata(title);
+          }
+        }
         if (data.year && !form.year) set("year", data.year);
         if (data.imageUrl && !form.imageUrl) set("imageUrl", data.imageUrl);
       }
@@ -297,6 +322,12 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
       purchasePrice:    form.purchasePrice ? parseFloat(form.purchasePrice) : null,
       store:            form.store || null,
       imageUrl:         form.imageUrl || null,
+      videoFormat:      form.videoFormat || null,
+      ...(selectedMeta ? {
+        externalId:     selectedMeta.externalId,
+        externalSource: selectedMeta.externalSource,
+        metadata:       selectedMeta.metadata,
+      } : {}),
       tags: Object.entries(extraTagValues)
         .filter(([, v]) => v)
         .map(([groupId, tagValueId]) => ({ groupId, tagValueId })),
@@ -332,7 +363,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
           <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest flex items-center gap-1.5">
-            {item ? "Item bearbeiten" : (
+            {item ? "Eintrag bearbeiten" : (
               <>
                 Neuer Eintrag —
                 <CategoryIcon icon={category.icon ?? null} className="h-3.5 w-3.5" />
@@ -345,6 +376,28 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
 
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+          {/* Video format selector (VIDEO type only) */}
+          {category.mediaType === "VIDEO" && (
+            <Field label="Medientyp">
+              <div className="flex flex-wrap gap-1.5">
+                {VIDEO_FORMATS.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => set("videoFormat", form.videoFormat === f ? "" : f)}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${
+                      form.videoFormat === f
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
 
           {/* Title + Metadata typeahead */}
           <div ref={metaRef} className="relative">
@@ -376,7 +429,10 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
                     <span className="ml-2 text-xs text-muted-foreground">Suche…</span>
                   </div>
                 )}
-                {!metaLoading && metaResults.length === 0 && (
+                {!metaLoading && metaError && (
+                  <p className="text-xs text-yellow-500 py-4 text-center px-2">{metaError}</p>
+                )}
+                {!metaLoading && !metaError && metaResults.length === 0 && (
                   <p className="text-xs text-muted-foreground py-4 text-center">Keine Ergebnisse.</p>
                 )}
                 {!metaLoading && metaResults.map((r, i) => (
@@ -393,7 +449,14 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
                       <div className="w-8 h-10 rounded bg-muted shrink-0" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-foreground truncate">{r.title}</p>
+                      <p className="text-xs font-medium text-foreground truncate">
+                        {r.title}{
+                          r.externalSource === "TheGamesDB" && r.metadata?.platform ? ` (${String(r.metadata.platform)})` :
+                          r.externalSource === "Discogs"    && r.metadata?.format   ? ` (${String(r.metadata.format)})` :
+                          r.externalSource === "TMDB"       && form.videoFormat      ? ` (${form.videoFormat})` :
+                          ""
+                        }
+                      </p>
                       <p className="text-[10px] text-muted-foreground">{r.year ?? "—"} · {r.externalSource}</p>
                       {r.description && (
                         <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{r.description}</p>

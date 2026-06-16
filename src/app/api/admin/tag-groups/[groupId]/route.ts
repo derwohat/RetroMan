@@ -26,6 +26,20 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json(group);
 }
 
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const denied = await checkAdmin();
+  if (denied) return denied;
+  const { groupId } = await params;
+  const body = await req.json();
+  if (!body.color && body.linkedField === undefined)
+    return NextResponse.json({ error: "Kein Feld zum Aktualisieren." }, { status: 400 });
+  const data: Record<string, unknown> = {};
+  if (body.color) data.color = body.color;
+  if (body.linkedField !== undefined) data.linkedField = body.linkedField || null;
+  const group = await prisma.tagGroup.update({ where: { id: groupId }, data });
+  return NextResponse.json(group);
+}
+
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;

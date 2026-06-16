@@ -10,7 +10,7 @@ export async function GET() {
           select: {
             groupId: true,
             showInView: true,
-            group: { select: { id: true, name: true } },
+            group: { select: { id: true, name: true, color: true } },
           },
         },
       },

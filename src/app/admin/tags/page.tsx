@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 type TagValue = { id: string; value: string; order: number };
-type TagGroup = { id: string; name: string; order: number; values: TagValue[] };
+type TagGroup = { id: string; name: string; color: string; order: number; values: TagValue[] };
 
 // ── Drag Handle Icon ───────────────────────────────────────────────────────────
 function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
@@ -149,6 +149,7 @@ function SortableGroup({
   onReorderValues,
   onRenameGroup,
   onDeleteGroup,
+  onColorChange,
 }: {
   group: TagGroup;
   isOpen: boolean;
@@ -159,6 +160,7 @@ function SortableGroup({
   onReorderValues: (groupId: string, newOrder: TagValue[]) => void;
   onRenameGroup: (groupId: string, name: string) => void;
   onDeleteGroup: (groupId: string) => void;
+  onColorChange: (groupId: string, color: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: group.id,
@@ -201,7 +203,7 @@ function SortableGroup({
       >
         <DragHandle listeners={listeners} attributes={attributes} />
 
-        {/* Group Name */}
+        {/* Group Name (as colored badge) */}
         <div className="flex-1 min-w-0">
           {editingName ? (
             <input
@@ -218,13 +220,34 @@ function SortableGroup({
               autoFocus
             />
           ) : (
-            <span className="text-sm font-medium text-foreground">{group.name}</span>
+            <span
+              className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
+              style={{ borderColor: `${group.color}50`, backgroundColor: `${group.color}18`, color: group.color }}
+            >
+              {group.name}
+            </span>
           )}
         </div>
 
-        <span className="text-[10px] text-muted-foreground mr-2 shrink-0">
+        <span className="text-[10px] text-muted-foreground mr-1 shrink-0">
           {group.values.length} {group.values.length === 1 ? "Wert" : "Werte"}
         </span>
+
+        {/* Color picker */}
+        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="color"
+            value={group.color}
+            onChange={(e) => onColorChange(group.id, e.target.value)}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            title="Farbe wählen"
+          />
+          <div
+            className="h-5 w-5 rounded-full border-2 border-white/20"
+            style={{ backgroundColor: group.color }}
+            title="Farbe wählen"
+          />
+        </div>
 
         {/* Edit name button */}
         <button
@@ -286,6 +309,7 @@ export default function AdminTagsPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: "group"; group: TagGroup } | { type: "value"; group: TagGroup; value: TagValue } | null>(null);
 
   const outerSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const colorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/tag-groups");
@@ -322,6 +346,18 @@ export default function AdminTagsPage() {
     setOpenGroups((prev) => new Set([...prev, newGroup.id]));
     setNewGroupName("");
     setShowCreateGroup(false);
+  }
+
+  function handleColorChange(groupId: string, color: string) {
+    setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, color } : g)));
+    if (colorTimerRef.current) clearTimeout(colorTimerRef.current);
+    colorTimerRef.current = setTimeout(() => {
+      fetch(`/api/admin/tag-groups/${groupId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ color }),
+      });
+    }, 300);
   }
 
   async function handleRenameGroup(groupId: string, name: string) {
@@ -431,7 +467,7 @@ export default function AdminTagsPage() {
         <div>
           <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">Tags</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"} · Werte werden beim Eintragen von Items als Optionen angeboten
+            {groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"} · Werte werden beim Anlegen von Einträgen als Optionen angeboten
           </p>
         </div>
         <button
@@ -465,6 +501,7 @@ export default function AdminTagsPage() {
                   onReorderValues={handleReorderValues}
                   onRenameGroup={handleRenameGroup}
                   onDeleteGroup={requestDeleteGroup}
+                  onColorChange={handleColorChange}
                 />
               ))}
             </div>

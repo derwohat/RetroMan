@@ -44,9 +44,14 @@ type ItemDetail = {
   purchaseDate: string | null;
   purchasePrice: number | null;
   store: string | null;
+  rating: number | null;
+  videoFormat: string | null;
+  externalId: string | null;
+  externalSource: string | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
-  images: Array<{ url: string | null; filePath: string | null; isPrimary: boolean }>;
+  images: Array<{ id: string; url: string | null; filePath: string | null; isPrimary: boolean; order: number }>;
   tags: ItemTagLink[];
   customFields: CustomField[];
   grading: GradingInfo | null;
@@ -278,6 +283,62 @@ const COLLECTION_STATUSES = [
   { value: "WISHLIST", label: "Wunschliste" },
 ];
 
+// ── MetaDataSection ───────────────────────────────────────────────────────────
+const META_LABELS: Record<string, string> = {
+  // Games
+  platform: "Plattform", publisher: "Publisher", developer: "Entwickler",
+  genre: "Genre", players: "Spieler", rating: "USK",
+  // Music
+  artist: "Künstler", releaseTitle: "Albumtitel", label: "Label", format: "Format",
+  barcode: "Barcode / EAN", tracklist: "Tracklist",
+  // Video
+  localizedTitle: "Titel (DE)", originalTitle: "Originaltitel",
+  director: "Regie", cast: "Darsteller", genres: "Genre",
+  runtime: "Laufzeit", fsk: "FSK", studio: "Studio", imdbRating: "IMDB",
+  // Books
+  author: "Autor", isbn: "ISBN", pages: "Seiten",
+  language: "Sprache", description: "Beschreibung",
+  // Shared
+  overview: "Beschreibung",
+};
+
+const META_ORDER: Record<string, string[]> = {
+  TheGamesDB:  ["platform", "publisher", "developer", "genre", "rating", "overview"],
+  Discogs:     ["artist", "releaseTitle", "format", "label", "genre", "barcode"],
+  TMDB:        ["localizedTitle", "originalTitle", "director", "cast", "genres", "runtime", "fsk", "imdbRating", "studio", "overview"],
+  OpenLibrary: ["author", "publisher", "isbn", "pages", "language", "genre", "description"],
+};
+
+type TrackEntry = { pos: string; title: string; dur: string };
+
+function MetaDataContent({ source, metadata, onImageClick }: { source: string | null; metadata: Record<string, unknown> | null; onImageClick?: (url: string) => void }) {
+  if (!source || !metadata || Object.keys(metadata).length === 0) return null;
+
+  const FULL_WIDTH_KEYS = new Set(["overview", "description"]);
+  const order = META_ORDER[source] ?? Object.keys(metadata).filter((k) => k !== "backCover" && k !== "tracklist");
+  const entries = order
+    .map((key) => ({ key, label: META_LABELS[key] ?? key, value: metadata[key] }))
+    .filter(({ key, value }) => !FULL_WIDTH_KEYS.has(key) && key !== "tracklist" && value !== null && value !== undefined && value !== "" && !(Array.isArray(value) && value.length === 0));
+
+  if (entries.length === 0) return null;
+
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+      {entries.map(({ key, label, value }) => {
+        const wide = key === "cast";
+        return (
+          <div key={key} className={wide ? "col-span-2" : ""}>
+            <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</dt>
+            <dd className={`text-sm text-foreground mt-0.5 ${wide ? "text-xs leading-relaxed" : "truncate"}`}>
+              {String(value)}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ItemDetailPage() {
   const { collectionId, itemId } = useParams<{ collectionId: string; itemId: string }>();
@@ -297,8 +358,17 @@ export default function ItemDetailPage() {
   const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [uploading, setUploading]   = useState(false);
   const [imageUrlDraft, setImageUrlDraft] = useState("");
-  const pickerRef = useRef<HTMLDivElement>(null);
-  const fileRef   = useRef<HTMLInputElement>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const pickerRef     = useRef<HTMLDivElement>(null);
+  const fileRef       = useRef<HTMLInputElement>(null);
+  const extraFileRef  = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxUrl]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -360,8 +430,62 @@ export default function ItemDetailPage() {
   async function saveCoverUrl(url: string | null) {
     const next = url || null;
     setImageUrlDraft(next ?? "");
-    setItem((p) => p ? { ...p, images: next ? [{ url: next, filePath: null, isPrimary: true }] : [] } : p);
-    await patch({ imageUrl: next });
+    setItem((p) => {
+      if (!p) return p;
+      const nonPrimary = p.images.filter((i) => !i.isPrimary);
+      return {
+        ...p,
+        images: [
+          ...(next ? [{ id: "_tmp_primary", url: next, filePath: null, isPrimary: true, order: 0 }] : []),
+          ...nonPrimary,
+        ],
+      };
+    });
+    const res = await fetch(`/api/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageUrl: next }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setItem((p) => p ? { ...p, images: updated.images } : p);
+    }
+  }
+
+  async function removeBackCover() {
+    if (!item?.metadata) return;
+    const { backCover: _bc, ...rest } = item.metadata;
+    setItem((p) => p ? { ...p, metadata: rest } : p);
+    await patch({ metadata: rest });
+  }
+
+  async function addExtraImage(url: string) {
+    const res = await fetch(`/api/items/${itemId}/images`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    if (res.ok) {
+      const newImage = await res.json();
+      setItem((p) => p ? { ...p, images: [...p.images, newImage] } : p);
+    }
+  }
+
+  async function removeExtraImage(imageId: string) {
+    setItem((p) => p ? { ...p, images: p.images.filter((i) => i.id !== imageId) } : p);
+    await fetch(`/api/items/${itemId}/images/${imageId}`, { method: "DELETE" });
+  }
+
+  async function handleExtraImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    setUploading(false);
+    if (res.ok) { const { url } = await res.json(); await addExtraImage(url); }
+    if (extraFileRef.current) extraFileRef.current.value = "";
   }
 
   async function searchCovers() {
@@ -441,7 +565,7 @@ export default function ItemDetailPage() {
   if (!item) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground text-sm">Item nicht gefunden.</p>
+        <p className="text-muted-foreground text-sm">Eintrag nicht gefunden.</p>
         <Link href={`/collection/${collectionId}`} className="mt-3 text-xs text-primary hover:underline block">← Zurück</Link>
       </div>
     );
@@ -449,6 +573,8 @@ export default function ItemDetailPage() {
 
   const category  = item.collection.category;
   const imageUrl  = getImageUrl(item);
+  const backCoverUrl  = typeof item.metadata?.backCover === "string" ? item.metadata.backCover : null;
+  const extraImages   = item.images.filter((i) => !i.isPrimary);
   const shopsGroup    = tagGroups.find((g) => g.name === "Shops");
   const lagerortGroup = tagGroups.find((g) => g.name === "Lagerort");
   const assignedGroupIds = new Set(category.tagGroups.map((tg) => tg.groupId));
@@ -472,28 +598,64 @@ export default function ItemDetailPage() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex flex-col sm:flex-row gap-0">
           {/* Cover */}
-          <div className="sm:w-48 shrink-0 bg-muted flex items-center justify-center min-h-[200px] relative">
-            {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={imageUrl} alt={item.title} className="w-full h-full object-cover" style={{ maxHeight: 280 }} />
-            ) : (
-              <CategoryIcon icon={category.icon} className="h-16 w-16 opacity-20" />
-            )}
-            {item.condition && (
-              <span className={`absolute top-2 left-2 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? ""}`}>
-                {CONDITION_LABELS[item.condition]}
-              </span>
-            )}
-            <button onClick={toggleFavorite} className={`absolute top-2 right-2 text-lg transition ${item.isFavorite ? "opacity-100" : "opacity-30 hover:opacity-60"}`} title={item.isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}>
-              ❤️
-            </button>
+          <div className="sm:w-48 shrink-0 flex flex-col">
+            {/* Main cover */}
+            <div className="relative flex-1 bg-muted flex items-center justify-center" style={{ minHeight: 200 }}>
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imageUrl} alt={item.title} className="w-full h-full object-cover cursor-zoom-in hover:opacity-90 transition" style={{ maxHeight: 280 }} onClick={() => setLightboxUrl(imageUrl)} />
+              ) : (
+                <CategoryIcon icon={category.icon} className="h-16 w-16 opacity-20" />
+              )}
+              {item.condition && (
+                <span className={`absolute top-2 left-2 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? ""}`}>
+                  {CONDITION_LABELS[item.condition]}
+                </span>
+              )}
+              <button onClick={toggleFavorite} className={`absolute top-2 right-2 text-lg transition ${item.isFavorite ? "opacity-100" : "opacity-30 hover:opacity-60"}`} title={item.isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}>
+                ❤️
+              </button>
+            </div>
+
+            {/* Extra images strip */}
+            <div className="border-t border-border bg-muted/30 p-1.5 flex flex-wrap gap-1 items-start">
+              {backCoverUrl && (
+                <div className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={backCoverUrl} alt="Backcover" className="h-14 w-auto object-cover rounded border border-border cursor-zoom-in hover:opacity-90 transition" style={{ maxWidth: 44 }} onClick={() => setLightboxUrl(backCoverUrl)} />
+                  <button onClick={removeBackCover} className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive/90 text-[9px] text-white opacity-0 group-hover:opacity-100 transition">✕</button>
+                </div>
+              )}
+              {extraImages.map((img) => {
+                const src = img.url ?? img.filePath ?? "";
+                if (!src) return null;
+                return (
+                  <div key={img.id} className="relative group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" className="h-14 w-auto object-cover rounded border border-border cursor-zoom-in hover:opacity-90 transition" style={{ maxWidth: 44 }} onClick={() => setLightboxUrl(src)} />
+                    <button onClick={() => removeExtraImage(img.id)} className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive/90 text-[9px] text-white opacity-0 group-hover:opacity-100 transition">✕</button>
+                  </div>
+                );
+              })}
+              <label className="h-14 w-9 rounded border border-dashed border-border/50 flex items-center justify-center text-xl text-muted-foreground/40 hover:border-primary/50 hover:text-primary/50 transition cursor-pointer leading-none">
+                +
+                <input ref={extraFileRef} type="file" accept="image/*" className="hidden" onChange={handleExtraImageUpload} />
+              </label>
+            </div>
           </div>
 
-          {/* Title / Year / Actions */}
-          <div className="flex-1 p-5 space-y-3">
+          {/* Title / Year / Metadata */}
+          <div className="flex-1 p-5 space-y-3 min-w-0">
             <div className="space-y-1">
-              <InlineTitleField value={item.title} onSave={(v) => saveField("title", v)} />
-              <InlineYearField value={item.year} onSave={(v) => saveField("year", v)} />
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-lg font-semibold leading-tight">{item.title}</p>
+                {item.externalSource && (
+                  <span className="shrink-0 mt-0.5 rounded-full border border-green-400/30 bg-green-400/10 px-2 py-0.5 text-[10px] font-medium text-green-400">
+                    {item.externalSource}
+                  </span>
+                )}
+              </div>
+              {item.year && <p className="text-sm text-muted-foreground">{item.year}</p>}
             </div>
             {item.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
@@ -504,13 +666,27 @@ export default function ItemDetailPage() {
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-2 pt-1">
-              <button onClick={() => setConfirmDel(true)} className="flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition">
-                Löschen
-              </button>
-            </div>
+            {item.metadata && item.externalSource && (
+              <>
+                <div className="border-t border-border" />
+                <MetaDataContent source={item.externalSource} metadata={item.metadata} onImageClick={setLightboxUrl} />
+              </>
+            )}
           </div>
         </div>
+
+        {/* Description — full width at bottom of main card */}
+        {(() => {
+          const desc = typeof item.metadata?.overview === "string" ? item.metadata.overview
+            : typeof item.metadata?.description === "string" ? item.metadata.description
+            : null;
+          if (!desc) return null;
+          return (
+            <div className="border-t border-border px-5 py-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Cover management */}
@@ -588,18 +764,39 @@ export default function ItemDetailPage() {
         </div>
       </div>
 
+      {/* Tracklist */}
+      {Array.isArray(item.metadata?.tracklist) && (item.metadata.tracklist as TrackEntry[]).length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest mb-4">Tracklist</h3>
+          <ol className="pl-8">
+            {(item.metadata.tracklist as TrackEntry[]).map((t, i) => (
+              <li key={i} className="group relative flex items-center gap-2 text-xs py-1">
+                <span className="absolute -left-8 w-6 text-right font-mono text-[10px] text-muted-foreground shrink-0 select-none">{t.pos || String(i + 1)}</span>
+                <span className="flex-1 text-foreground truncate transition-colors duration-150 group-hover:text-primary">{t.title}</span>
+                {t.dur && <span className="font-mono text-[10px] text-muted-foreground shrink-0 transition-colors duration-150 group-hover:text-primary">{t.dur}</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {/* Details */}
       <div className="space-y-4">
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
           <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</h3>
           <dl className="space-y-3">
+            {category.mediaType === "VIDEO" && (
+              <InlineEditableField label="Medientyp" value={item.videoFormat ?? ""} type="select"
+                options={["VHS", "DVD", "Blu-ray", "Ultra HD 4K", "LaserDisc", "HD DVD"].map((f) => ({ value: f, label: f }))}
+                onSave={(v) => saveField("videoFormat", v)}
+              />
+            )}
             <InlineEditableField label="Zustand" value={item.condition ?? ""} type="select" options={CONDITIONS} onSave={(v) => saveField("condition", v)} />
             <InlineEditableField label="Status" value={item.itemStatus ?? ""} type="select" options={ITEM_STATUSES} onSave={(v) => saveField("itemStatus", v)} />
             <InlineEditableField label="Sammlung" value={item.collectionStatus} type="select" options={COLLECTION_STATUSES} onSave={(v) => saveField("collectionStatus", v ?? "OWNED")} />
             <InlineEditableField label="Anzahl" value={item.quantity.toString()} type="number" onSave={(v) => saveField("quantity", v ?? "1")} />
             <InlineEditableField label="Barcode (EAN)" value={item.barcode} onSave={(v) => saveField("barcode", v)} />
             <InlineEditableField label="Lagerort" value={item.location ?? ""} type="select" options={lagerortGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("location", v)} />
-            <InlineEditableField label="Beschreibung" value={item.description} type="textarea" onSave={(v) => saveField("description", v)} />
           </dl>
         </div>
 
@@ -738,6 +935,14 @@ export default function ItemDetailPage() {
         <span>Aktualisiert: {formatDate(item.updatedAt, locale)}</span>
       </div>
 
+      <div className="rounded-xl border border-destructive/20 bg-card p-5 space-y-3">
+        <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
+        <p className="text-xs text-muted-foreground">Eintrag dauerhaft löschen. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <button onClick={() => setConfirmDel(true)} className="rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition">
+          Eintrag löschen
+        </button>
+      </div>
+
       {confirmDel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
@@ -755,6 +960,28 @@ export default function ItemDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-full object-contain rounded shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute top-4 right-4 text-white/60 hover:text-white text-2xl leading-none transition"
+            onClick={() => setLightboxUrl(null)}
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>

@@ -104,7 +104,7 @@ export async function PATCH(
       ...(imageUrl !== undefined
         ? {
             images: {
-              deleteMany: {},
+              deleteMany: { isPrimary: true },
               ...(imageUrl ? { create: [{ url: imageUrl, order: 0, isPrimary: true }] } : {}),
             },
           }

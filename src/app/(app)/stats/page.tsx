@@ -62,7 +62,7 @@ export default function StatsPage() {
   if (!data || data.total === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-sm text-muted-foreground">Noch keine Items vorhanden.</p>
+        <p className="text-sm text-muted-foreground">Noch keine Einträge vorhanden.</p>
       </div>
     );
   }
@@ -86,7 +86,7 @@ export default function StatsPage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Items gesamt" value={data.total} />
+        <StatCard label="Einträge gesamt" value={data.total} />
         <StatCard label="Gesamtwert" value={formatPrice(data.totalValue)} />
         <StatCard label="Favoriten" value={data.favorites} />
         <StatCard label="Wunschliste" value={data.wishlist} />
@@ -96,7 +96,7 @@ export default function StatsPage() {
 
         {/* Items per collection */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Items pro Sammlung</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Einträge pro Sammlung</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data.byCollection.slice(0, 10)} margin={{ top: 0, right: 0, bottom: 40, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -106,7 +106,7 @@ export default function StatsPage() {
                 contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 12 }}
                 cursor={{ fill: "rgba(255,45,149,0.08)" }}
               />
-              <Bar dataKey="count" name="Items" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="count" name="Einträge" radius={[4, 4, 0, 0]}>
                 {data.byCollection.slice(0, 10).map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
@@ -164,7 +164,7 @@ export default function StatsPage() {
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 12 }}
                   cursor={{ stroke: "rgba(255,45,149,0.3)" }}
                 />
-                <Area type="monotone" dataKey="count" name="Items" stroke="#ff2d95" strokeWidth={2} fill="url(#colorCount)" />
+                <Area type="monotone" dataKey="count" name="Einträge" stroke="#ff2d95" strokeWidth={2} fill="url(#colorCount)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -173,7 +173,7 @@ export default function StatsPage() {
         {/* Items per year */}
         {data.byYear.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Items nach Erscheinungsjahr</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Einträge nach Erscheinungsjahr</p>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={data.byYear} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -183,7 +183,7 @@ export default function StatsPage() {
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 12 }}
                   cursor={{ fill: "rgba(255,45,149,0.08)" }}
                 />
-                <Bar dataKey="count" name="Items" fill="#00f5d4" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="count" name="Einträge" fill="#00f5d4" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

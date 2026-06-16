@@ -6,6 +6,7 @@ type Settings = {
   discogsApiKey: boolean;
   theGamesDbKey: boolean;
   tmdbApiKey: boolean;
+  omdbApiKey: boolean;
   requireMfa: boolean;
   donationUrl: string | null;
   githubUrl: string | null;
@@ -23,8 +24,9 @@ const SERVICES = [
     steps: [
       "Registriere dich kostenlos auf discogs.com",
       "Gehe zu discogs.com/settings/developers",
+      'Scrolle zu "Personal Access Tokens" (nicht zu Apps/OAuth)',
       '"Neues Token generieren" klicken',
-      "Kopiere den Personal Access Token",
+      "Kopiere den generierten Token (langer Zufallsstring)",
     ],
     url: "https://www.discogs.com/settings/developers",
   },
@@ -54,6 +56,21 @@ const SERVICES = [
       "Kopiere den API Read Access Token (v4)",
     ],
     url: "https://www.themoviedb.org/settings/api",
+  },
+  {
+    key: "omdbApiKey" as const,
+    label: "OMDb",
+    subtitle: "Open Movie Database — IMDB-Bewertungen",
+    icon: "⭐",
+    description: "Liefert IMDB-Bewertungen für Filme (1.000 Anfragen/Tag kostenlos). Ergänzt TMDB.",
+    steps: [
+      "Gehe zu omdbapi.com/apikey.aspx",
+      'Wähle "FREE" (1.000 Anfragen täglich)',
+      "E-Mail-Adresse eingeben und absenden",
+      "Link in der Bestätigungs-E-Mail klicken",
+      "API-Key aus der E-Mail kopieren",
+    ],
+    url: "https://www.omdbapi.com/apikey.aspx",
   },
 ];
 

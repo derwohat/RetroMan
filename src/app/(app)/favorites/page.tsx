@@ -42,7 +42,7 @@ export default function FavoritesPage() {
         </h2>
         {!loading && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? "Item" : "Items"}
+            {items.length} {items.length === 1 ? "Eintrag" : "Einträge"}
           </p>
         )}
       </div>
@@ -51,7 +51,7 @@ export default function FavoritesPage() {
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <span className="text-5xl mb-4 opacity-20">❤️</span>
           <p className="text-sm text-muted-foreground">Noch keine Favoriten.</p>
-          <p className="mt-1 text-xs text-muted-foreground">Items mit dem Herz-Symbol markieren.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Einträge mit dem Herz-Symbol markieren.</p>
         </div>
       )}
 

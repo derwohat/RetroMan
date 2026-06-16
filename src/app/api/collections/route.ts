@@ -13,7 +13,7 @@ export async function GET() {
             mediaType: true,
             fields: { orderBy: { order: "asc" } },
             tagGroups: {
-              select: { groupId: true, showInView: true, group: { select: { id: true, name: true } } },
+              select: { groupId: true, showInView: true, group: { select: { id: true, name: true, color: true, linkedField: true } } },
             },
           },
         },

@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import https from "node:https";
 import { prisma } from "@/lib/db/prisma";
 import { decrypt } from "@/lib/crypto/encryption";
+
+function httpsGet(url: string, timeoutMs = 25000): Promise<string> {
+  const parsed = new URL(url);
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
+      method: "GET",
+      family: 4,
+      headers: {
+        "User-Agent": "RetroMan/1.0",
+        "Accept": "application/json",
+        "Accept-Encoding": "identity",
+        "Connection": "close",
+      },
+    }, (res) => {
+      let body = "";
+      res.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+      res.on("end", () => resolve(body));
+    });
+    req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error(`OpenLibrary timeout after ${timeoutMs}ms`)); });
+    req.on("error", reject);
+    req.end();
+  });
+}
 
 export type MetadataResult = {
   title: string;
@@ -9,7 +35,28 @@ export type MetadataResult = {
   imageUrl: string | null;
   externalId: string;
   externalSource: string;
+  metadata: Record<string, unknown> | null;
 };
+
+type TrackEntry = { pos: string; title: string; dur: string };
+
+async function fetchDiscogsTracklist(releaseId: number, apiKey: string): Promise<TrackEntry[] | null> {
+  try {
+    const res = await fetch(`https://api.discogs.com/releases/${releaseId}`, {
+      headers: { Authorization: `Discogs token=${apiKey}`, "User-Agent": "RetroMan/1.0" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const tracks = (data.tracklist ?? []) as Array<{ position: string; title: string; duration: string; type_?: string }>;
+    const filtered = tracks
+      .filter((t) => t.type_ !== "heading" && t.title?.trim())
+      .map((t) => ({ pos: t.position ?? "", title: t.title, dur: t.duration ?? "" }));
+    return filtered.length > 0 ? filtered : null;
+  } catch {
+    return null;
+  }
+}
 
 async function searchDiscogs(query: string, apiKey: string): Promise<MetadataResult[]> {
   const q = new URLSearchParams({ q: query, type: "release", per_page: "8" });
@@ -17,64 +64,352 @@ async function searchDiscogs(query: string, apiKey: string): Promise<MetadataRes
     headers: { Authorization: `Discogs token=${apiKey}`, "User-Agent": "RetroMan/1.0" },
     signal: AbortSignal.timeout(6000),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`[Discogs] ${res.status} ${res.statusText} — ${body.slice(0, 200)}`);
+    throw new Error(`Discogs ${res.status}: ${body.slice(0, 120)}`);
+  }
   const data = await res.json();
-  return (data.results ?? []).slice(0, 8).map((r: {
+  const results: MetadataResult[] = (data.results ?? []).slice(0, 8).map((r: {
     id: number; title: string; cover_image?: string; thumb?: string; year?: string;
-  }) => ({
-    title: r.title,
-    year: r.year ? parseInt(r.year) : null,
-    description: null,
-    imageUrl: r.cover_image?.startsWith("http") ? r.cover_image : (r.thumb?.startsWith("http") ? r.thumb : null),
-    externalId: String(r.id),
-    externalSource: "Discogs",
-  }));
+    label?: string[]; format?: string[]; genre?: string[]; barcode?: string[];
+  }) => {
+    const sepIdx = r.title.indexOf(" - ");
+    const artist = sepIdx > -1 ? r.title.slice(0, sepIdx) : null;
+    const releaseTitle = sepIdx > -1 ? r.title.slice(sepIdx + 3) : r.title;
+    const meta: Record<string, unknown> = {};
+    if (artist) meta.artist = artist;
+    if (releaseTitle !== r.title) meta.releaseTitle = releaseTitle;
+    if (r.label?.[0]) meta.label = r.label[0];
+    if (r.format?.length) meta.format = r.format.filter((f) => !["Album", "Single", "EP", "Compilation"].includes(f)).join(", ") || r.format[0];
+    if (r.genre?.[0]) meta.genre = r.genre[0];
+    if (r.barcode?.[0]) meta.barcode = r.barcode[0];
+    return {
+      title: r.title,
+      year: r.year ? parseInt(r.year) : null,
+      description: null,
+      imageUrl: r.cover_image?.startsWith("http") ? r.cover_image : (r.thumb?.startsWith("http") ? r.thumb : null),
+      externalId: String(r.id),
+      externalSource: "Discogs",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+
+  // Fetch tracklists for all results in parallel — failures are silently skipped
+  const tracklists = await Promise.allSettled(
+    results.map((r) => fetchDiscogsTracklist(parseInt(r.externalId), apiKey))
+  );
+
+  return results.map((r, i) => {
+    const settled = tracklists[i];
+    const tl = settled.status === "fulfilled" ? settled.value : null;
+    if (!tl || tl.length === 0) return r;
+    return { ...r, metadata: { ...(r.metadata ?? {}), tracklist: tl } };
+  });
+}
+
+function esrbToUsk(esrb: string): string | null {
+  const s = esrb.toLowerCase();
+  if (s.includes("early childhood"))                         return "USK 0";
+  if (s.includes("e10+") || s.includes("everyone 10+"))     return "USK 6";
+  if (s.includes("everyone"))                                return "USK 0";
+  if (s.includes("teen"))                                    return "USK 12";
+  if (s.includes("adults only"))                             return "USK 18";
+  if (s.includes("mature"))                                  return "USK 18";
+  return null;
 }
 
 async function searchTheGamesDb(query: string, apiKey: string): Promise<MetadataResult[]> {
-  const params = new URLSearchParams({ apikey: apiKey, name: query, fields: "overview", include: "boxart" });
-  const res = await fetch(`https://api.thegamesdb.net/v1/Games/ByGameName?${params}`, {
-    signal: AbortSignal.timeout(6000),
+  const params = new URLSearchParams({
+    apikey: apiKey,
+    name: query,
+    fields: "overview,platform,players,rating,publishers,genres,developers",
+    include: "boxart,platform,publishers,genres,developers",
   });
-  if (!res.ok) return [];
+  const res = await fetch(`https://api.thegamesdb.net/v1/Games/ByGameName?${params}`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`TheGamesDB ${res.status}: ${body.slice(0, 120)}`);
+  }
   const data = await res.json();
-  if (data.code !== 200) return [];
-  const games = (data.data?.games ?? []) as Array<{ id: number; game_title: string; release_date?: string; overview?: string }>;
+  if (data.code !== 200) throw new Error(`TheGamesDB code ${data.code}: ${data.status ?? ""}`);
+
+  type TgdbGame = {
+    id: number; game_title: string; release_date?: string; overview?: string;
+    platform?: number; players?: string; rating?: string;
+    publishers?: number[]; genres?: number[]; developers?: number[];
+  };
+  const games = (data.data?.games ?? []) as TgdbGame[];
   const boxartBase: string = data.include?.boxart?.base_url?.large ?? "";
   const boxartData: Record<string, Array<{ type: string; side?: string; filename: string }>> = data.include?.boxart?.data ?? {};
-  return games.slice(0, 8).map((g) => {
+  // TheGamesDB returns platform either as { data: {...} } or directly as { id: {...} }
+  const _platRaw = data.include?.platform;
+  const platformData: Record<string, { name: string }> = _platRaw?.data ?? _platRaw ?? {};
+
+  // TheGamesDB only returns boxart+platform via `include`; publishers/developers/genres
+  // require separate lookup calls with the IDs from the game objects.
+  const publisherIds = [...new Set(games.flatMap((g) => g.publishers ?? []))];
+  const developerIds = [...new Set(games.flatMap((g) => g.developers ?? []))];
+  const genreIds     = [...new Set(games.flatMap((g) => g.genres ?? []))];
+
+  async function tgdbIds(endpoint: string, ids: number[]): Promise<Record<string, string>> {
+    if (!ids.length) return {};
+    try {
+      const p = new URLSearchParams({ apikey: apiKey, id: ids.join(",") });
+      const r = await fetch(`https://api.thegamesdb.net/v1/${endpoint}?${p}`, { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return {};
+      const d = await r.json();
+      const map: Record<string, { name: string }> = d.data?.[endpoint.toLowerCase()] ?? {};
+      return Object.fromEntries(Object.entries(map).map(([k, v]) => [k, v.name]));
+    } catch { return {}; }
+  }
+
+  async function wikiDeDesc(title: string): Promise<string | null> {
+    try {
+      const res = await fetch(
+        `https://de.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+        { headers: { "User-Agent": "RetroMan/1.0" }, signal: AbortSignal.timeout(4000) },
+      );
+      if (!res.ok) return null;
+      const d = await res.json();
+      if (d.type === "disambiguation") return null;
+      const text = d.extract as string | undefined;
+      return text && text.length > 40 ? text : null;
+    } catch { return null; }
+  }
+
+  const gameSlice = games.slice(0, 8);
+  const [[publisherMap, developerMap, genreMap], wikiResults] = await Promise.all([
+    Promise.all([tgdbIds("Publishers", publisherIds), tgdbIds("Developers", developerIds), tgdbIds("Genres", genreIds)]),
+    Promise.allSettled(gameSlice.map((g) => wikiDeDesc(g.game_title))),
+  ]);
+
+  return gameSlice.map((g, i) => {
     const arts = boxartData[String(g.id)] ?? [];
     const front = arts.find((b) => b.type === "boxart" && b.side === "front") ?? arts[0];
+    const back  = arts.find((b) => b.type === "boxart" && b.side === "back");
+
+    const platformName  = g.platform ? (platformData[String(g.platform)]?.name ?? null) : null;
+    const publisherName = (g.publishers ?? []).map((id) => publisherMap[String(id)]).filter(Boolean).slice(0, 2).join(", ") || null;
+    const developerName = (g.developers ?? []).map((id) => developerMap[String(id)]).filter(Boolean).slice(0, 2).join(", ") || null;
+    const genreNames    = (g.genres    ?? []).map((id) => genreMap[String(id)]).filter(Boolean).slice(0, 3).join(", ") || null;
+    const wikiDesc      = wikiResults[i].status === "fulfilled" ? wikiResults[i].value : null;
+
+    const meta: Record<string, unknown> = {};
+    if (platformName)  meta.platform  = platformName;
+    if (publisherName) meta.publisher = publisherName;
+    if (developerName) meta.developer = developerName;
+    if (genreNames)    meta.genre     = genreNames;
+    const usk = g.rating ? esrbToUsk(g.rating) : null;
+    if (usk)           meta.rating    = usk;
+    // German Wikipedia preferred; English TheGamesDB overview as fallback
+    meta.overview = wikiDesc ?? g.overview ?? null;
+    if (!meta.overview) delete meta.overview;
+    if (back && boxartBase) meta.backCover = `${boxartBase}${back.filename}`;
+
     return {
       title: g.game_title,
       year: g.release_date ? new Date(g.release_date).getFullYear() : null,
-      description: g.overview || null,
+      description: (wikiDesc ?? g.overview) || null,
       imageUrl: front && boxartBase ? `${boxartBase}${front.filename}` : null,
       externalId: String(g.id),
       externalSource: "TheGamesDB",
+      metadata: Object.keys(meta).length ? meta : null,
     };
   });
 }
 
-async function searchTmdb(query: string, year: string | undefined, apiKey: string): Promise<MetadataResult[]> {
+const TMDB_GENRES: Record<number, string> = {
+  28: "Action", 12: "Abenteuer", 16: "Animation", 35: "Komödie", 80: "Krimi",
+  99: "Dokumentarfilm", 18: "Drama", 10751: "Familie", 14: "Fantasy", 36: "Geschichte",
+  27: "Horror", 10402: "Musik", 9648: "Mystery", 10749: "Romantik", 878: "Science Fiction",
+  10770: "TV-Film", 53: "Thriller", 10752: "Kriegsfilm", 37: "Western",
+};
+
+type TmdbDetailResponse = {
+  title: string;
+  runtime: number | null;
+  imdb_id: string | null;
+  production_companies: Array<{ name: string }>;
+  credits: {
+    crew: Array<{ job: string; name: string }>;
+    cast: Array<{ name: string }>;
+  };
+  release_dates: {
+    results: Array<{
+      iso_3166_1: string;
+      release_dates: Array<{ certification: string; type: number }>;
+    }>;
+  };
+};
+
+async function fetchTmdbMovieEnrichment(
+  movieId: number,
+  tmdbKey: string,
+  omdbKey?: string,
+): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}?language=de-DE&append_to_response=credits,release_dates`,
+      { headers: { Authorization: `Bearer ${tmdbKey}` }, signal: AbortSignal.timeout(6000) },
+    );
+    if (!res.ok) return {};
+    const d = (await res.json()) as TmdbDetailResponse;
+    const result: Record<string, string> = {};
+
+    const directors = d.credits?.crew?.filter((c) => c.job === "Director").map((c) => c.name);
+    if (directors?.length) result.director = directors.join(", ");
+
+    const cast = d.credits?.cast?.slice(0, 5).map((c) => c.name);
+    if (cast?.length) result.cast = cast.join(", ");
+
+    if (d.runtime && d.runtime > 0) result.runtime = `${d.runtime} min`;
+
+    const deRelease = d.release_dates?.results?.find((r) => r.iso_3166_1 === "DE");
+    const cert = deRelease?.release_dates?.find((r) => r.certification)?.certification;
+    if (cert) result.fsk = cert;
+
+    if (d.production_companies?.[0]?.name) result.studio = d.production_companies[0].name;
+
+    if (omdbKey && d.imdb_id) {
+      try {
+        const omdb = await fetch(`https://www.omdbapi.com/?i=${d.imdb_id}&apikey=${omdbKey}`, {
+          signal: AbortSignal.timeout(4000),
+        });
+        if (omdb.ok) {
+          const od = await omdb.json();
+          if (od.imdbRating && od.imdbRating !== "N/A") result.imdbRating = od.imdbRating;
+        }
+      } catch { /* skip OMDb on error */ }
+    }
+
+    return result;
+  } catch (e) {
+    console.error(`[TMDB detail] failed for movieId=${movieId}:`, e);
+    return {};
+  }
+}
+
+async function searchTmdb(query: string, year: string | undefined, apiKey: string, omdbKey?: string): Promise<MetadataResult[]> {
   const q = new URLSearchParams({ query, language: "de-DE" });
   if (year) q.set("year", year);
   const res = await fetch(`https://api.themoviedb.org/3/search/movie?${q}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
     signal: AbortSignal.timeout(6000),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`TMDB ${res.status}: ${body.slice(0, 120)}`);
+  }
   const data = await res.json();
-  return (data.results ?? []).slice(0, 8).map((r: {
-    id: number; title: string; overview?: string; poster_path?: string | null; release_date?: string;
-  }) => ({
-    title: r.title,
-    year: r.release_date ? parseInt(r.release_date.slice(0, 4)) : null,
-    description: r.overview || null,
-    imageUrl: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
-    externalId: String(r.id),
-    externalSource: "TMDB",
-  }));
+  const results: MetadataResult[] = (data.results ?? []).slice(0, 8).map((r: {
+    id: number; title: string; original_title?: string; overview?: string;
+    poster_path?: string | null; release_date?: string; genre_ids?: number[];
+  }) => {
+    const meta: Record<string, unknown> = {};
+    if (r.original_title) meta.originalTitle = r.original_title;
+    if (r.title && r.title !== r.original_title) meta.localizedTitle = r.title;
+    if (r.genre_ids?.length) {
+      const names = r.genre_ids.map((id) => TMDB_GENRES[id]).filter(Boolean);
+      if (names.length) meta.genres = names.join(", ");
+    }
+    if (r.overview) meta.overview = r.overview;
+    return {
+      title: r.title,
+      year: r.release_date ? parseInt(r.release_date.slice(0, 4)) : null,
+      description: r.overview || null,
+      imageUrl: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
+      externalId: String(r.id),
+      externalSource: "TMDB",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+
+  // Fetch full credits, runtime, FSK, studio and IMDB rating in parallel
+  const enrichments = await Promise.allSettled(
+    results.map((r) => fetchTmdbMovieEnrichment(parseInt(r.externalId), apiKey, omdbKey)),
+  );
+
+  return results.map((r, i) => {
+    const extra = enrichments[i].status === "fulfilled" ? enrichments[i].value : {};
+    if (!extra || Object.keys(extra).length === 0) return r;
+    return { ...r, metadata: { ...(r.metadata ?? {}), ...extra } };
+  });
+}
+
+const OL_LANG: Record<string, string> = {
+  eng: "Englisch", ger: "Deutsch", deu: "Deutsch",
+  fre: "Französisch", fra: "Französisch", jpn: "Japanisch",
+  spa: "Spanisch", ita: "Italienisch", por: "Portugiesisch",
+  nld: "Niederländisch", swe: "Schwedisch", nor: "Norwegisch",
+  dan: "Dänisch", fin: "Finnisch", rus: "Russisch",
+  zho: "Chinesisch", kor: "Koreanisch", ara: "Arabisch",
+  pol: "Polnisch", ces: "Tschechisch", tur: "Türkisch",
+};
+
+async function fetchOpenLibraryDescription(workId: string): Promise<string | null> {
+  try {
+    const body = await httpsGet(`https://openlibrary.org/works/${workId}.json`, 5000);
+    const data = JSON.parse(body);
+    const desc = data.description;
+    if (!desc) return null;
+    if (typeof desc === "string") return desc;
+    if (typeof desc === "object" && desc.value) return String(desc.value);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function searchOpenLibrary(query: string): Promise<MetadataResult[]> {
+  const fields = "key,title,author_name,first_publish_year,cover_i,publisher,number_of_pages_median,isbn,subject,language";
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=8&fields=${fields}`;
+  const rawBody = await httpsGet(url);
+  const data = JSON.parse(rawBody);
+
+  const results: MetadataResult[] = (data.docs ?? []).slice(0, 8).map((r: {
+    key: string; title: string; author_name?: string[];
+    first_publish_year?: number; cover_i?: number;
+    publisher?: string[]; number_of_pages_median?: number;
+    isbn?: string[]; subject?: string[]; language?: string[];
+  }) => {
+    const meta: Record<string, unknown> = {};
+    if (r.author_name?.[0]) meta.author = r.author_name.slice(0, 2).join(", ");
+    if (r.publisher?.[0]) meta.publisher = r.publisher[0];
+    if (r.number_of_pages_median) meta.pages = r.number_of_pages_median;
+    if (r.isbn?.length) {
+      const isbn13 = r.isbn.find((i) => /^97[89]\d{10}$/.test(i));
+      meta.isbn = isbn13 ?? r.isbn[0];
+    }
+    if (r.subject?.length) meta.genre = r.subject.slice(0, 3).join(", ");
+    if (r.language?.length) {
+      const names = [...new Set(r.language.slice(0, 3).map((l) => OL_LANG[l] ?? l))];
+      meta.language = names.slice(0, 2).join(", ");
+    }
+    const workId = r.key?.replace("/works/", "") ?? "";
+    return {
+      title: r.title,
+      year: r.first_publish_year ?? null,
+      description: null,
+      imageUrl: r.cover_i ? `https://covers.openlibrary.org/b/id/${r.cover_i}-L.jpg` : null,
+      externalId: workId,
+      externalSource: "OpenLibrary",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+
+  // Fetch descriptions in parallel via /works/{id}.json
+  const descriptions = await Promise.allSettled(
+    results.map((r) => fetchOpenLibraryDescription(r.externalId)),
+  );
+
+  return results.map((r, i) => {
+    const desc = descriptions[i].status === "fulfilled" ? descriptions[i].value : null;
+    if (!desc) return r;
+    return { ...r, metadata: { ...(r.metadata ?? {}), description: desc } };
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -88,14 +423,25 @@ export async function GET(req: NextRequest) {
   const settings = await prisma.appSettings.findFirst({ where: { id: "singleton" } });
 
   try {
-    if (mediaType === "MUSIC" && settings?.discogsApiKey)
+    if (mediaType === "MUSIC") {
+      if (!settings?.discogsApiKey) return NextResponse.json({ error: "no_key", source: "Discogs" }, { status: 503 });
       return NextResponse.json(await searchDiscogs(title, decrypt(settings.discogsApiKey)));
-    if (mediaType === "GAME" && settings?.theGamesDbKey)
+    }
+    if (mediaType === "GAME") {
+      if (!settings?.theGamesDbKey) return NextResponse.json({ error: "no_key", source: "TheGamesDB" }, { status: 503 });
       return NextResponse.json(await searchTheGamesDb(title, decrypt(settings.theGamesDbKey)));
-    if (mediaType === "VIDEO" && settings?.tmdbApiKey)
-      return NextResponse.json(await searchTmdb(title, year, decrypt(settings.tmdbApiKey)));
-  } catch {
-    // API error
+    }
+    if (mediaType === "VIDEO") {
+      if (!settings?.tmdbApiKey) return NextResponse.json({ error: "no_key", source: "TMDB" }, { status: 503 });
+      const omdbKey = settings?.omdbApiKey ? decrypt(settings.omdbApiKey) : undefined;
+      return NextResponse.json(await searchTmdb(title, year, decrypt(settings.tmdbApiKey), omdbKey));
+    }
+    if (mediaType === "BOOK") {
+      return NextResponse.json(await searchOpenLibrary(title));
+    }
+  } catch (err) {
+    console.error("[metadata/search] error:", err);
+    return NextResponse.json({ error: "api_error", message: String(err) }, { status: 502 });
   }
 
   return NextResponse.json([]);

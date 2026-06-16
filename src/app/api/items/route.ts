@@ -72,19 +72,23 @@ export async function POST(req: NextRequest) {
 
   const tagLinks: Array<{ tagValueId: string; groupId: string }> = Array.isArray(tags) ? tags : [];
 
-  const item = await prisma.item.create({
-    data: {
-      userId,
-      collectionId,
-      title: title.trim(),
-      ...itemData,
-      ...(imageUrl ? { images: { create: [{ url: imageUrl, order: 0, isPrimary: true }] } } : {}),
-      ...(tagLinks.length > 0
-        ? { tags: { create: tagLinks.map(({ tagValueId, groupId }) => ({ tagValueId, groupId })) } }
-        : {}),
-    },
-    include: { images: true, tags: { include: { tagValue: true, tagGroup: true } } },
-  });
-
-  return NextResponse.json(item, { status: 201 });
+  try {
+    const item = await prisma.item.create({
+      data: {
+        userId,
+        collectionId,
+        title: title.trim(),
+        ...itemData,
+        ...(imageUrl ? { images: { create: [{ url: imageUrl, order: 0, isPrimary: true }] } } : {}),
+        ...(tagLinks.length > 0
+          ? { tags: { create: tagLinks.map(({ tagValueId, groupId }) => ({ tagValueId, groupId })) } }
+          : {}),
+      },
+      include: { images: true, tags: { include: { tagValue: true, tagGroup: true } } },
+    });
+    return NextResponse.json(item, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/items]", err);
+    return NextResponse.json({ error: "Datenbankfehler beim Erstellen des Eintrags." }, { status: 500 });
+  }
 }

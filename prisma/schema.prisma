@@ -106,6 +106,7 @@ model AppSettings {
   mobyGamesKey     String?
   googleSearchKey  String?
   googleSearchCx   String?
+  omdbApiKey       String?
   donationUrl      String?
   githubUrl        String?
   requireMfa       Boolean @default(false)
@@ -117,10 +118,12 @@ model AppSettings {
 // ─── Categories & Fields ──────────────────────────────────────────────────────
 
 model TagGroup {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  order     Int        @default(0)
-  createdAt DateTime   @default(now())
+  id           String     @id @default(cuid())
+  name         String     @unique
+  order        Int        @default(0)
+  color        String     @default("#ff2d95")
+  linkedField  String?
+  createdAt    DateTime   @default(now())
 
   values     TagValue[]
   itemTags   ItemTag[]
@@ -220,6 +223,7 @@ model Item {
   rating           Int?
   collectionStatus CollectionStatus @default(OWNED)
   isFavorite       Boolean          @default(false)
+  videoFormat      String?
   externalId       String?
   externalSource   String?
   metadata         Json?

@@ -23,11 +23,11 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
-  const { name } = await req.json();
+  const { name, color } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Name erforderlich." }, { status: 400 });
   const count = await prisma.tagGroup.count();
   const group = await prisma.tagGroup.create({
-    data: { name: name.trim(), order: count },
+    data: { name: name.trim(), order: count, ...(color ? { color } : {}) },
     include: { values: true },
   });
   return NextResponse.json(group, { status: 201 });
