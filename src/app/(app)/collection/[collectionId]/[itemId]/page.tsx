@@ -690,8 +690,8 @@ export default function ItemDetailPage() {
       </div>
 
       {/* Cover management */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">Cover</p>
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Cover</h3>
         <div className="flex gap-3 items-start">
           <div ref={pickerRef} className="relative shrink-0">
             <button type="button" onClick={searchCovers} title="Klicken zum Cover suchen"
@@ -766,8 +766,8 @@ export default function ItemDetailPage() {
 
       {/* Tracklist */}
       {Array.isArray(item.metadata?.tracklist) && (item.metadata.tracklist as TrackEntry[]).length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest mb-4">Tracklist</h3>
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Tracklist</h3>
           <ol className="pl-8">
             {(item.metadata.tracklist as TrackEntry[]).map((t, i) => (
               <li key={i} className="group relative flex items-center gap-2 text-xs py-1">
