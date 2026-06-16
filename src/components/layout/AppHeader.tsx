@@ -8,13 +8,29 @@ import { signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
 
 type Profile = { name: string; email: string; role: string };
+type SearchItem = {
+  id: string;
+  title: string;
+  year: number | null;
+  collection: {
+    id: string;
+    name: string;
+    category: { id: string; icon: string | null };
+  };
+  images: Array<{ url: string | null; isPrimary: boolean }>;
+};
 
 export function AppHeader() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery]           = useState("");
+  const [profile, setProfile]       = useState<Profile | null>(null);
+  const [showMenu, setShowMenu]     = useState(false);
+  const [suggestions, setSuggestions] = useState<SearchItem[]>([]);
+  const [showDrop, setShowDrop]     = useState(false);
+  const [searching, setSearching]   = useState(false);
+  const menuRef   = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/me")
@@ -26,15 +42,45 @@ export function AppHeader() {
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDrop(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (value.trim().length >= 3) {
+      timerRef.current = setTimeout(async () => {
+        setSearching(true);
+        try {
+          const res = await fetch(`/api/items?search=${encodeURIComponent(value.trim())}`);
+          if (res.ok) {
+            const items: SearchItem[] = await res.json();
+            setSuggestions(items.slice(0, 8));
+            setShowDrop(true);
+          }
+        } finally {
+          setSearching(false);
+        }
+      }, 300);
+    } else {
+      setSuggestions([]);
+      setShowDrop(false);
+    }
+  }
+
   function handleSearch(e: FormEvent) {
     e.preventDefault();
     const q = query.trim();
-    if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+    if (q) { setShowDrop(false); router.push(`/search?q=${encodeURIComponent(q)}`); }
+  }
+
+  function pickSuggestion(item: SearchItem) {
+    setShowDrop(false);
+    setQuery("");
+    router.push(`/collection/${item.collection.id}`);
   }
 
   return (
@@ -47,27 +93,72 @@ export function AppHeader() {
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex flex-1 items-center gap-2 rounded-md border border-border bg-muted px-4 py-2.5">
-        <button type="submit" className="shrink-0 text-muted-foreground hover:text-primary transition">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rewind your world!"
-          className="flex-1 bg-transparent text-sm text-foreground search-slogan-placeholder outline-none"
-        />
-        {query === "" && (
-          <div className="hidden sm:flex items-center gap-1.5">
-            <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Name</span>
-            <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Typ</span>
-            <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Jahr</span>
+      <div ref={searchRef} className="relative flex-1">
+        <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-md border border-border bg-muted px-4 py-2.5">
+          <button type="submit" className="shrink-0 text-muted-foreground hover:text-primary transition">
+            {searching ? (
+              <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            )}
+          </button>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            onFocus={() => { if (suggestions.length > 0) setShowDrop(true); }}
+            placeholder="Rewind your world!"
+            autoComplete="off"
+            className="flex-1 bg-transparent text-sm text-foreground search-slogan-placeholder outline-none"
+          />
+          {query === "" && (
+            <div className="hidden sm:flex items-center gap-1.5">
+              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Name</span>
+              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Typ</span>
+              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Jahr</span>
+            </div>
+          )}
+        </form>
+
+        {/* Suggestions dropdown */}
+        {showDrop && suggestions.length > 0 && (
+          <div className="absolute left-0 top-full mt-1 w-full rounded-lg border border-border bg-card shadow-2xl z-50 overflow-hidden">
+            {suggestions.map((item) => {
+              const img = item.images.find((i) => i.isPrimary) ?? item.images[0];
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => pickSuggestion(item)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted transition"
+                >
+                  <div className="w-8 h-10 rounded border border-border bg-muted shrink-0 overflow-hidden">
+                    {img?.url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-foreground truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.collection.name}{item.year ? ` · ${item.year}` : ""}</p>
+                  </div>
+                </button>
+              );
+            })}
+            <div className="border-t border-border px-4 py-2">
+              <button
+                type="button"
+                onClick={() => { setShowDrop(false); router.push(`/search?q=${encodeURIComponent(query.trim())}`); }}
+                className="text-xs text-primary hover:underline"
+              >
+                Alle Ergebnisse für „{query.trim()}" anzeigen →
+              </button>
+            </div>
           </div>
         )}
-      </form>
+      </div>
 
       {/* Actions */}
       <div className="flex items-center gap-3 ml-auto">
@@ -87,7 +178,6 @@ export function AppHeader() {
 
           {showMenu && (
             <div className="absolute right-0 top-12 z-50 w-56 rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
-              {/* User info */}
               {profile && (
                 <div className="px-4 py-3 border-b border-border">
                   <p className="text-sm font-medium text-foreground truncate">{profile.name}</p>
@@ -98,7 +188,6 @@ export function AppHeader() {
                 </div>
               )}
 
-              {/* Menu items */}
               <div className="py-1">
                 <Link
                   href="/profile"
@@ -126,7 +215,6 @@ export function AppHeader() {
                 )}
               </div>
 
-              {/* Logout */}
               <div className="border-t border-border py-1">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}

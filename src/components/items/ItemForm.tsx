@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { isoToDE, deToISO } from "@/lib/format";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { BarcodeScanner } from "./BarcodeScanner";
@@ -156,9 +156,10 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
   const [metaLoading, setMetaLoading]     = useState(false);
   const [showMeta, setShowMeta]           = useState(false);
   const [tagGroups, setTagGroups]         = useState<TagGroup[]>([]);
-  const fileRef     = useRef<HTMLInputElement>(null);
-  const pickerRef   = useRef<HTMLDivElement>(null);
-  const metaRef     = useRef<HTMLDivElement>(null);
+  const fileRef      = useRef<HTMLInputElement>(null);
+  const pickerRef    = useRef<HTMLDivElement>(null);
+  const metaRef      = useRef<HTMLDivElement>(null);
+  const metaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -184,18 +185,30 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  async function searchMetadata() {
-    if (!form.title.trim()) return;
+  const searchMetadata = useCallback(async (titleOverride?: string) => {
+    const q = (titleOverride ?? form.title).trim();
+    if (q.length < 3 || !category.mediaType || category.mediaType === "CUSTOM") return;
     setShowMeta(true);
     setMetaLoading(true);
     setMetaResults([]);
-    const p = new URLSearchParams({ title: form.title.trim(), mediaType: category.mediaType ?? "CUSTOM" });
+    const p = new URLSearchParams({ title: q, mediaType: category.mediaType });
     if (form.year) p.set("year", form.year);
     try {
       const res = await fetch(`/api/metadata/search?${p}`);
       if (res.ok) setMetaResults(await res.json());
     } finally {
       setMetaLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category.mediaType, form.year]);
+
+  function handleTitleChange(value: string) {
+    set("title", value);
+    if (metaTimerRef.current) clearTimeout(metaTimerRef.current);
+    if (value.trim().length >= 3 && category.mediaType && category.mediaType !== "CUSTOM") {
+      metaTimerRef.current = setTimeout(() => searchMetadata(value.trim()), 400);
+    } else {
+      setShowMeta(false);
     }
   }
 
@@ -328,33 +341,24 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-          {/* Title + Metadata search */}
+          {/* Title + Metadata typeahead */}
           <div ref={metaRef} className="relative">
             <Field label="Titel *">
-              <div className="flex gap-1.5">
+              <div className="relative">
                 <input
                   required
                   value={form.title}
-                  onChange={(e) => set("title", e.target.value)}
-                  className="retro-field flex-1"
-                  placeholder="Titel des Items"
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="retro-field w-full pr-8"
+                  placeholder={
+                    category.mediaType && category.mediaType !== "CUSTOM"
+                      ? "Ab 3 Zeichen werden Vorschläge angezeigt…"
+                      : "Titel des Items"
+                  }
+                  autoComplete="off"
                 />
-                {category.mediaType && category.mediaType !== "CUSTOM" && (
-                  <button
-                    type="button"
-                    onClick={searchMetadata}
-                    disabled={!form.title.trim() || metaLoading}
-                    title="Metadaten suchen"
-                    className="rounded border border-border px-2.5 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-40"
-                  >
-                    {metaLoading ? (
-                      <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    )}
-                  </button>
+                {metaLoading && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 )}
               </div>
             </Field>
