@@ -9,7 +9,6 @@ type Settings = {
   omdbApiKey: boolean;
   requireMfa: boolean;
   donationUrl: string | null;
-  githubUrl: string | null;
   fontSize: string;
   interfaceLanguage: string;
 };
@@ -80,7 +79,6 @@ export default function AdminSettingsPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [requireMfa, setRequireMfa] = useState(false);
   const [donationUrl, setDonationUrl] = useState("");
-  const [githubUrl, setGithubUrl] = useState("");
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
   const [interfaceLanguage, setInterfaceLanguage] = useState<"de" | "en" | "fr">("de");
   const [saving, setSaving] = useState<string | null>(null);
@@ -93,7 +91,6 @@ export default function AdminSettingsPage() {
         setSettings(data);
         setRequireMfa(data.requireMfa);
         setDonationUrl(data.donationUrl ?? "");
-        setGithubUrl(data.githubUrl ?? "");
         setFontSize((data.fontSize as "small" | "medium" | "large") ?? "medium");
         setInterfaceLanguage((data.interfaceLanguage as "de" | "en" | "fr") ?? "de");
       });
@@ -139,7 +136,6 @@ export default function AdminSettingsPage() {
       body: JSON.stringify({
         requireMfa,
         donationUrl: donationUrl || null,
-        githubUrl: githubUrl || null,
         fontSize,
         interfaceLanguage,
       }),
@@ -321,19 +317,6 @@ export default function AdminSettingsPage() {
             >
               <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${requireMfa ? "translate-x-5" : "translate-x-0"}`} />
             </button>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              GitHub URL
-            </label>
-            <input
-              type="url"
-              value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
-              placeholder="https://github.com/..."
-              className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-            />
           </div>
 
           <div className="space-y-1.5">
