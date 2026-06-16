@@ -306,7 +306,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
         onClose={() => setShowScanner(false)}
       />
     )}
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-xl rounded-xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]"
