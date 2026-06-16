@@ -84,17 +84,17 @@ export function AdminSidebar() {
             </Link>
           );
         })}
-      </nav>
 
-      <div className="border-t border-border p-3">
+        <div className="my-2 mx-3 border-t border-border/50" />
+
         <Link
           href="/dashboard"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition"
+          className="flex items-center gap-2.5 px-3 py-2.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
-          <IconArrowLeft />
-          <span>{t.admin.backToApp}</span>
+          <span className="shrink-0"><IconArrowLeft /></span>
+          <span className="text-xs">Admin-Bereich verlassen</span>
         </Link>
-      </div>
+      </nav>
     </aside>
   );
 }
