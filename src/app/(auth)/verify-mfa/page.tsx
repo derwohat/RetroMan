@@ -30,10 +30,10 @@ export default function VerifyMfaPage() {
       return;
     }
 
-    // Clear mfaPending in the JWT so the user gets full access
+    // Clear mfaPending in the JWT, then hard-redirect so the proxy
+    // reads the fresh cookie instead of the stale client-side session
     await update({ mfaPending: false });
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   return (
