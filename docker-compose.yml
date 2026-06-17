@@ -31,8 +31,9 @@ services:
       # Same password as POSTGRES_PASSWORD above
       # Example: postgresql://retroman:MeinSicheresPasswort42!@db:5432/retroman
       DATABASE_URL: postgresql://retroman:CHANGE_ME@db:5432/retroman
-      # IP or hostname of this machine (with port)
-      # Example: http://192.168.1.100:7007
+      # IP or hostname of this machine (with port), or reverse proxy domain (without port)
+      # Example direct:        http://192.168.1.100:7007
+      # Example reverse proxy: https://retroman.deine-domain.de
       NEXTAUTH_URL: http://CHANGE_ME:7007
       # Random secret - generate with: openssl rand -base64 32
       # Example: hX3kL9mZqR7vW2nYpT5uA8eB6cD4fG0j1iO+sN/KQw=
