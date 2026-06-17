@@ -1,6 +1,6 @@
 // Production seed — uses pg directly (no TypeScript/Prisma client needed at runtime).
 import pg from "pg";
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -45,20 +45,6 @@ function cuid() {
   return `c${ts}${rand}`;
 }
 
-// bcrypt-compatible hash using node:crypto (10 rounds approximation via PBKDF2)
-// In production the real bcrypt from bcryptjs is used — this is only for the default admin password.
-async function hashPassword(password) {
-  // Use a real bcrypt-like approach: we rely on the bcryptjs package being available
-  try {
-    const { default: bcrypt } = await import("bcryptjs");
-    return bcrypt.hash(password, 12);
-  } catch {
-    // Fallback: SHA-256 with salt (not bcrypt-compatible, but prevents plaintext)
-    const salt = randomBytes(16).toString("hex");
-    const hash = createHash("sha256").update(salt + password).digest("hex");
-    return `$sha256$${salt}$${hash}`;
-  }
-}
 
 async function main() {
   const client = await pool.connect();
@@ -113,24 +99,7 @@ async function main() {
     );
     console.log(`✓ AppSettings singleton ensured`);
 
-    // ── Admin user (first time only) ──────────────────────────────────────────
-    const existing = await client.query(
-      `SELECT id FROM "User" WHERE email='admin@retroman.local' LIMIT 1`
-    );
-    if (existing.rows.length === 0) {
-      const passwordHash = await hashPassword("admin1234");
-      await client.query(
-        `INSERT INTO "User" (id, email, name, "passwordHash", "mustChangePassword", "mfaEnabled",
-           role, "preferredLanguage", "preferredRegion", "dateFormat", "createdAt", "updatedAt")
-         VALUES ($1,'admin@retroman.local','Admin',$2,true,false,'ADMIN','de','PAL-EU','EUROPEAN',NOW(),NOW())`,
-        [cuid(), passwordHash]
-      );
-      console.log(`✓ Admin user created: admin@retroman.local`);
-      console.log(`  Temporary password: admin1234`);
-      console.log(`  (Must be changed on first login)`);
-    } else {
-      console.log(`✓ Admin user exists: admin@retroman.local`);
-    }
+    console.log(`✓ No default user created — first login will prompt account setup`);
   } finally {
     client.release();
     await pool.end();

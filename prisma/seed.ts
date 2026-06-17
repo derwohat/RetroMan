@@ -83,25 +83,7 @@ async function main() {
   });
   console.log(`✓ AppSettings singleton ensured`);
 
-  // ── First-time only: create admin user ───────────────────────────────────────
-  const existing = await prisma.user.findFirst({ where: { email: "admin@retroman.local" } });
-  if (!existing) {
-    const passwordHash = await bcrypt.hash("admin1234", 12);
-    const user = await prisma.user.create({
-      data: {
-        email: "admin@retroman.local",
-        name: "Admin",
-        passwordHash,
-        role: "ADMIN",
-        mustChangePassword: true,
-      },
-    });
-    console.log(`✓ Admin user created: ${user.email}`);
-    console.log(`  Temporary password: admin1234`);
-    console.log(`  (Must be changed on first login)`);
-  } else {
-    console.log(`✓ Admin user exists: ${existing.email}`);
-  }
+  console.log(`✓ No default user created — first login will prompt account setup`);
 }
 
 main()

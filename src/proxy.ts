@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth/config";
 
-const PUBLIC_PATHS = ["/login", "/setup", "/api/auth", "/api/upload"];
+const PUBLIC_PATHS = ["/login", "/setup", "/api/auth", "/api/upload", "/api/setup"];
 
 export async function proxy(req: NextRequest) {
   if (process.env.NODE_ENV !== "production") return NextResponse.next();
