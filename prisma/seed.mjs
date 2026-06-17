@@ -65,17 +65,19 @@ async function main() {
   try {
     // ── Upsert Collections ────────────────────────────────────────────────────
     for (const col of DEFAULT_COLLECTIONS) {
-      await client.query(
-        `INSERT INTO "Collection" (id, name, icon, "mediaType", "order", "gradingEnabled", "createdAt")
-         VALUES ($1,$2,$3,$4::\"MediaType\",$5,false,NOW())
-         ON CONFLICT (id) DO NOTHING`,
-        [cuid(), col.name, col.icon, col.mediaType, col.order]
-      );
-      // Also update existing by name
-      await client.query(
-        `UPDATE "Collection" SET icon=$1, "mediaType"=$2::\"MediaType\", "order"=$3 WHERE name=$4`,
-        [col.icon, col.mediaType, col.order, col.name]
-      );
+      const existing = await client.query(`SELECT id FROM "Collection" WHERE name=$1 LIMIT 1`, [col.name]);
+      if (existing.rows.length > 0) {
+        await client.query(
+          `UPDATE "Collection" SET icon=$1, "mediaType"=$2::\"MediaType\", "order"=$3 WHERE id=$4`,
+          [col.icon, col.mediaType, col.order, existing.rows[0].id]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO "Collection" (id, name, icon, "mediaType", "order", "gradingEnabled", "createdAt")
+           VALUES ($1,$2,$3,$4::\"MediaType\",$5,false,NOW())`,
+          [cuid(), col.name, col.icon, col.mediaType, col.order]
+        );
+      }
     }
     console.log(`✓ ${DEFAULT_COLLECTIONS.length} collections synced`);
 
