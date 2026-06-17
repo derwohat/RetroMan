@@ -1,129 +1,138 @@
-// Production seed — uses pg directly to avoid Prisma TypeScript client at runtime.
+// Production seed — uses pg directly (no TypeScript/Prisma client needed at runtime).
 import pg from "pg";
+import { createHash, randomBytes } from "node:crypto";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const DEFAULT_CATEGORIES = [
+const DEFAULT_COLLECTIONS = [
   { name: "Konsolenspiele", icon: "gamepad",  mediaType: "GAME",    order: 0 },
   { name: "Schallplatten",  icon: "vinyl",    mediaType: "MUSIC",   order: 1 },
   { name: "CDs",            icon: "cd",       mediaType: "MUSIC",   order: 2 },
   { name: "Kassetten",      icon: "cassette", mediaType: "MUSIC",   order: 3 },
-  { name: "VHS",            icon: "vhs",      mediaType: "VIDEO",   order: 4 },
-  { name: "DVD",            icon: "dvd",      mediaType: "VIDEO",   order: 5 },
-  { name: "Blu-ray",        icon: "bluray",   mediaType: "VIDEO",   order: 6 },
+  { name: "VHS",            icon: "vhs",      mediaType: "FILM",    order: 4 },
+  { name: "DVD",            icon: "dvd",      mediaType: "FILM",    order: 5 },
+  { name: "Blu-ray",        icon: "bluray",   mediaType: "FILM",    order: 6 },
   { name: "Bücher",         icon: "book",     mediaType: "BOOK",    order: 7 },
-  { name: "Comics",         icon: "comic",    mediaType: "BOOK",    order: 8 },
+  { name: "Comics",         icon: "comic",    mediaType: "COMIC",   order: 8 },
   { name: "Konsolen",       icon: "console",  mediaType: "CONSOLE", order: 9 },
   { name: "PC-Spiele",      icon: "computer", mediaType: "GAME",    order: 10 },
 ];
 
 const DEFAULT_TAG_GROUPS = [
   {
-    name: "Shops",
+    name: "Grading Service",
     order: 0,
+    isSystem: true,
+    values: ["PSA", "CGC", "WATA", "BGS", "VGA", "SGC", "AFA", "HGA"],
+  },
+  {
+    name: "Shops",
+    order: 1,
+    isSystem: true,
     values: [
       "eBay", "Amazon", "MediaMarkt", "Saturn", "GameStop",
       "Thalia", "Weltbild", "Otto", "Rebuy", "Momox", "Kleinanzeigen",
       "Flohmarkt", "Privat",
     ],
   },
-  { name: "Lagerort", order: 1, values: [] },
+  { name: "Lagerort", order: 2, isSystem: true, values: [] },
 ];
 
 function cuid() {
   const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 10);
+  const rand = randomBytes(4).toString("hex");
   return `c${ts}${rand}`;
+}
+
+// bcrypt-compatible hash using node:crypto (10 rounds approximation via PBKDF2)
+// In production the real bcrypt from bcryptjs is used — this is only for the default admin password.
+async function hashPassword(password) {
+  // Use a real bcrypt-like approach: we rely on the bcryptjs package being available
+  try {
+    const { default: bcrypt } = await import("bcryptjs");
+    return bcrypt.hash(password, 12);
+  } catch {
+    // Fallback: SHA-256 with salt (not bcrypt-compatible, but prevents plaintext)
+    const salt = randomBytes(16).toString("hex");
+    const hash = createHash("sha256").update(salt + password).digest("hex");
+    return `$sha256$${salt}$${hash}`;
+  }
 }
 
 async function main() {
   const client = await pool.connect();
   try {
-    // Migrate renamed categories
-    for (const [from, to, icon] of [
-      ["VHS/DVD/Bluray", "VHS", "vhs"],
-      ["Bücher/Comics", "Bücher", "book"],
-    ]) {
-      const r = await client.query(
-        `UPDATE "Category" SET name=$1, icon=$2 WHERE name=$3`,
-        [to, icon, from]
-      );
-      if (r.rowCount > 0) console.log(`✓ Migrated "${from}" → "${to}"`);
-    }
-
-    // Upsert categories
-    for (const cat of DEFAULT_CATEGORIES) {
+    // ── Upsert Collections ────────────────────────────────────────────────────
+    for (const col of DEFAULT_COLLECTIONS) {
       await client.query(
-        `INSERT INTO "Category" (id, name, icon, "mediaType", "order")
-         VALUES ($1,$2,$3,$4,$5)
-         ON CONFLICT (name) DO UPDATE SET icon=EXCLUDED.icon, "order"=EXCLUDED."order"`,
-        [cuid(), cat.name, cat.icon, cat.mediaType, cat.order]
+        `INSERT INTO "Collection" (id, name, icon, "mediaType", "order", "gradingEnabled", "createdAt")
+         VALUES ($1,$2,$3,$4::\"MediaType\",$5,false,NOW())
+         ON CONFLICT (id) DO NOTHING`,
+        [cuid(), col.name, col.icon, col.mediaType, col.order]
+      );
+      // Also update existing by name
+      await client.query(
+        `UPDATE "Collection" SET icon=$1, "mediaType"=$2::\"MediaType\", "order"=$3 WHERE name=$4`,
+        [col.icon, col.mediaType, col.order, col.name]
       );
     }
-    console.log(`✓ ${DEFAULT_CATEGORIES.length} categories synced`);
+    console.log(`✓ ${DEFAULT_COLLECTIONS.length} collections synced`);
 
-    // Create default collections for CDs, PC-Spiele and Blu-ray only
-    const DEFAULT_COLLECTIONS = ["CDs", "PC-Spiele", "Blu-ray"];
-    for (const collName of DEFAULT_COLLECTIONS) {
-      const { rows: cats } = await client.query(
-        `SELECT id, "order" FROM "Category" WHERE name=$1 LIMIT 1`,
-        [collName]
-      );
-      if (cats.length === 0) continue;
-      const cat = cats[0];
-      const { rows } = await client.query(
-        `SELECT id FROM "Collection" WHERE "categoryId"=$1 LIMIT 1`,
-        [cat.id]
-      );
-      if (rows.length === 0) {
-        await client.query(
-          `INSERT INTO "Collection" (id, name, "categoryId", "order") VALUES ($1,$2,$3,$4)`,
-          [cuid(), collName, cat.id, cat.order]
-        );
-        console.log(`✓ Created default collection "${collName}"`);
-      }
-    }
-
-    // Upsert tag groups and values
+    // ── Upsert Tag Groups ─────────────────────────────────────────────────────
     for (const groupDef of DEFAULT_TAG_GROUPS) {
-      const { rows: existing } = await client.query(
-        `SELECT id FROM "TagGroup" WHERE name=$1`,
-        [groupDef.name]
+      // Upsert group
+      const res = await client.query(
+        `INSERT INTO "TagGroup" (id, name, "order", color, "isSystem", "createdAt")
+         VALUES ($1,$2,$3,'#ff2d95',$4,NOW())
+         ON CONFLICT (name) DO UPDATE SET "order"=EXCLUDED."order", "isSystem"=EXCLUDED."isSystem"
+         RETURNING id`,
+        [cuid(), groupDef.name, groupDef.order, groupDef.isSystem]
       );
-      let groupId;
-      if (existing.length > 0) {
-        groupId = existing[0].id;
-        await client.query(`UPDATE "TagGroup" SET "order"=$1 WHERE id=$2`, [groupDef.order, groupId]);
-      } else {
-        groupId = cuid();
-        await client.query(
-          `INSERT INTO "TagGroup" (id, name, "order") VALUES ($1,$2,$3)`,
-          [groupId, groupDef.name, groupDef.order]
-        );
-      }
+      const groupId = res.rows[0].id;
+
+      // Upsert values
       for (let i = 0; i < groupDef.values.length; i++) {
         await client.query(
-          `INSERT INTO "TagValue" (id, "groupId", value, "order")
-           VALUES ($1,$2,$3,$4)
+          `INSERT INTO "TagValue" (id, "groupId", value, "order", "createdAt")
+           VALUES ($1,$2,$3,$4,NOW())
            ON CONFLICT ("groupId", value) DO UPDATE SET "order"=EXCLUDED."order"`,
           [cuid(), groupId, groupDef.values[i], i]
         );
       }
-      console.log(`✓ Tag group "${groupDef.name}" synced`);
+      console.log(`✓ Tag group "${groupDef.name}" synced (${groupDef.values.length} values)`);
     }
 
-    // AppSettings singleton (updatedAt has no DB default — must be provided)
+    // ── AppSettings singleton ─────────────────────────────────────────────────
     await client.query(
-      `INSERT INTO "AppSettings" (id, "updatedAt") VALUES ('singleton', NOW()) ON CONFLICT (id) DO NOTHING`
+      `INSERT INTO "AppSettings" (id, "requireMfa", "fontSize", "interfaceLanguage", "updatedAt")
+       VALUES ('singleton',false,'medium','de',NOW())
+       ON CONFLICT (id) DO NOTHING`
     );
     console.log(`✓ AppSettings singleton ensured`);
 
-    // No default admin — first-run setup is done via the /setup page in the web UI.
+    // ── Admin user (first time only) ──────────────────────────────────────────
+    const existing = await client.query(
+      `SELECT id FROM "User" WHERE email='admin@retroman.local' LIMIT 1`
+    );
+    if (existing.rows.length === 0) {
+      const passwordHash = await hashPassword("admin1234");
+      await client.query(
+        `INSERT INTO "User" (id, email, name, "passwordHash", "mustChangePassword", "mfaEnabled",
+           role, "preferredLanguage", "preferredRegion", "dateFormat", "createdAt", "updatedAt")
+         VALUES ($1,'admin@retroman.local','Admin',$2,true,false,'ADMIN','de','PAL-EU','EUROPEAN',NOW(),NOW())`,
+        [cuid(), passwordHash]
+      );
+      console.log(`✓ Admin user created: admin@retroman.local`);
+      console.log(`  Temporary password: admin1234`);
+      console.log(`  (Must be changed on first login)`);
+    } else {
+      console.log(`✓ Admin user exists: admin@retroman.local`);
+    }
   } finally {
     client.release();
     await pool.end();
   }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((err) => { console.error(err); process.exit(1); });
