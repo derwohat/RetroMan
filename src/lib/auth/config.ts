@@ -12,12 +12,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
         token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword;
         token.mfaEnabled = (user as { mfaEnabled?: boolean }).mfaEnabled;
+        // If MFA is enabled, mark as pending until TOTP is verified
+        token.mfaPending = (user as { mfaEnabled?: boolean }).mfaEnabled === true;
+      }
+      // Allow client to clear mfaPending after successful TOTP verification
+      if (trigger === "update" && session && typeof session.mfaPending === "boolean") {
+        token.mfaPending = session.mfaPending;
       }
       return token;
     },
@@ -27,6 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string;
         session.user.mustChangePassword = token.mustChangePassword as boolean;
         session.user.mfaEnabled = token.mfaEnabled as boolean;
+        session.user.mfaPending = token.mfaPending as boolean;
       }
       return session;
     },
