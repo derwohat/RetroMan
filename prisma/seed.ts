@@ -10,19 +10,26 @@ const DEFAULT_COLLECTIONS = [
   { name: "Schallplatten",  icon: "vinyl",    mediaType: "MUSIC",   order: 1 },
   { name: "CDs",            icon: "cd",       mediaType: "MUSIC",   order: 2 },
   { name: "Kassetten",      icon: "cassette", mediaType: "MUSIC",   order: 3 },
-  { name: "VHS",            icon: "vhs",      mediaType: "VIDEO",   order: 4 },
-  { name: "DVD",            icon: "dvd",      mediaType: "VIDEO",   order: 5 },
-  { name: "Blu-ray",        icon: "bluray",   mediaType: "VIDEO",   order: 6 },
+  { name: "VHS",            icon: "vhs",      mediaType: "FILM",    order: 4 },
+  { name: "DVD",            icon: "dvd",      mediaType: "FILM",    order: 5 },
+  { name: "Blu-ray",        icon: "bluray",   mediaType: "FILM",    order: 6 },
   { name: "Bücher",         icon: "book",     mediaType: "BOOK",    order: 7 },
-  { name: "Comics",         icon: "comic",    mediaType: "BOOK",    order: 8 },
+  { name: "Comics",         icon: "comic",    mediaType: "COMIC",   order: 8 },
   { name: "Konsolen",       icon: "console",  mediaType: "CONSOLE", order: 9 },
   { name: "PC-Spiele",      icon: "computer", mediaType: "GAME",    order: 10 },
 ];
 
 const DEFAULT_TAG_GROUPS = [
   {
-    name: "Shops",
+    name: "Grading Service",
     order: 0,
+    isSystem: true,
+    values: ["PSA", "CGC", "WATA", "BGS", "VGA", "SGC", "AFA", "HGA"],
+  },
+  {
+    name: "Shops",
+    order: 1,
+    isSystem: true,
     values: [
       "eBay", "Amazon", "MediaMarkt", "Saturn", "GameStop",
       "Thalia", "Weltbild", "Otto", "Rebuy", "Momox", "Kleinanzeigen",
@@ -31,7 +38,8 @@ const DEFAULT_TAG_GROUPS = [
   },
   {
     name: "Lagerort",
-    order: 1,
+    order: 2,
+    isSystem: true,
     values: [],
   },
 ];
@@ -41,7 +49,8 @@ async function main() {
   for (const col of DEFAULT_COLLECTIONS) {
     const existing = await prisma.collection.findFirst({ where: { name: col.name } });
     if (existing) {
-      await prisma.collection.update({ where: { id: existing.id }, data: { icon: col.icon, order: col.order } });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await prisma.collection.update({ where: { id: existing.id }, data: { icon: col.icon, order: col.order, mediaType: col.mediaType as any } });
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await prisma.collection.create({ data: col as any });
@@ -53,8 +62,8 @@ async function main() {
   for (const groupDef of DEFAULT_TAG_GROUPS) {
     const group = await prisma.tagGroup.upsert({
       where: { name: groupDef.name },
-      create: { name: groupDef.name, order: groupDef.order },
-      update: { order: groupDef.order },
+      create: { name: groupDef.name, order: groupDef.order, isSystem: groupDef.isSystem },
+      update: { order: groupDef.order, isSystem: groupDef.isSystem },
     });
     for (let i = 0; i < groupDef.values.length; i++) {
       await prisma.tagValue.upsert({

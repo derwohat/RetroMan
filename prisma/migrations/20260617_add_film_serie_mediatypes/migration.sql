@@ -1,3 +1,0 @@
--- Add FILM and SERIE to MediaType enum
-ALTER TYPE "MediaType" ADD VALUE IF NOT EXISTS 'FILM';
-ALTER TYPE "MediaType" ADD VALUE IF NOT EXISTS 'SERIE';

@@ -1,8 +1,11 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "MediaType" AS ENUM ('MUSIC', 'VIDEO', 'GAME', 'BOOK', 'CONSOLE', 'CUSTOM');
+CREATE TYPE "MediaType" AS ENUM ('MUSIC', 'VIDEO', 'FILM', 'SERIE', 'GAME', 'BOOK', 'COMIC', 'MANGA', 'CONSOLE', 'CUSTOM');
 
 -- CreateEnum
 CREATE TYPE "Condition" AS ENUM ('MINT', 'VERY_GOOD', 'GOOD', 'USED', 'POOR');
@@ -56,30 +59,62 @@ CREATE TABLE "AppSettings" (
     "pricechartingKey" TEXT,
     "theGamesDbKey" TEXT,
     "mobyGamesKey" TEXT,
+    "googleSearchKey" TEXT,
+    "googleSearchCx" TEXT,
+    "omdbApiKey" TEXT,
+    "comicVineKey" TEXT,
     "donationUrl" TEXT,
     "githubUrl" TEXT,
     "requireMfa" BOOLEAN NOT NULL DEFAULT false,
+    "fontSize" TEXT NOT NULL DEFAULT 'medium',
+    "interfaceLanguage" TEXT NOT NULL DEFAULT 'de',
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "AppSettings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Category" (
+CREATE TABLE "TagGroup" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "icon" TEXT,
-    "mediaType" "MediaType" NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
+    "color" TEXT NOT NULL DEFAULT '#ff2d95',
+    "linkedField" TEXT,
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "TagGroup_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "CategoryField" (
+CREATE TABLE "TagValue" (
     "id" TEXT NOT NULL,
-    "categoryId" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TagValue_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Collection" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "icon" TEXT,
+    "mediaType" "MediaType" NOT NULL DEFAULT 'CUSTOM',
+    "customMediaTypeLabel" TEXT,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "gradingEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Collection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CollectionField" (
+    "id" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "fieldKey" TEXT NOT NULL,
     "fieldType" "FieldType" NOT NULL,
@@ -88,14 +123,25 @@ CREATE TABLE "CategoryField" (
     "required" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "CategoryField_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "CollectionField_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CollectionTagGroup" (
+    "id" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
+    "showInView" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CollectionTagGroup_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Item" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "categoryId" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "year" INTEGER,
     "purchaseDate" TIMESTAMP(3),
@@ -111,6 +157,7 @@ CREATE TABLE "Item" (
     "rating" INTEGER,
     "collectionStatus" "CollectionStatus" NOT NULL DEFAULT 'OWNED',
     "isFavorite" BOOLEAN NOT NULL DEFAULT false,
+    "videoFormat" TEXT,
     "externalId" TEXT,
     "externalSource" TEXT,
     "metadata" JSONB,
@@ -144,19 +191,12 @@ CREATE TABLE "ItemCustomField" (
 );
 
 -- CreateTable
-CREATE TABLE "Tag" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-
-    CONSTRAINT "Tag_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "ItemTag" (
     "itemId" TEXT NOT NULL,
-    "tagId" TEXT NOT NULL,
+    "tagValueId" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
 
-    CONSTRAINT "ItemTag_pkey" PRIMARY KEY ("itemId","tagId")
+    CONSTRAINT "ItemTag_pkey" PRIMARY KEY ("itemId","tagValueId")
 );
 
 -- CreateTable
@@ -175,7 +215,7 @@ CREATE TABLE "GradingInfo" (
 CREATE TABLE "CollectionViewSettings" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "categoryId" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
     "viewType" "ViewType" NOT NULL,
     "visibleTags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "sortBy" TEXT NOT NULL DEFAULT 'title',
@@ -188,7 +228,7 @@ CREATE TABLE "CollectionViewSettings" (
 CREATE TABLE "CollectionSettings" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "categoryId" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
     "regionOverride" TEXT,
 
     CONSTRAINT "CollectionSettings_pkey" PRIMARY KEY ("id")
@@ -198,34 +238,46 @@ CREATE TABLE "CollectionSettings" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
+CREATE UNIQUE INDEX "TagGroup_name_key" ON "TagGroup"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CategoryField_categoryId_fieldKey_key" ON "CategoryField"("categoryId", "fieldKey");
+CREATE UNIQUE INDEX "TagValue_groupId_value_key" ON "TagValue"("groupId", "value");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CollectionField_collectionId_fieldKey_key" ON "CollectionField"("collectionId", "fieldKey");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CollectionTagGroup_collectionId_groupId_key" ON "CollectionTagGroup"("collectionId", "groupId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ItemCustomField_itemId_fieldId_key" ON "ItemCustomField"("itemId", "fieldId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Tag_name_key" ON "Tag"("name");
-
--- CreateIndex
 CREATE UNIQUE INDEX "GradingInfo_itemId_key" ON "GradingInfo"("itemId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CollectionViewSettings_userId_categoryId_viewType_key" ON "CollectionViewSettings"("userId", "categoryId", "viewType");
+CREATE UNIQUE INDEX "CollectionViewSettings_userId_collectionId_viewType_key" ON "CollectionViewSettings"("userId", "collectionId", "viewType");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CollectionSettings_userId_categoryId_key" ON "CollectionSettings"("userId", "categoryId");
+CREATE UNIQUE INDEX "CollectionSettings_userId_collectionId_key" ON "CollectionSettings"("userId", "collectionId");
 
 -- AddForeignKey
-ALTER TABLE "CategoryField" ADD CONSTRAINT "CategoryField_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TagValue" ADD CONSTRAINT "TagValue_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "TagGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CollectionField" ADD CONSTRAINT "CollectionField_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CollectionTagGroup" ADD CONSTRAINT "CollectionTagGroup_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CollectionTagGroup" ADD CONSTRAINT "CollectionTagGroup_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "TagGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Item" ADD CONSTRAINT "Item_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Item" ADD CONSTRAINT "Item_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Item" ADD CONSTRAINT "Item_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ItemImage" ADD CONSTRAINT "ItemImage_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -234,13 +286,16 @@ ALTER TABLE "ItemImage" ADD CONSTRAINT "ItemImage_itemId_fkey" FOREIGN KEY ("ite
 ALTER TABLE "ItemCustomField" ADD CONSTRAINT "ItemCustomField_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ItemCustomField" ADD CONSTRAINT "ItemCustomField_fieldId_fkey" FOREIGN KEY ("fieldId") REFERENCES "CategoryField"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ItemCustomField" ADD CONSTRAINT "ItemCustomField_fieldId_fkey" FOREIGN KEY ("fieldId") REFERENCES "CollectionField"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ItemTag" ADD CONSTRAINT "ItemTag_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ItemTag" ADD CONSTRAINT "ItemTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ItemTag" ADD CONSTRAINT "ItemTag_tagValueId_fkey" FOREIGN KEY ("tagValueId") REFERENCES "TagValue"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ItemTag" ADD CONSTRAINT "ItemTag_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "TagGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "GradingInfo" ADD CONSTRAINT "GradingInfo_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -249,10 +304,11 @@ ALTER TABLE "GradingInfo" ADD CONSTRAINT "GradingInfo_itemId_fkey" FOREIGN KEY (
 ALTER TABLE "CollectionViewSettings" ADD CONSTRAINT "CollectionViewSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CollectionViewSettings" ADD CONSTRAINT "CollectionViewSettings_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CollectionViewSettings" ADD CONSTRAINT "CollectionViewSettings_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CollectionSettings" ADD CONSTRAINT "CollectionSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CollectionSettings" ADD CONSTRAINT "CollectionSettings_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CollectionSettings" ADD CONSTRAINT "CollectionSettings_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
