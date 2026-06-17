@@ -26,7 +26,7 @@ services:
     image: ghcr.io/derwohat/retroman:latest
     restart: unless-stopped
     ports:
-      - "7007:3000"
+      - "7007:7007"
     environment:
       # Same password as POSTGRES_PASSWORD above
       # Example: postgresql://retroman:MeinSicheresPasswort42!@db:5432/retroman

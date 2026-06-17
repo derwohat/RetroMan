@@ -65,8 +65,8 @@ RUN chmod +x entrypoint.sh
 
 USER nextjs
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 7007
+ENV PORT=7007
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["/app/entrypoint.sh"]
