@@ -5,7 +5,7 @@ import { isoToDE, deToISO } from "@/lib/format";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { BarcodeScanner } from "./BarcodeScanner";
 
-type CategoryField = {
+type CollectionField = {
   id: string;
   name: string;
   fieldKey: string;
@@ -14,12 +14,12 @@ type CategoryField = {
   required: boolean;
 };
 
-type Category = {
+type Collection = {
   id: string;
   name: string;
   icon: string | null;
   mediaType?: string;
-  fields: CategoryField[];
+  fields: CollectionField[];
   tagGroups?: Array<{ groupId: string; group: { id: string; name: string } }>;
 };
 
@@ -50,7 +50,7 @@ type TagValue = { id: string; value: string };
 type TagGroup = { id: string; name: string; values: TagValue[] };
 
 interface Props {
-  category: Category;
+  collection: Collection;
   collectionId: string;
   item: FormItem | null;
   onClose: () => void;
@@ -124,7 +124,7 @@ function GermanDateInput({ value, onChange }: { value: string; onChange: (iso: s
 
 
 // ── Main form ─────────────────────────────────────────────────────────────────
-export function ItemForm({ category, collectionId, item, onClose, onSaved }: Props) {
+export function ItemForm({ collection, collectionId, item, onClose, onSaved }: Props) {
   const primaryImage = item?.images.find((i) => i.isPrimary) ?? item?.images[0];
 
   const [form, setForm] = useState({
@@ -193,12 +193,12 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
 
   const searchMetadata = useCallback(async (titleOverride?: string) => {
     const q = (titleOverride ?? form.title).trim();
-    if (q.length < 3 || !category.mediaType || category.mediaType === "CUSTOM") return;
+    if (q.length < 3 || !collection.mediaType || collection.mediaType === "CUSTOM") return;
     setShowMeta(true);
     setMetaLoading(true);
     setMetaResults([]);
     setMetaError(null);
-    const p = new URLSearchParams({ title: q, mediaType: category.mediaType });
+    const p = new URLSearchParams({ title: q, mediaType: collection.mediaType });
     if (form.year) p.set("year", form.year);
     try {
       const res = await fetch(`/api/metadata/search?${p}`);
@@ -216,12 +216,12 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
       setMetaLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category.mediaType, form.year]);
+  }, [collection.mediaType, form.year]);
 
   function handleTitleChange(value: string) {
     set("title", value);
     if (metaTimerRef.current) clearTimeout(metaTimerRef.current);
-    if (value.trim().length >= 3 && category.mediaType && category.mediaType !== "CUSTOM") {
+    if (value.trim().length >= 3 && collection.mediaType && collection.mediaType !== "CUSTOM") {
       metaTimerRef.current = setTimeout(() => searchMetadata(value.trim()), 400);
     } else {
       setShowMeta(false);
@@ -229,12 +229,15 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
   }
 
   function applyMetadata(r: MetadataResult) {
+    const metaBarcode = (r.metadata?.barcode as string | undefined)
+                     ?? (r.metadata?.isbn    as string | undefined);
     setForm((f) => ({
       ...f,
       title:       r.title,
       year:        r.year?.toString() ?? f.year,
       description: r.description ?? f.description,
       imageUrl:    r.imageUrl ?? f.imageUrl,
+      barcode:     metaBarcode ?? f.barcode,
     }));
     setSelectedMeta({ externalId: r.externalId, externalSource: r.externalSource, metadata: r.metadata });
     setShowMeta(false);
@@ -245,7 +248,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     setShowCoverPicker(true);
     setCoverLoading(true);
     setCoverResults([]);
-    const p = new URLSearchParams({ title: form.title.trim(), mediaType: category.mediaType ?? "CUSTOM" });
+    const p = new URLSearchParams({ title: form.title.trim(), mediaType: collection.mediaType ?? "CUSTOM" });
     if (form.year) p.set("year", form.year);
     try {
       const res = await fetch(`/api/cover-search?${p}`);
@@ -261,14 +264,14 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
     setBarcodeLoading(true);
     try {
       const p = new URLSearchParams({ ean });
-      if (category.mediaType) p.set("mediaType", category.mediaType);
+      if (collection.mediaType) p.set("mediaType", collection.mediaType);
       const res = await fetch(`/api/barcode?${p}`);
       if (res.ok) {
         const data = await res.json();
         const title = data.title as string | undefined;
         if (title && !form.title.trim()) {
           set("title", title);
-          if (category.mediaType && category.mediaType !== "CUSTOM") {
+          if (collection.mediaType && collection.mediaType !== "CUSTOM") {
             searchMetadata(title);
           }
         }
@@ -366,8 +369,8 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
             {item ? "Eintrag bearbeiten" : (
               <>
                 Neuer Eintrag —
-                <CategoryIcon icon={category.icon ?? null} className="h-3.5 w-3.5" />
-                {category.name}
+                <CategoryIcon icon={collection.icon ?? null} className="h-3.5 w-3.5" />
+                {collection.name}
               </>
             )}
           </h3>
@@ -376,28 +379,6 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
 
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-
-          {/* Video format selector (VIDEO type only) */}
-          {category.mediaType === "VIDEO" && (
-            <Field label="Medientyp">
-              <div className="flex flex-wrap gap-1.5">
-                {VIDEO_FORMATS.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => set("videoFormat", form.videoFormat === f ? "" : f)}
-                    className={`rounded-full border px-3 py-1 text-xs transition ${
-                      form.videoFormat === f
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-            </Field>
-          )}
 
           {/* Title + Metadata typeahead */}
           <div ref={metaRef} className="relative">
@@ -409,7 +390,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
                   onChange={(e) => handleTitleChange(e.target.value)}
                   className="retro-field w-full pr-8"
                   placeholder={
-                    category.mediaType && category.mediaType !== "CUSTOM"
+                    collection.mediaType && collection.mediaType !== "CUSTOM"
                       ? "Ab 3 Zeichen werden Vorschläge angezeigt…"
                       : "Titel des Items"
                   }
@@ -468,6 +449,15 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
             )}
           </div>
 
+          {/* Jahr */}
+          <Field label="Jahr">
+            <input
+              type="number" min="1800" max={new Date().getFullYear() + 2}
+              value={form.year} onChange={(e) => set("year", e.target.value)}
+              className="retro-field w-full" placeholder="1997"
+            />
+          </Field>
+
           {/* Cover */}
           <Field label="Cover">
             <div className="flex gap-3 items-start">
@@ -482,7 +472,7 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={form.imageUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <CategoryIcon icon={category.icon ?? null} className="h-8 w-8 opacity-20" />
+                    <CategoryIcon icon={collection.icon ?? null} className="h-8 w-8 opacity-20" />
                   )}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -497,21 +487,18 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cover-Vorschläge</p>
                       <button type="button" onClick={() => setShowCoverPicker(false)} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
                     </div>
-
                     {coverLoading && (
                       <div className="flex items-center justify-center py-6">
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                         <span className="ml-2 text-xs text-muted-foreground">Suche…</span>
                       </div>
                     )}
-
                     {!coverLoading && coverResults.length === 0 && (
                       <div className="py-4 text-center space-y-1">
                         <p className="text-xs text-muted-foreground">Keine Cover gefunden.</p>
                         <button type="button" onClick={searchCovers} className="mt-1 text-[10px] text-primary hover:underline">Erneut suchen</button>
                       </div>
                     )}
-
                     {!coverLoading && coverResults.length > 0 && (
                       <>
                         <div className="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto">
@@ -572,106 +559,46 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
             </div>
           </Field>
 
-          {/* Year + Condition */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Jahr">
-              <input
-                type="number" min="1800" max={new Date().getFullYear() + 2}
-                value={form.year} onChange={(e) => set("year", e.target.value)}
-                className="retro-field w-full" placeholder="1997"
-              />
-            </Field>
-            <Field label="Zustand">
-              <select value={form.condition} onChange={(e) => set("condition", e.target.value)} className="retro-field w-full">
-                <option value="">—</option>
-                {CONDITIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </Field>
-          </div>
+          {/* ── Allgemein ─────────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</p>
 
-          {/* Status + Collection */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Item-Status">
-              <select value={form.itemStatus} onChange={(e) => set("itemStatus", e.target.value)} className="retro-field w-full">
-                <option value="">—</option>
-                {ITEM_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </Field>
-            <Field label="Sammlung">
-              <select value={form.collectionStatus} onChange={(e) => set("collectionStatus", e.target.value)} className="retro-field w-full">
-                <option value="OWNED">Vorhanden</option>
-                <option value="WISHLIST">Wunschliste</option>
-              </select>
-            </Field>
-          </div>
-
-          {/* Price + Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Kaufpreis (€)">
-              <input type="number" min="0" step="0.01"
-                value={form.purchasePrice} onChange={(e) => set("purchasePrice", e.target.value)}
-                className="retro-field w-full" placeholder="29.99"
-              />
-            </Field>
-            <Field label="Kaufdatum">
-              <GermanDateInput value={form.purchaseDate} onChange={(iso) => set("purchaseDate", iso)} />
-            </Field>
-          </div>
-
-          {/* Store + Location */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Gekauft bei">
-              <select value={form.store} onChange={(e) => set("store", e.target.value)} className="retro-field w-full">
-                <option value="">—</option>
-                {(tagGroups.find((g) => g.name === "Shops")?.values ?? []).map((v) => (
-                  <option key={v.id} value={v.value}>{v.value}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Lagerort">
-              <select value={form.location} onChange={(e) => set("location", e.target.value)} className="retro-field w-full">
-                <option value="">—</option>
-                {(tagGroups.find((g) => g.name === "Lagerort")?.values ?? []).map((v) => (
-                  <option key={v.id} value={v.value}>{v.value}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          {/* Extra tag groups assigned to this category */}
-          {(() => {
-            const extraGroups = (category.tagGroups ?? [])
-              .map((ctg) => tagGroups.find((g) => g.id === ctg.groupId))
-              .filter((g): g is TagGroup => !!g && !STANDARD_GROUP_NAMES.includes(g.name));
-            if (extraGroups.length === 0) return null;
-            return (
-              <div className="grid grid-cols-2 gap-3">
-                {extraGroups.map((g) => (
-                  <Field key={g.id} label={g.name}>
-                    <select
-                      value={extraTagValues[g.id] ?? ""}
-                      onChange={(e) => setExtraTagValues((v) => ({ ...v, [g.id]: e.target.value }))}
-                      className="retro-field w-full"
+            {(collection.mediaType === "VIDEO" || collection.mediaType === "FILM" || collection.mediaType === "SERIE") && (
+              <Field label="Medientyp">
+                <div className="flex flex-wrap gap-1.5">
+                  {VIDEO_FORMATS.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => set("videoFormat", form.videoFormat === f ? "" : f)}
+                      className={`rounded-full border px-3 py-1 text-xs transition ${
+                        form.videoFormat === f
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                      }`}
                     >
-                      <option value="">—</option>
-                      {g.values.map((v) => (
-                        <option key={v.id} value={v.id}>{v.value}</option>
-                      ))}
-                    </select>
-                  </Field>
-                ))}
-              </div>
-            );
-          })()}
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
 
-          {/* Qty + Barcode */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Anzahl">
-              <input type="number" min="1"
-                value={form.quantity} onChange={(e) => set("quantity", e.target.value)}
-                className="retro-field w-full"
-              />
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Zustand">
+                <select value={form.condition} onChange={(e) => set("condition", e.target.value)} className="retro-field w-full">
+                  <option value="">—</option>
+                  {CONDITIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+              </Field>
+              <Field label="Status">
+                <select value={form.itemStatus} onChange={(e) => set("itemStatus", e.target.value)} className="retro-field w-full">
+                  <option value="">—</option>
+                  {ITEM_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </Field>
+            </div>
+
             <Field label="Barcode (EAN)">
               <div className="flex gap-1.5">
                 <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
@@ -694,29 +621,97 @@ export function ItemForm({ category, collectionId, item, onClose, onSaved }: Pro
                 </button>
               </div>
             </Field>
+
+            <Field label="Lagerort">
+              <select value={form.location} onChange={(e) => set("location", e.target.value)} className="retro-field w-full">
+                <option value="">—</option>
+                {(tagGroups.find((g) => g.name === "Lagerort")?.values ?? []).map((v) => (
+                  <option key={v.id} value={v.value}>{v.value}</option>
+                ))}
+              </select>
+            </Field>
           </div>
 
+          {/* ── Kauf ─────────────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Kauf</p>
 
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Kaufpreis (€)">
+                <input type="number" min="0" step="0.01"
+                  value={form.purchasePrice} onChange={(e) => set("purchasePrice", e.target.value)}
+                  className="retro-field w-full" placeholder="29.99"
+                />
+              </Field>
+              <Field label="Kaufdatum">
+                <GermanDateInput value={form.purchaseDate} onChange={(iso) => set("purchaseDate", iso)} />
+              </Field>
+            </div>
 
-          {/* Description */}
-          <Field label="Beschreibung">
-            <textarea
-              value={form.description} onChange={(e) => set("description", e.target.value)}
-              rows={2}
-              className="retro-field w-full resize-none"
-              placeholder="Kurzbeschreibung (wird ggf. aus Metadaten-Suche gefüllt)"
-            />
-          </Field>
+            <Field label="Gekauft bei">
+              <select value={form.store} onChange={(e) => set("store", e.target.value)} className="retro-field w-full">
+                <option value="">—</option>
+                {(tagGroups.find((g) => g.name === "Shops")?.values ?? []).map((v) => (
+                  <option key={v.id} value={v.value}>{v.value}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
 
-          {/* Notes */}
-          <Field label="Notizen">
-            <textarea
-              value={form.notes} onChange={(e) => set("notes", e.target.value)}
-              rows={2}
-              className="retro-field w-full resize-none"
-              placeholder="Zustand, Besonderheiten, Seriennummer…"
-            />
-          </Field>
+          {/* ── Sammlungs-Felder ─────────────────────────────────────── */}
+          {(() => {
+            const extraGroups = (collection.tagGroups ?? [])
+              .map((ctg) => tagGroups.find((g) => g.id === ctg.groupId))
+              .filter((g): g is TagGroup => !!g && !STANDARD_GROUP_NAMES.includes(g.name));
+            if (collection.fields.length === 0 && extraGroups.length === 0) return null;
+            return (
+              <div className="space-y-3">
+                <p className="font-heading text-[10px] text-primary uppercase tracking-widest flex items-center gap-1.5">
+                  <CategoryIcon icon={collection.icon ?? null} className="h-3.5 w-3.5" />
+                  {collection.name}
+                </p>
+                {extraGroups.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {extraGroups.map((g) => (
+                      <Field key={g.id} label={g.name}>
+                        <select
+                          value={extraTagValues[g.id] ?? ""}
+                          onChange={(e) => setExtraTagValues((v) => ({ ...v, [g.id]: e.target.value }))}
+                          className="retro-field w-full"
+                        >
+                          <option value="">—</option>
+                          {g.values.map((v) => (
+                            <option key={v.id} value={v.id}>{v.value}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ── Notizen ──────────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Notizen</p>
+            <Field label="Beschreibung">
+              <textarea
+                value={form.description} onChange={(e) => set("description", e.target.value)}
+                rows={2}
+                className="retro-field w-full resize-none"
+                placeholder="Kurzbeschreibung (wird ggf. aus Metadaten-Suche gefüllt)"
+              />
+            </Field>
+            <Field label="Notizen">
+              <textarea
+                value={form.notes} onChange={(e) => set("notes", e.target.value)}
+                rows={2}
+                className="retro-field w-full resize-none"
+                placeholder="Zustand, Besonderheiten, Seriennummer…"
+              />
+            </Field>
+          </div>
 
           {/* Favorite */}
           <label className="flex items-center gap-2 cursor-pointer select-none">

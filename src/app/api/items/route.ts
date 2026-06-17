@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       images: { orderBy: { order: "asc" } },
       tags: { include: { tagValue: true, tagGroup: true } },
       customFields: { include: { field: true } },
-      collection: { select: { id: true, name: true, category: { select: { id: true, icon: true, mediaType: true } } } },
+      collection: { select: { id: true, name: true, icon: true, mediaType: true } },
     },
     orderBy: { [safeSort]: sortOrder },
   });

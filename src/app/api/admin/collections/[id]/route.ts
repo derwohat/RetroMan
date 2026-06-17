@@ -19,18 +19,22 @@ export async function PATCH(
   if (denied) return denied;
 
   const { id } = await params;
-  const { name, categoryId } = await req.json();
+  const { name, icon, mediaType, gradingEnabled, customMediaTypeLabel } = await req.json();
 
   try {
     const data: Record<string, unknown> = {};
     if (name?.trim()) data.name = name.trim();
-    if (categoryId) data.categoryId = categoryId;
+    if (icon !== undefined) data.icon = icon;
+    if (mediaType) data.mediaType = mediaType;
+    if (gradingEnabled !== undefined) data.gradingEnabled = gradingEnabled;
+    if (customMediaTypeLabel !== undefined) data.customMediaTypeLabel = customMediaTypeLabel;
 
     const collection = await prisma.collection.update({
       where: { id },
       data,
       include: {
-        category: { select: { id: true, name: true, icon: true, mediaType: true } },
+        fields: { orderBy: { order: "asc" } },
+        tagGroups: { include: { group: true }, orderBy: { createdAt: "asc" } },
         _count: { select: { items: true } },
       },
     });

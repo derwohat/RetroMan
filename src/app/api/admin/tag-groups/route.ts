@@ -37,8 +37,15 @@ export async function PUT(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { order } = await req.json() as { order: string[] };
+  // System groups keep order 0; user groups start from 1
+  const systemGroups = await prisma.tagGroup.findMany({ where: { isSystem: true }, select: { id: true } });
+  const systemIds = new Set(systemGroups.map((g) => g.id));
+  let userIdx = 1;
   await Promise.all(
-    order.map((id, idx) => prisma.tagGroup.update({ where: { id }, data: { order: idx } }))
+    order.map((id) => {
+      if (systemIds.has(id)) return prisma.tagGroup.update({ where: { id }, data: { order: 0 } });
+      return prisma.tagGroup.update({ where: { id }, data: { order: userIdx++ } });
+    })
   );
   return NextResponse.json({ ok: true });
 }

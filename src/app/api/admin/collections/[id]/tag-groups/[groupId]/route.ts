@@ -18,18 +18,18 @@ export async function PATCH(
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const { id: categoryId, groupId } = await params;
+  const { id: collectionId, groupId } = await params;
 
-  const existing = await prisma.categoryTagGroup.findUnique({
-    where: { categoryId_groupId: { categoryId, groupId } },
+  const existing = await prisma.collectionTagGroup.findUnique({
+    where: { collectionId_groupId: { collectionId, groupId } },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Zuweisung nicht gefunden." }, { status: 404 });
   }
 
-  const updated = await prisma.categoryTagGroup.update({
-    where: { categoryId_groupId: { categoryId, groupId } },
+  const updated = await prisma.collectionTagGroup.update({
+    where: { collectionId_groupId: { collectionId, groupId } },
     data: { showInView: !existing.showInView },
     include: { group: true },
   });
@@ -44,10 +44,10 @@ export async function DELETE(
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const { id: categoryId, groupId } = await params;
+  const { id: collectionId, groupId } = await params;
 
-  await prisma.categoryTagGroup.delete({
-    where: { categoryId_groupId: { categoryId, groupId } },
+  await prisma.collectionTagGroup.delete({
+    where: { collectionId_groupId: { collectionId, groupId } },
   });
 
   return NextResponse.json({ success: true });

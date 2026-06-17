@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 type TagValue = { id: string; value: string; order: number };
-type TagGroup = { id: string; name: string; color: string; order: number; values: TagValue[] };
+type TagGroup = { id: string; name: string; color: string; order: number; isSystem: boolean; values: TagValue[] };
 
 // ── Drag Handle Icon ───────────────────────────────────────────────────────────
 function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
@@ -201,7 +201,10 @@ function SortableGroup({
         className="flex items-center gap-1 px-2 py-3 cursor-pointer hover:bg-muted/20 transition-colors select-none"
         onClick={() => !editingName && onToggle(group.id)}
       >
-        <DragHandle listeners={listeners} attributes={attributes} />
+        {group.isSystem
+          ? <span className="px-1 text-muted-foreground/30 shrink-0 select-none" title="Systemgruppe">🔒</span>
+          : <DragHandle listeners={listeners} attributes={attributes} />
+        }
 
         {/* Group Name (as colored badge) */}
         <div className="flex-1 min-w-0">
@@ -249,23 +252,27 @@ function SortableGroup({
           />
         </div>
 
-        {/* Edit name button */}
-        <button
-          onClick={startEditName}
-          className="text-[10px] text-muted-foreground hover:text-foreground transition px-1.5 py-0.5 rounded shrink-0"
-          title="Gruppe umbenennen"
-        >
-          ✎
-        </button>
+        {/* Edit name button — hidden for system groups */}
+        {!group.isSystem && (
+          <button
+            onClick={startEditName}
+            className="text-[10px] text-muted-foreground hover:text-foreground transition px-1.5 py-0.5 rounded shrink-0"
+            title="Gruppe umbenennen"
+          >
+            ✎
+          </button>
+        )}
 
-        {/* Delete group button */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDeleteGroup(group.id); }}
-          className="text-[10px] text-destructive/50 hover:text-destructive transition px-1.5 py-0.5 rounded shrink-0"
-          title="Gruppe löschen"
-        >
-          ✕
-        </button>
+        {/* Delete group button — hidden for system groups */}
+        {!group.isSystem && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDeleteGroup(group.id); }}
+            className="text-[10px] text-destructive/50 hover:text-destructive transition px-1.5 py-0.5 rounded shrink-0"
+            title="Gruppe löschen"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Accordion Body */}

@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
-const DEFAULT_CATEGORIES = [
+const DEFAULT_COLLECTIONS = [
   { name: "Konsolenspiele", icon: "gamepad",  mediaType: "GAME",    order: 0 },
   { name: "Schallplatten",  icon: "vinyl",    mediaType: "MUSIC",   order: 1 },
   { name: "CDs",            icon: "cd",       mediaType: "MUSIC",   order: 2 },
@@ -37,44 +37,17 @@ const DEFAULT_TAG_GROUPS = [
 ];
 
 async function main() {
-  // ── Migrations: rename combined categories ───────────────────────────────────
-
-  // VHS/DVD/Bluray → VHS
-  const vhsMigration = await prisma.category.updateMany({
-    where: { name: "VHS/DVD/Bluray" },
-    data: { name: "VHS", icon: "vhs" },
-  });
-  if (vhsMigration.count > 0) console.log(`✓ Migrated "VHS/DVD/Bluray" → "VHS"`);
-
-  // Bücher/Comics → Bücher
-  const bookMigration = await prisma.category.updateMany({
-    where: { name: "Bücher/Comics" },
-    data: { name: "Bücher", icon: "book" },
-  });
-  if (bookMigration.count > 0) console.log(`✓ Migrated "Bücher/Comics" → "Bücher"`);
-
-  // ── Upsert default categories ─────────────────────────────────────────────────
-  for (const cat of DEFAULT_CATEGORIES) {
-    await prisma.category.upsert({
-      where: { name: cat.name },
+  // ── Upsert default collections ────────────────────────────────────────────────
+  for (const col of DEFAULT_COLLECTIONS) {
+    const existing = await prisma.collection.findFirst({ where: { name: col.name } });
+    if (existing) {
+      await prisma.collection.update({ where: { id: existing.id }, data: { icon: col.icon, order: col.order } });
+    } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      create: cat as any,
-      update: { icon: cat.icon, order: cat.order },
-    });
-  }
-  console.log(`✓ ${DEFAULT_CATEGORIES.length} categories synced`);
-
-  // ── Ensure each category has at least one default collection ──────────────────
-  const allCategories = await prisma.category.findMany({ orderBy: { order: "asc" } });
-  for (const cat of allCategories) {
-    const existing = await prisma.collection.findFirst({ where: { categoryId: cat.id } });
-    if (!existing) {
-      await prisma.collection.create({
-        data: { id: cat.id, name: cat.name, categoryId: cat.id, order: cat.order },
-      });
-      console.log(`✓ Created default collection "${cat.name}"`);
+      await prisma.collection.create({ data: col as any });
     }
   }
+  console.log(`✓ ${DEFAULT_COLLECTIONS.length} collections synced`);
 
   // ── Upsert default tag groups ─────────────────────────────────────────────────
   for (const groupDef of DEFAULT_TAG_GROUPS) {

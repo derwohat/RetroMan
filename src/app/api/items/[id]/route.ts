@@ -46,12 +46,8 @@ export async function GET(
         tags: { include: { tagValue: true, tagGroup: true } },
         collection: {
           include: {
-            category: {
-              include: {
-                fields: { orderBy: { order: "asc" } },
-                tagGroups: { select: { groupId: true, showInView: true } },
-              },
-            },
+            fields: { orderBy: { order: "asc" } },
+            tagGroups: { select: { groupId: true, showInView: true } },
           },
         },
         customFields: { include: { field: true } },

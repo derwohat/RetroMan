@@ -7,6 +7,7 @@ type Settings = {
   theGamesDbKey: boolean;
   tmdbApiKey: boolean;
   omdbApiKey: boolean;
+  comicVineKey: boolean;
   requireMfa: boolean;
   donationUrl: string | null;
   fontSize: string;
@@ -70,6 +71,19 @@ const SERVICES = [
       "API-Key aus der E-Mail kopieren",
     ],
     url: "https://www.omdbapi.com/apikey.aspx",
+  },
+  {
+    key: "comicVineKey" as const,
+    label: "ComicVine",
+    subtitle: "Comic-Datenbank",
+    icon: "🦸",
+    description: "Umfangreiche Comic-Datenbank — Suche, Cover und Metadaten für alle Comic-Sammlungen (Marvel, DC, Indie u.v.m.).",
+    steps: [
+      "Registriere dich kostenlos auf comicvine.gamespot.com",
+      'Gehe zu comicvine.gamespot.com/api — klicke auf "Get API Key"',
+      "Kopiere den API Key",
+    ],
+    url: "https://comicvine.gamespot.com/api/",
   },
 ];
 

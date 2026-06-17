@@ -15,7 +15,7 @@ type SearchItem = {
   collection: {
     id: string;
     name: string;
-    category: { id: string; icon: string | null };
+    icon: string | null;
   };
   images: Array<{ url: string | null; isPrimary: boolean }>;
 };

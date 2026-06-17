@@ -18,7 +18,8 @@ export async function GET() {
   try {
     const collections = await prisma.collection.findMany({
       include: {
-        category: { select: { id: true, name: true, icon: true, mediaType: true } },
+        fields: { orderBy: { order: "asc" } },
+        tagGroups: { include: { group: true }, orderBy: { createdAt: "asc" } },
         _count: { select: { items: true } },
       },
       orderBy: { order: "asc" },
@@ -33,17 +34,20 @@ export async function POST(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const { name, categoryId } = await req.json();
-  if (!name?.trim() || !categoryId) {
-    return NextResponse.json({ error: "Name und Kategorie erforderlich." }, { status: 400 });
+  const { name, icon, mediaType, customMediaTypeLabel } = await req.json();
+  if (!name?.trim() || !mediaType) {
+    return NextResponse.json({ error: "Name und Medientyp erforderlich." }, { status: 400 });
   }
 
   try {
-    const count = await prisma.collection.count();
+    const agg = await prisma.collection.aggregate({ _max: { order: true } });
+    const nextOrder = (agg._max.order ?? -1) + 1;
     const collection = await prisma.collection.create({
-      data: { name: name.trim(), categoryId, order: count },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { name: name.trim(), icon: icon || null, mediaType: mediaType as any, customMediaTypeLabel: customMediaTypeLabel || null, order: nextOrder },
       include: {
-        category: { select: { id: true, name: true, icon: true, mediaType: true } },
+        fields: { orderBy: { order: "asc" } },
+        tagGroups: { include: { group: true }, orderBy: { createdAt: "asc" } },
         _count: { select: { items: true } },
       },
     });

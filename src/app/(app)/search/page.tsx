@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ViewItem } from "@/components/views/types";
 
-type SearchResult = ViewItem & { categoryId: string; categoryName: string; categoryIcon: string };
+type SearchResult = ViewItem & { collectionIcon: string };
 
 function getImageUrl(item: SearchResult) {
   const primary = item.images.find((i) => i.isPrimary) ?? item.images[0];
@@ -49,7 +49,7 @@ function SearchResults() {
         return (
           <Link
             key={item.id}
-            href={`/collection/${item.categoryId}/${item.id}`}
+            href={`/collection/${item.collectionId}/${item.id}`}
             className="media-card group flex gap-3 rounded-lg border border-border bg-card p-3 hover:border-primary transition"
           >
             <div className="relative w-14 h-18 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center">
@@ -57,12 +57,12 @@ function SearchResults() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
               ) : (
-                <span className="text-xl opacity-20">{item.categoryIcon}</span>
+                <span className="text-xl opacity-20">{item.collectionIcon}</span>
               )}
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
               <p className="text-xs text-muted-foreground truncate">
-                {item.categoryIcon} {item.categoryName}
+                {item.collectionIcon}
               </p>
               <p className="text-sm font-medium text-foreground line-clamp-2 leading-tight">{item.title}</p>
               {item.year && <p className="text-xs text-muted-foreground">{item.year}</p>}

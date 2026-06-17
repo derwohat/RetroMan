@@ -26,7 +26,7 @@ export async function GET() {
       year: true,
       createdAt: true,
       collectionId: true,
-      collection: { select: { id: true, name: true, category: { select: { icon: true } } } },
+      collection: { select: { id: true, name: true, icon: true } },
     },
   });
 
@@ -35,7 +35,7 @@ export async function GET() {
   for (const item of items) {
     const id = item.collectionId;
     if (!byCollection[id]) {
-      byCollection[id] = { name: item.collection.name, icon: item.collection.category.icon, count: 0, value: 0 };
+      byCollection[id] = { name: item.collection.name, icon: item.collection.icon, count: 0, value: 0 };
     }
     byCollection[id].count++;
     if (item.purchasePrice) byCollection[id].value += Number(item.purchasePrice);

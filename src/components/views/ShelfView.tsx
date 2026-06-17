@@ -26,7 +26,7 @@ export function ShelfView({ items, categoryIcon, chipGroups }: ViewProps) {
         return (
           <div key={item.id} className="media-card group relative flex flex-col rounded-lg border border-border bg-card overflow-hidden">
             {/* Cover — clickable to detail */}
-            <Link href={`/collection/${item.collectionId}/${item.id}`} className="scanlines relative aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden block">
+            <Link href={`/collection/${item.collectionId}/${item.id}`} className="relative aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden block">
               {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />

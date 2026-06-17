@@ -19,20 +19,14 @@ import {
   type CategoryField,
 } from "@/components/views/types";
 
-type CategoryTagGroup = { groupId: string; showInView: boolean; group: { id: string; name: string; color: string; linkedField?: string | null } };
-type Category = {
+type CollectionTagGroup = { groupId: string; showInView: boolean; group: { id: string; name: string; color: string; linkedField?: string | null } };
+type Collection = {
   id: string;
   name: string;
   icon: string | null;
   mediaType: MediaType;
   fields: CategoryField[];
-  tagGroups: CategoryTagGroup[];
-};
-type Collection = {
-  id: string;
-  name: string;
-  categoryId: string;
-  category: Category;
+  tagGroups: CollectionTagGroup[];
 };
 
 export default function CollectionPage() {
@@ -104,18 +98,16 @@ export default function CollectionPage() {
     saveViewSettings(activeView, next);
   }
 
-  const category = collection?.category ?? null;
-
-  const availableViews = category
-    ? VIEW_AVAILABILITY[category.mediaType] ?? ["SHELF", "SIMPLE", "TABLE"]
+  const availableViews = collection
+    ? VIEW_AVAILABILITY[collection.mediaType] ?? ["SHELF", "SIMPLE", "TABLE"]
     : (["SHELF", "SIMPLE", "TABLE"] as ViewType[]);
 
   const viewProps = {
     items,
-    categoryIcon: category?.icon ?? "📦",
+    categoryIcon: collection?.icon ?? "📦",
     visibleTags,
-    fields: category?.fields ?? [],
-    chipGroups: (category?.tagGroups ?? [])
+    fields: collection?.fields ?? [],
+    chipGroups: (collection?.tagGroups ?? [])
       .filter((tg) => tg.showInView)
       .map((tg) => ({ groupId: tg.groupId, name: tg.group.name, color: tg.group.color ?? "#ff2d95", linkedField: tg.group.linkedField })),
   };
@@ -126,7 +118,7 @@ export default function CollectionPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest flex items-center gap-2">
-            <CategoryIcon icon={category?.icon ?? null} className="h-4 w-4" />
+            <CategoryIcon icon={collection?.icon ?? null} className="h-4 w-4" />
             {collection?.name ?? "Sammlung"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -153,7 +145,7 @@ export default function CollectionPage() {
           </div>
 
           {/* Tag/chip settings */}
-          {(category?.fields?.length ?? 0) > 0 && (
+          {(collection?.fields?.length ?? 0) > 0 && (
             <div className="relative" ref={tagPanelRef}>
               <button
                 onClick={() => setShowTagPanel((p) => !p)}
@@ -171,7 +163,7 @@ export default function CollectionPage() {
               {showTagPanel && (
                 <div className="absolute right-0 top-10 z-20 w-56 rounded-lg border border-border bg-card shadow-xl p-3 space-y-2">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Als Chip auf Kacheln zeigen</p>
-                  {category?.fields.map((field) => (
+                  {collection?.fields.map((field) => (
                     <label key={field.fieldKey} className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={visibleTags.includes(field.fieldKey)} onChange={() => toggleTag(field.fieldKey)} className="rounded" />
                       <span className="text-xs text-foreground">{field.name}</span>
@@ -203,9 +195,9 @@ export default function CollectionPage() {
         </>
       )}
 
-      {showForm && collection && category && (
+      {showForm && collection && (
         <ItemForm
-          category={category}
+          collection={collection}
           collectionId={collection.id}
           item={null}
           onClose={() => setShowForm(false)}

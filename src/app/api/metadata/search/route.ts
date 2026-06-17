@@ -412,6 +412,209 @@ async function searchOpenLibrary(query: string): Promise<MetadataResult[]> {
   });
 }
 
+async function searchComicVine(query: string, apiKey: string): Promise<MetadataResult[]> {
+  const q = new URLSearchParams({
+    api_key: apiKey,
+    format: "json",
+    query,
+    resources: "issue",
+    field_list: "id,name,issue_number,description,image,volume,person_credits,store_date",
+    limit: "8",
+  });
+  const data = await httpsGet(`https://comicvine.gamespot.com/api/search/?${q}`, 8000).then(JSON.parse);
+  if (!data.results) return [];
+
+  return (data.results as Array<{
+    id: number;
+    name: string | null;
+    issue_number?: string;
+    description?: string | null;
+    image?: { medium_url?: string; original_url?: string };
+    volume?: { name?: string; api_detail_url?: string };
+    person_credits?: Array<{ name: string; role: string }>;
+    store_date?: string | null;
+  }>).map((r) => {
+    const meta: Record<string, unknown> = {};
+    if (r.volume?.name) meta.series = r.volume.name;
+    if (r.issue_number) meta.issueNumber = `#${r.issue_number}`;
+    const writers = (r.person_credits ?? []).filter((p) => p.role.toLowerCase().includes("writer")).map((p) => p.name);
+    const artists = (r.person_credits ?? []).filter((p) => p.role.toLowerCase().includes("artist") || p.role.toLowerCase().includes("pencil")).map((p) => p.name);
+    if (writers.length) meta.writer = writers.slice(0, 2).join(", ");
+    if (artists.length) meta.artist = artists.slice(0, 2).join(", ");
+    const year = r.store_date ? parseInt(r.store_date.slice(0, 4)) : null;
+
+    const rawDesc = r.description ?? null;
+    const cleanDesc = rawDesc ? rawDesc.replace(/<[^>]*>/g, "").slice(0, 400) : null;
+
+    const title = r.name ?? (r.volume?.name ? `${r.volume.name} #${r.issue_number ?? "?"}` : "Unbekannt");
+
+    return {
+      title,
+      year,
+      description: cleanDesc,
+      imageUrl: r.image?.medium_url ?? r.image?.original_url ?? null,
+      externalId: String(r.id),
+      externalSource: "ComicVine",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+}
+
+async function searchMangaDex(query: string): Promise<MetadataResult[]> {
+  const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&limit=8&includes[]=author&includes[]=artist&includes[]=cover_art&order[relevance]=desc`;
+  const data = await httpsGet(url, 8000).then(JSON.parse);
+  if (!data.data) return [];
+
+  return (data.data as Array<{
+    id: string;
+    attributes: {
+      title: Record<string, string>;
+      altTitles: Array<Record<string, string>>;
+      description: Record<string, string>;
+      publicationDemographic: string | null;
+      status: string;
+      year: number | null;
+      tags: Array<{ attributes: { name: Record<string, string>; group: string } }>;
+    };
+    relationships: Array<{ type: string; attributes?: { name?: string; fileName?: string } }>;
+  }>).map((r) => {
+    const attr = r.attributes;
+    // Title: prefer German, then English, then first available
+    const title = attr.title["de"] ?? attr.title["en"] ?? Object.values(attr.title)[0] ?? "Unbekannt";
+    // Original Japanese title
+    const jaTitle = attr.altTitles.find((t) => t["ja"] || t["ja-ro"]);
+    // Description: prefer German then English
+    const desc = attr.description["de"] ?? attr.description["en"] ?? null;
+
+    const meta: Record<string, unknown> = {};
+    if (jaTitle) meta.originalTitle = jaTitle["ja"] ?? jaTitle["ja-ro"];
+    // Author/Artist
+    const author = r.relationships.find((rel) => rel.type === "author")?.attributes?.name;
+    const artist = r.relationships.find((rel) => rel.type === "artist")?.attributes?.name;
+    if (author) meta.author = author;
+    if (artist && artist !== author) meta.artist = artist;
+    // Demographic
+    if (attr.publicationDemographic) {
+      const demMap: Record<string, string> = { shonen: "Shōnen", shojo: "Shōjo", seinen: "Seinen", josei: "Josei" };
+      meta.demographic = demMap[attr.publicationDemographic] ?? attr.publicationDemographic;
+    }
+    // Genres (tags of type "genre")
+    const genres = attr.tags.filter((t) => t.attributes.group === "genre").map((t) => t.attributes.name["de"] ?? t.attributes.name["en"]).filter(Boolean).slice(0, 4);
+    if (genres.length) meta.genres = genres.join(", ");
+    // Status
+    const statusMap: Record<string, string> = { ongoing: "Laufend", completed: "Abgeschlossen", hiatus: "Pause", cancelled: "Abgebrochen" };
+    if (attr.status) meta.status = statusMap[attr.status] ?? attr.status;
+
+    // Cover art
+    const coverRel = r.relationships.find((rel) => rel.type === "cover_art");
+    const coverFile = coverRel?.attributes?.fileName;
+    const imageUrl = coverFile ? `https://uploads.mangadex.org/covers/${r.id}/${coverFile}.256.jpg` : null;
+
+    return {
+      title,
+      year: attr.year,
+      description: desc?.slice(0, 500) ?? null,
+      imageUrl,
+      externalId: r.id,
+      externalSource: "MangaDex",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+}
+
+async function searchTmdbTv(query: string, apiKey: string, omdbKey?: string): Promise<MetadataResult[]> {
+  const q = new URLSearchParams({ query, language: "de-DE" });
+  const res = await fetch(`https://api.themoviedb.org/3/search/tv?${q}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!res.ok) throw new Error(`TMDB-TV ${res.status}`);
+  const data = await res.json();
+
+  const results: MetadataResult[] = (data.results ?? []).slice(0, 8).map((r: {
+    id: number; name: string; original_name?: string; overview?: string;
+    poster_path?: string | null; first_air_date?: string; genre_ids?: number[];
+  }) => {
+    const meta: Record<string, unknown> = {};
+    if (r.original_name) meta.originalTitle = r.original_name;
+    if (r.name && r.name !== r.original_name) meta.localizedTitle = r.name;
+    if (r.genre_ids?.length) {
+      const names = r.genre_ids.map((id) => TMDB_GENRES[id]).filter(Boolean);
+      if (names.length) meta.genres = names.join(", ");
+    }
+    if (r.first_air_date) meta.firstAirDate = r.first_air_date.slice(0, 4);
+    if (r.overview) meta.overview = r.overview;
+    return {
+      title: r.name,
+      year: r.first_air_date ? parseInt(r.first_air_date.slice(0, 4)) : null,
+      description: r.overview || null,
+      imageUrl: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
+      externalId: String(r.id),
+      externalSource: "TMDB-TV",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+
+  // Enrich with full TV details
+  const enrichments = await Promise.allSettled(
+    results.map((r) => fetchTmdbTvEnrichment(parseInt(r.externalId), apiKey, omdbKey)),
+  );
+
+  return results.map((r, i) => {
+    const extra = enrichments[i].status === "fulfilled" ? enrichments[i].value : {};
+    if (!extra || Object.keys(extra).length === 0) return r;
+    return { ...r, metadata: { ...(r.metadata ?? {}), ...extra } };
+  });
+}
+
+async function fetchTmdbTvEnrichment(tvId: number, tmdbKey: string, omdbKey?: string): Promise<Record<string, unknown>> {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}?language=de-DE&append_to_response=credits,content_ratings`,
+      { headers: { Authorization: `Bearer ${tmdbKey}` }, signal: AbortSignal.timeout(6000) },
+    );
+    if (!res.ok) return {};
+    const d = await res.json();
+    const result: Record<string, unknown> = {};
+
+    const creators = (d.created_by ?? []).map((c: { name: string }) => c.name);
+    if (creators.length) result.creator = creators.join(", ");
+
+    const cast = (d.credits?.cast ?? []).slice(0, 5).map((c: { name: string }) => c.name);
+    if (cast.length) result.cast = cast.join(", ");
+
+    if (d.number_of_seasons) result.numberOfSeasons = `${d.number_of_seasons} Staffel${d.number_of_seasons !== 1 ? "n" : ""}`;
+    if (d.number_of_episodes) result.numberOfEpisodes = `${d.number_of_episodes} Episoden`;
+
+    const runtime = (d.episode_run_time ?? [])[0];
+    if (runtime) result.episodeRuntime = `${runtime} min`;
+
+    const networks = (d.networks ?? []).slice(0, 2).map((n: { name: string }) => n.name);
+    if (networks.length) result.network = networks.join(", ");
+
+    // FSK via German content rating
+    const deRating = (d.content_ratings?.results ?? []).find(
+      (r: { iso_3166_1: string }) => r.iso_3166_1 === "DE"
+    ) as { rating?: string } | undefined;
+    if (deRating?.rating) result.fsk = deRating.rating;
+
+    // IMDB rating via OMDb
+    if (omdbKey && d.external_ids?.imdb_id) {
+      try {
+        const omdb = await fetch(`https://www.omdbapi.com/?i=${d.external_ids.imdb_id}&apikey=${omdbKey}`, { signal: AbortSignal.timeout(3000) });
+        if (omdb.ok) {
+          const od = await omdb.json();
+          if (od.imdbRating && od.imdbRating !== "N/A") result.imdbRating = od.imdbRating;
+        }
+      } catch { /* skip */ }
+    }
+
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const title     = searchParams.get("title")?.trim() ?? "";
@@ -431,13 +634,25 @@ export async function GET(req: NextRequest) {
       if (!settings?.theGamesDbKey) return NextResponse.json({ error: "no_key", source: "TheGamesDB" }, { status: 503 });
       return NextResponse.json(await searchTheGamesDb(title, decrypt(settings.theGamesDbKey)));
     }
-    if (mediaType === "VIDEO") {
+    if (mediaType === "VIDEO" || mediaType === "FILM") {
       if (!settings?.tmdbApiKey) return NextResponse.json({ error: "no_key", source: "TMDB" }, { status: 503 });
       const omdbKey = settings?.omdbApiKey ? decrypt(settings.omdbApiKey) : undefined;
       return NextResponse.json(await searchTmdb(title, year, decrypt(settings.tmdbApiKey), omdbKey));
     }
+    if (mediaType === "SERIE") {
+      if (!settings?.tmdbApiKey) return NextResponse.json({ error: "no_key", source: "TMDB" }, { status: 503 });
+      const omdbKey = settings?.omdbApiKey ? decrypt(settings.omdbApiKey) : undefined;
+      return NextResponse.json(await searchTmdbTv(title, decrypt(settings.tmdbApiKey), omdbKey));
+    }
     if (mediaType === "BOOK") {
       return NextResponse.json(await searchOpenLibrary(title));
+    }
+    if (mediaType === "COMIC") {
+      if (!settings?.comicVineKey) return NextResponse.json({ error: "no_key", source: "ComicVine" }, { status: 503 });
+      return NextResponse.json(await searchComicVine(title, decrypt(settings.comicVineKey)));
+    }
+    if (mediaType === "MANGA") {
+      return NextResponse.json(await searchMangaDex(title));
     }
   } catch (err) {
     console.error("[metadata/search] error:", err);

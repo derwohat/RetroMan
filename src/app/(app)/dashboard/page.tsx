@@ -7,7 +7,7 @@ import { CategoryIcon } from "@/components/ui/CategoryIcon";
 type Collection = {
   id: string;
   name: string;
-  category: { icon: string | null };
+  icon: string | null;
   _count: { items: number };
 };
 
@@ -45,7 +45,7 @@ export default function DashboardPage() {
               href={`/collection/${col.id}`}
               className="media-card group flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card p-8 transition hover:border-primary hover:bg-primary/5"
             >
-              <CategoryIcon icon={col.category.icon} className="h-16 w-16" />
+              <CategoryIcon icon={col.icon} className="h-16 w-16" />
               <div className="text-center">
                 <p className="text-sm font-medium text-foreground group-hover:text-primary transition">{col.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">

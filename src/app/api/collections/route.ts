@@ -5,17 +5,9 @@ export async function GET() {
   try {
     const collections = await prisma.collection.findMany({
       include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-            mediaType: true,
-            fields: { orderBy: { order: "asc" } },
-            tagGroups: {
-              select: { groupId: true, showInView: true, group: { select: { id: true, name: true, color: true, linkedField: true } } },
-            },
-          },
+        fields: { orderBy: { order: "asc" } },
+        tagGroups: {
+          select: { groupId: true, showInView: true, group: { select: { id: true, name: true, color: true, linkedField: true } } },
         },
         _count: { select: { items: true } },
       },

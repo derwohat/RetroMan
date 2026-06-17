@@ -16,6 +16,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const existing = await prisma.tagGroup.findUnique({ where: { id: groupId } });
+  if (existing?.isSystem) return NextResponse.json({ error: "System-Gruppen können nicht umbenannt werden." }, { status: 403 });
   const { name } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Name erforderlich." }, { status: 400 });
   const group = await prisma.tagGroup.update({
@@ -44,6 +46,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const existing = await prisma.tagGroup.findUnique({ where: { id: groupId } });
+  if (existing?.isSystem) return NextResponse.json({ error: "System-Gruppen können nicht gelöscht werden." }, { status: 403 });
   await prisma.tagGroup.delete({ where: { id: groupId } });
   return NextResponse.json({ ok: true });
 }

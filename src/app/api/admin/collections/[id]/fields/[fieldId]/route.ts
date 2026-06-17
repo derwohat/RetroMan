@@ -20,7 +20,7 @@ export async function PATCH(
 
   const { fieldId } = await params;
   const body = await req.json();
-  const field = await prisma.categoryField.update({ where: { id: fieldId }, data: body });
+  const field = await prisma.collectionField.update({ where: { id: fieldId }, data: body });
   return NextResponse.json(field);
 }
 
@@ -32,6 +32,6 @@ export async function DELETE(
   if (denied) return denied;
 
   const { fieldId } = await params;
-  await prisma.categoryField.delete({ where: { id: fieldId } });
+  await prisma.collectionField.delete({ where: { id: fieldId } });
   return NextResponse.json({ success: true });
 }

@@ -21,7 +21,7 @@ export async function POST(
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const { id: categoryId } = await params;
+  const { id: collectionId } = await params;
 
   let body: unknown;
   try {
@@ -39,16 +39,16 @@ export async function POST(
   if (!fieldType || !ALLOWED_FIELD_TYPES.includes(fieldType as string))
     return NextResponse.json({ error: "Ungültiger Feldtyp." }, { status: 400 });
 
-  // Verify category exists
-  const category = await prisma.category.findUnique({ where: { id: categoryId } });
-  if (!category)
-    return NextResponse.json({ error: "Kategorie nicht gefunden." }, { status: 404 });
+  // Verify collection exists
+  const collection = await prisma.collection.findUnique({ where: { id: collectionId } });
+  if (!collection)
+    return NextResponse.json({ error: "Sammlung nicht gefunden." }, { status: 404 });
 
   try {
-    const count = await prisma.categoryField.count({ where: { categoryId } });
-    const field = await prisma.categoryField.create({
+    const count = await prisma.collectionField.count({ where: { collectionId } });
+    const field = await prisma.collectionField.create({
       data: {
-        categoryId,
+        collectionId,
         name: name.trim(),
         fieldKey: (fieldKey as string).trim().toLowerCase(),
         fieldType: fieldType as FieldType,
@@ -62,7 +62,7 @@ export async function POST(
     return NextResponse.json(field, { status: 201 });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      return NextResponse.json({ error: `Feld-Key „${fieldKey}" existiert bereits in dieser Kategorie.` }, { status: 409 });
+      return NextResponse.json({ error: `Feld-Key „${fieldKey}" existiert bereits in dieser Sammlung.` }, { status: 409 });
     }
     console.error("[fields/POST]", e);
     return NextResponse.json({ error: "Datenbankfehler beim Erstellen des Feldes." }, { status: 500 });

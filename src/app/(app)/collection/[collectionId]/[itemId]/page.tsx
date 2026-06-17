@@ -10,15 +10,15 @@ import { useTranslations } from "@/components/LanguageProvider";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Field = { id: string; name: string; fieldKey: string; fieldType: string; options: string[]; required: boolean };
-type Category = {
+type Collection = {
   id: string;
   name: string;
   icon: string | null;
   mediaType: string;
+  gradingEnabled: boolean;
   fields: Field[];
   tagGroups: Array<{ groupId: string; showInView: boolean }>;
 };
-type Collection = { id: string; name: string; category: Category };
 type CustomField = { value: string; field: { id: string; name: string; fieldKey: string; fieldType: string; options: string[] } };
 type TagValue = { id: string; value: string };
 type TagGroup = { id: string; name: string; order: number; values: TagValue[] };
@@ -289,15 +289,23 @@ const META_LABELS: Record<string, string> = {
   platform: "Plattform", publisher: "Publisher", developer: "Entwickler",
   genre: "Genre", players: "Spieler", rating: "USK",
   // Music
-  artist: "Künstler", releaseTitle: "Albumtitel", label: "Label", format: "Format",
+  artist: "Künstler / Zeichner", releaseTitle: "Albumtitel", label: "Label", format: "Format",
   barcode: "Barcode / EAN", tracklist: "Tracklist",
-  // Video
+  // Film
   localizedTitle: "Titel (DE)", originalTitle: "Originaltitel",
   director: "Regie", cast: "Darsteller", genres: "Genre",
   runtime: "Laufzeit", fsk: "FSK", studio: "Studio", imdbRating: "IMDB",
+  // Serie
+  creator: "Erstellt von", network: "Sender / Plattform",
+  numberOfSeasons: "Staffeln", numberOfEpisodes: "Episoden",
+  episodeRuntime: "Episodenlänge", firstAirDate: "Erstausstrahlung",
   // Books
   author: "Autor", isbn: "ISBN", pages: "Seiten",
   language: "Sprache", description: "Beschreibung",
+  // Comics
+  series: "Reihe", issueNumber: "Heft-Nr.", writer: "Autor",
+  // Manga
+  demographic: "Zielgruppe", status: "Status",
   // Shared
   overview: "Beschreibung",
 };
@@ -306,7 +314,10 @@ const META_ORDER: Record<string, string[]> = {
   TheGamesDB:  ["platform", "publisher", "developer", "genre", "rating", "overview"],
   Discogs:     ["artist", "releaseTitle", "format", "label", "genre", "barcode"],
   TMDB:        ["localizedTitle", "originalTitle", "director", "cast", "genres", "runtime", "fsk", "imdbRating", "studio", "overview"],
+  "TMDB-TV":   ["localizedTitle", "originalTitle", "creator", "cast", "genres", "numberOfSeasons", "numberOfEpisodes", "episodeRuntime", "firstAirDate", "fsk", "imdbRating", "network", "overview"],
   OpenLibrary: ["author", "publisher", "isbn", "pages", "language", "genre", "description"],
+  ComicVine:   ["series", "issueNumber", "writer", "artist", "overview"],
+  MangaDex:    ["originalTitle", "author", "artist", "demographic", "genres", "status", "overview"],
 };
 
 type TrackEntry = { pos: string; title: string; dur: string };
@@ -493,7 +504,7 @@ export default function ItemDetailPage() {
     setShowCoverPicker(true);
     setCoverLoading(true);
     setCoverResults([]);
-    const p = new URLSearchParams({ title: item.title.trim(), mediaType: item.collection.category.mediaType ?? "CUSTOM" });
+    const p = new URLSearchParams({ title: item.title.trim(), mediaType: item.collection.mediaType ?? "CUSTOM" });
     try {
       const res = await fetch(`/api/cover-search?${p}`);
       if (res.ok) setCoverResults(await res.json());
@@ -571,7 +582,7 @@ export default function ItemDetailPage() {
     );
   }
 
-  const category  = item.collection.category;
+  const category  = item.collection;
   const imageUrl  = getImageUrl(item);
   const backCoverUrl  = typeof item.metadata?.backCover === "string" ? item.metadata.backCover : null;
   const extraImages   = item.images.filter((i) => !i.isPrimary);
@@ -782,31 +793,33 @@ export default function ItemDetailPage() {
 
       {/* Details */}
       <div className="space-y-4">
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</h3>
-          <dl className="space-y-3">
-            {category.mediaType === "VIDEO" && (
-              <InlineEditableField label="Medientyp" value={item.videoFormat ?? ""} type="select"
-                options={["VHS", "DVD", "Blu-ray", "Ultra HD 4K", "LaserDisc", "HD DVD"].map((f) => ({ value: f, label: f }))}
-                onSave={(v) => saveField("videoFormat", v)}
-              />
-            )}
-            <InlineEditableField label="Zustand" value={item.condition ?? ""} type="select" options={CONDITIONS} onSave={(v) => saveField("condition", v)} />
-            <InlineEditableField label="Status" value={item.itemStatus ?? ""} type="select" options={ITEM_STATUSES} onSave={(v) => saveField("itemStatus", v)} />
-            <InlineEditableField label="Sammlung" value={item.collectionStatus} type="select" options={COLLECTION_STATUSES} onSave={(v) => saveField("collectionStatus", v ?? "OWNED")} />
-            <InlineEditableField label="Anzahl" value={item.quantity.toString()} type="number" onSave={(v) => saveField("quantity", v ?? "1")} />
-            <InlineEditableField label="Barcode (EAN)" value={item.barcode} onSave={(v) => saveField("barcode", v)} />
-            <InlineEditableField label="Lagerort" value={item.location ?? ""} type="select" options={lagerortGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("location", v)} />
-          </dl>
-        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</h3>
+            <dl className="space-y-3">
+              {(category.mediaType === "VIDEO" || category.mediaType === "FILM" || category.mediaType === "SERIE") && (
+                <InlineEditableField label="Medientyp" value={item.videoFormat ?? ""} type="select"
+                  options={["VHS", "DVD", "Blu-ray", "Ultra HD 4K", "LaserDisc", "HD DVD"].map((f) => ({ value: f, label: f }))}
+                  onSave={(v) => saveField("videoFormat", v)}
+                />
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <InlineEditableField label="Zustand" value={item.condition ?? ""} type="select" options={CONDITIONS} onSave={(v) => saveField("condition", v)} />
+                <InlineEditableField label="Status" value={item.itemStatus ?? ""} type="select" options={ITEM_STATUSES} onSave={(v) => saveField("itemStatus", v)} />
+              </div>
+              <InlineEditableField label="Barcode (EAN)" value={item.barcode} onSave={(v) => saveField("barcode", v)} />
+              <InlineEditableField label="Lagerort" value={item.location ?? ""} type="select" options={lagerortGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("location", v)} />
+            </dl>
+          </div>
 
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Kauf</h3>
-          <dl className="space-y-3">
-            <InlineEditableField label="Kaufpreis (€)" value={item.purchasePrice != null ? item.purchasePrice.toString().replace(".", ",") : ""} type="text" placeholder="0,00" onSave={(v) => saveField("purchasePrice", v ? v.replace(",", ".") : null)} />
-            <InlineDateField label="Kaufdatum" value={toDateInput(item.purchaseDate)} onSave={(v) => saveField("purchaseDate", v)} />
-            <InlineEditableField label="Gekauft bei" value={item.store ?? ""} type="select" options={shopsGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("store", v)} />
-          </dl>
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Kauf</h3>
+            <dl className="space-y-3">
+              <InlineEditableField label="Kaufpreis (€)" value={item.purchasePrice != null ? item.purchasePrice.toString().replace(".", ",") : ""} type="text" placeholder="0,00" onSave={(v) => saveField("purchasePrice", v ? v.replace(",", ".") : null)} />
+              <InlineDateField label="Kaufdatum" value={toDateInput(item.purchaseDate)} onSave={(v) => saveField("purchaseDate", v)} />
+              <InlineEditableField label="Gekauft bei" value={item.store ?? ""} type="select" options={shopsGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("store", v)} />
+            </dl>
+          </div>
         </div>
 
         {category.fields.length > 0 && (
@@ -830,6 +843,7 @@ export default function ItemDetailPage() {
         )}
 
         {/* Grading */}
+        {item.collection.gradingEnabled && (
         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Grading</h3>
@@ -912,6 +926,7 @@ export default function ItemDetailPage() {
             </div>
           )}
         </div>
+        )}
 
         <div className="rounded-xl border border-border bg-card p-5 space-y-2">
           <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Notizen</h3>

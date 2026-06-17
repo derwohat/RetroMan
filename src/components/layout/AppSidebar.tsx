@@ -43,7 +43,7 @@ function IconChevronRight() {
   );
 }
 
-type Collection = { id: string; name: string; category: { icon: string | null }; _count: { items: number } };
+type Collection = { id: string; name: string; icon: string | null; _count: { items: number } };
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -100,9 +100,7 @@ export function AppSidebar() {
           <div className="px-3 pt-1 pb-1">
             <Link
               href="/dashboard"
-              className={`text-[9px] uppercase tracking-widest font-medium transition-colors ${
-                pathname === "/dashboard" ? "text-primary" : "text-muted-foreground hover:text-primary"
-              }`}
+              className="font-heading text-[10px] text-primary neon-glow uppercase tracking-widest"
             >
               {t.nav.collections}
             </Link>
@@ -130,7 +128,7 @@ export function AppSidebar() {
               }`}
             >
               <span className="shrink-0">
-                <CategoryIcon icon={col.category.icon} className="h-4 w-4" />
+                <CategoryIcon icon={col.icon} className="h-4 w-4" />
               </span>
               {!collapsed && (
                 <span className="flex-1 truncate text-xs">{col.name}</span>

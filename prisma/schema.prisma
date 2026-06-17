@@ -17,8 +17,12 @@ enum Role {
 enum MediaType {
   MUSIC
   VIDEO
+  FILM
+  SERIE
   GAME
   BOOK
+  COMIC
+  MANGA
   CONSOLE
   CUSTOM
 }
@@ -107,6 +111,7 @@ model AppSettings {
   googleSearchKey  String?
   googleSearchCx   String?
   omdbApiKey       String?
+  comicVineKey     String?
   donationUrl      String?
   githubUrl        String?
   requireMfa       Boolean @default(false)
@@ -115,7 +120,7 @@ model AppSettings {
   updatedAt         DateTime @updatedAt
 }
 
-// ─── Categories & Fields ──────────────────────────────────────────────────────
+// ─── Tags ────────────────────────────────────────────────────────────────────
 
 model TagGroup {
   id           String     @id @default(cuid())
@@ -123,11 +128,12 @@ model TagGroup {
   order        Int        @default(0)
   color        String     @default("#ff2d95")
   linkedField  String?
+  isSystem     Boolean    @default(false)
   createdAt    DateTime   @default(now())
 
-  values     TagValue[]
-  itemTags   ItemTag[]
-  categories CategoryTagGroup[]
+  values      TagValue[]
+  itemTags    ItemTag[]
+  collections CollectionTagGroup[]
 }
 
 model TagValue {
@@ -143,63 +149,53 @@ model TagValue {
   @@unique([groupId, value])
 }
 
-model CategoryTagGroup {
-  id         String   @id @default(cuid())
-  categoryId String
-  groupId    String
-  showInView Boolean  @default(false)
-  createdAt  DateTime @default(now())
-
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  group    TagGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@unique([categoryId, groupId])
-}
-
-model Category {
-  id                   String          @id @default(cuid())
-  name                 String          @unique
-  icon                 String?
-  mediaType            MediaType
-  customMediaTypeLabel String?
-  order                Int             @default(0)
-  createdAt            DateTime        @default(now())
-
-  fields      CategoryField[]
-  collections Collection[]
-  tagGroups   CategoryTagGroup[]
-}
-
-model CategoryField {
-  id         String    @id @default(cuid())
-  categoryId String
-  name       String
-  fieldKey   String
-  fieldType  FieldType
-  options    String[]  @default([])
-  order      Int       @default(0)
-  required   Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-
-  category     Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  customValues ItemCustomField[]
-
-  @@unique([categoryId, fieldKey])
-}
-
 // ─── Collections ──────────────────────────────────────────────────────────────
 
 model Collection {
-  id         String   @id @default(cuid())
-  name       String
-  categoryId String
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
+  id                   String    @id @default(cuid())
+  name                 String
+  icon                 String?
+  mediaType            MediaType @default(CUSTOM)
+  customMediaTypeLabel String?
+  order                Int       @default(0)
+  gradingEnabled       Boolean   @default(false)
+  createdAt            DateTime  @default(now())
 
-  category           Category                 @relation(fields: [categoryId], references: [id])
   items              Item[]
+  fields             CollectionField[]
+  tagGroups          CollectionTagGroup[]
   viewSettings       CollectionViewSettings[]
   collectionSettings CollectionSettings[]
+}
+
+model CollectionField {
+  id           String    @id @default(cuid())
+  collectionId String
+  name         String
+  fieldKey     String
+  fieldType    FieldType
+  options      String[]  @default([])
+  order        Int       @default(0)
+  required     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  collection   Collection      @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  customValues ItemCustomField[]
+
+  @@unique([collectionId, fieldKey])
+}
+
+model CollectionTagGroup {
+  id           String   @id @default(cuid())
+  collectionId String
+  groupId      String
+  showInView   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  group      TagGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, groupId])
 }
 
 // ─── Items ────────────────────────────────────────────────────────────────────
@@ -256,8 +252,8 @@ model ItemCustomField {
   fieldId String
   value   String
 
-  item  Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  field CategoryField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  item  Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  field CollectionField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, fieldId])
 }

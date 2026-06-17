@@ -11,13 +11,24 @@ async function checkAdmin(): Promise<NextResponse | null> {
   return null;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const { ids } = await req.json() as { ids: string[] };
-  await Promise.all(
-    ids.map((id, index) => prisma.category.update({ where: { id }, data: { order: index } })),
-  );
-  return NextResponse.json({ success: true });
+  const { id: collectionId } = await params;
+  const { groupId } = await req.json();
+
+  if (!groupId) {
+    return NextResponse.json({ error: "groupId erforderlich." }, { status: 400 });
+  }
+
+  const assignment = await prisma.collectionTagGroup.create({
+    data: { collectionId, groupId, showInView: false },
+    include: { group: true },
+  });
+
+  return NextResponse.json(assignment, { status: 201 });
 }

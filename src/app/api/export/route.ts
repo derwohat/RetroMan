@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.item.findMany({
         where: { userId },
-        include: { images: true, tags: { include: { tagValue: true, tagGroup: true } }, customFields: { include: { field: true } }, grading: true, collection: { select: { id: true, name: true, category: { select: { name: true } } } } },
+        include: { images: true, tags: { include: { tagValue: true, tagGroup: true } }, customFields: { include: { field: true } }, grading: true, collection: { select: { id: true, name: true } } },
         orderBy: { createdAt: "asc" },
       }),
     ]);
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       images: { orderBy: { order: "asc" } },
       tags: { include: { tagValue: true, tagGroup: true } },
       customFields: { include: { field: true } },
-      collection: { select: { id: true, name: true, category: { select: { name: true } } } },
+      collection: { select: { id: true, name: true } },
     },
     orderBy: [{ collectionId: "asc" }, { title: "asc" }],
   });
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     const rows = items.map((item) => {
       const img = item.images.find((i) => i.isPrimary) ?? item.images[0];
       return [
-        item.id, item.title, item.collection.name, item.collection.category.name,
+        item.id, item.title, item.collection.name, item.collection.name,
         item.year, item.condition, item.itemStatus, item.collectionStatus,
         item.isFavorite, item.purchasePrice, item.purchaseDate?.toISOString().split("T")[0],
         item.store, item.location, item.quantity, item.barcode,
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
       id: item.id,
       title: item.title,
       collection: item.collection.name,
-      category: item.collection.category.name,
+      category: item.collection.name,
       year: item.year,
       condition: item.condition,
       itemStatus: item.itemStatus,

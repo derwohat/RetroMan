@@ -37,7 +37,7 @@ export function ItemCard({ item, categoryIcon, onEdit, onDelete }: Props) {
   return (
     <div className="media-card group relative flex flex-col rounded-lg border border-border bg-card overflow-hidden">
       {/* Cover */}
-      <div className="scanlines relative aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />

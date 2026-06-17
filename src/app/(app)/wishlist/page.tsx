@@ -15,7 +15,7 @@ type ItemWithCollection = {
   purchasePrice: number | null;
   isFavorite: boolean;
   images: Array<{ url: string | null; filePath: string | null; isPrimary: boolean }>;
-  collection: { id: string; name: string; category: { icon: string | null } };
+  collection: { id: string; name: string; icon: string | null };
 };
 
 function getImageUrl(item: ItemWithCollection) {
@@ -72,7 +72,7 @@ export default function WishlistPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <CategoryIcon icon={item.collection.category.icon} className="h-8 w-8 opacity-20" />
+                    <CategoryIcon icon={item.collection.icon} className="h-8 w-8 opacity-20" />
                   )}
                   {item.condition && (
                     <span className={`absolute top-0.5 left-0.5 rounded-full border px-1 py-0.5 text-[8px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? ""}`}>
@@ -90,7 +90,7 @@ export default function WishlistPage() {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                      <CategoryIcon icon={item.collection.category.icon} className="h-2.5 w-2.5" />
+                      <CategoryIcon icon={item.collection.icon} className="h-2.5 w-2.5" />
                       {item.collection.name}
                     </span>
                     {item.purchasePrice && (

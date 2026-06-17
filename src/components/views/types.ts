@@ -1,11 +1,15 @@
 export type ViewType = "SHELF" | "SPINE" | "CDWALL" | "SIMPLE" | "TABLE";
-export type MediaType = "GAME" | "MUSIC" | "VIDEO" | "BOOK" | "CONSOLE" | "CUSTOM";
+export type MediaType = "GAME" | "MUSIC" | "VIDEO" | "FILM" | "SERIE" | "BOOK" | "COMIC" | "MANGA" | "CONSOLE" | "CUSTOM";
 
 export const VIEW_AVAILABILITY: Record<MediaType, ViewType[]> = {
   GAME:    ["SHELF", "SIMPLE", "TABLE"],
   MUSIC:   ["SHELF", "CDWALL", "SIMPLE", "TABLE"],
   VIDEO:   ["SHELF", "SIMPLE", "TABLE"],
+  FILM:    ["SHELF", "SIMPLE", "TABLE"],
+  SERIE:   ["SHELF", "SIMPLE", "TABLE"],
   BOOK:    ["SHELF", "SPINE", "SIMPLE", "TABLE"],
+  COMIC:   ["SHELF", "SPINE", "SIMPLE", "TABLE"],
+  MANGA:   ["SHELF", "SPINE", "SIMPLE", "TABLE"],
   CONSOLE: ["SHELF", "SIMPLE", "TABLE"],
   CUSTOM:  ["SHELF", "SIMPLE", "TABLE"],
 };
