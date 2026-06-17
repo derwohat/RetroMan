@@ -18,6 +18,9 @@ WHERE c."categoryId" = cat."id";
 -- Fill any remaining NULLs with default
 UPDATE "Collection" SET "mediaType" = 'CUSTOM' WHERE "mediaType" IS NULL;
 
+-- Migrate VIDEO → FILM (FILM enum value added in add_film_serie_mediatypes which runs before this)
+UPDATE "Collection" SET "mediaType" = 'FILM' WHERE "mediaType" = 'VIDEO';
+
 -- ── Step 3: Make mediaType NOT NULL ──────────────────────────────────────────
 ALTER TABLE "Collection" ALTER COLUMN "mediaType" SET NOT NULL;
 
