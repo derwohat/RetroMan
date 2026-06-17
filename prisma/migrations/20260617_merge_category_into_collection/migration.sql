@@ -6,12 +6,12 @@ ALTER TABLE "Collection"
   ADD COLUMN "mediaType"            "MediaType";
 
 -- ── Step 2: Copy Category data into Collection ────────────────────────────────
+-- Note: gradingEnabled is not copied — defaults to false, set via admin UI
 UPDATE "Collection" c
 SET
   "icon"                 = cat."icon",
   "mediaType"            = cat."mediaType",
-  "customMediaTypeLabel" = cat."customMediaTypeLabel",
-  "gradingEnabled"       = cat."gradingEnabled"
+  "customMediaTypeLabel" = cat."customMediaTypeLabel"
 FROM "Category" cat
 WHERE c."categoryId" = cat."id";
 
