@@ -87,6 +87,8 @@ const SERVICES = [
   },
 ];
 
+type MigrateStatus = { applied: number; failed: number; lastMigration: string | null; lastApplied: string | null; hasFailed: boolean };
+
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [keys, setKeys] = useState<Record<string, string>>({});
@@ -97,6 +99,13 @@ export default function AdminSettingsPage() {
   const [interfaceLanguage, setInterfaceLanguage] = useState<"de" | "en" | "fr">("de");
   const [saving, setSaving] = useState<string | null>(null);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [migrateStatus, setMigrateStatus] = useState<MigrateStatus | null>(null);
+  const [migrating, setMigrating] = useState(false);
+  const [migrateOutput, setMigrateOutput] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/migrate").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setMigrateStatus(d); });
+  }, []);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -151,6 +160,17 @@ export default function AdminSettingsPage() {
     showSaved("Gespeichert");
   }
 
+  async function runMigration() {
+    setMigrating(true);
+    setMigrateOutput(null);
+    const res = await fetch("/api/admin/migrate", { method: "POST" });
+    const data = await res.json();
+    setMigrateOutput(data.output ?? []);
+    setMigrating(false);
+    // Refresh status
+    fetch("/api/admin/migrate").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setMigrateStatus(d); });
+  }
+
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
@@ -166,6 +186,52 @@ export default function AdminSettingsPage() {
           ✓ {savedMsg}
         </div>
       )}
+
+      {/* Datenbank-Migration */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+          Datenbank
+        </h3>
+        <div className="rounded-lg border border-border bg-card px-4 py-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Migration</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {migrateStatus
+                  ? migrateStatus.hasFailed
+                    ? "⚠ Fehlgeschlagene Migration gefunden"
+                    : `${migrateStatus.applied} Migrationen angewendet${migrateStatus.lastMigration ? ` · Letzte: ${migrateStatus.lastMigration}` : ""}`
+                  : "Lade Status…"}
+              </p>
+            </div>
+            <button
+              onClick={runMigration}
+              disabled={migrating}
+              className="shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+            >
+              {migrating ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Läuft…
+                </span>
+              ) : "Migration ausführen"}
+            </button>
+          </div>
+
+          {migrateOutput && (
+            <div className="rounded-md bg-black/40 border border-border p-3 max-h-48 overflow-y-auto">
+              {migrateOutput.map((line, i) => (
+                <p key={i} className={`font-mono text-[11px] leading-5 ${
+                  line.startsWith("✓") ? "text-green-400" :
+                  line.startsWith("✗") ? "text-destructive" :
+                  line.startsWith("▶") ? "text-primary" :
+                  "text-muted-foreground"
+                }`}>{line || " "}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* API Keys */}
       <section className="space-y-3">
