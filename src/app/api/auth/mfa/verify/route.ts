@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { verifySync } from "otplib";
 import { decrypt } from "@/lib/crypto/encryption";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { authenticator } = require("otplib") as { authenticator: { verify(opts: { token: string; secret: string }): boolean } };
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -22,9 +21,8 @@ export async function POST(req: Request) {
   }
 
   const secret = decrypt(user.mfaSecret);
-  const isValid = authenticator.verify({ token, secret });
-
-  if (!isValid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
+  const result = verifySync({ token, secret });
+  if (!result.valid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
 
   return NextResponse.json({ success: true });
 }

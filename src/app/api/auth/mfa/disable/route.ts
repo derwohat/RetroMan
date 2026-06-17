@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { authenticator } = require("otplib") as { authenticator: { verify(opts: { token: string; secret: string }): boolean } };
+import { verifySync } from "otplib";
 import { decrypt } from "@/lib/crypto/encryption";
 
 async function getUserId(): Promise<string | null> {
@@ -18,7 +17,7 @@ export async function POST(req: Request) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { token } = await req.json();
+  const { token } = await req.json() as { token?: string };
   if (!token) return NextResponse.json({ error: "Token erforderlich." }, { status: 400 });
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { mfaSecret: true, mfaEnabled: true } });
@@ -27,8 +26,8 @@ export async function POST(req: Request) {
   }
 
   const secret = decrypt(user.mfaSecret);
-  const isValid = authenticator.verify({ token, secret });
-  if (!isValid) return NextResponse.json({ error: "Ungültiger Code." }, { status: 400 });
+  const result = verifySync({ token, secret });
+  if (!result.valid) return NextResponse.json({ error: "Ungültiger Code." }, { status: 400 });
 
   await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: false, mfaSecret: null } });
   return NextResponse.json({ success: true });
