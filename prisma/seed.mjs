@@ -30,13 +30,14 @@ const DEFAULT_TAG_GROUPS = [
     name: "Shops",
     order: 1,
     isSystem: true,
+    linkedField: "store",
     values: [
       "eBay", "Amazon", "MediaMarkt", "Saturn", "GameStop",
       "Thalia", "Weltbild", "Otto", "Rebuy", "Momox", "Kleinanzeigen",
       "Flohmarkt", "Privat",
     ],
   },
-  { name: "Lagerort", order: 2, isSystem: true, values: [] },
+  { name: "Lagerort", order: 2, isSystem: true, linkedField: "location", values: [] },
 ];
 
 function cuid() {
@@ -71,11 +72,11 @@ async function main() {
     for (const groupDef of DEFAULT_TAG_GROUPS) {
       // Upsert group
       const res = await client.query(
-        `INSERT INTO "TagGroup" (id, name, "order", color, "isSystem", "createdAt")
-         VALUES ($1,$2,$3,'#ff2d95',$4,NOW())
-         ON CONFLICT (name) DO UPDATE SET "order"=EXCLUDED."order", "isSystem"=EXCLUDED."isSystem"
+        `INSERT INTO "TagGroup" (id, name, "order", color, "isSystem", "linkedField", "createdAt")
+         VALUES ($1,$2,$3,'#ff2d95',$4,$5,NOW())
+         ON CONFLICT (name) DO UPDATE SET "order"=EXCLUDED."order", "isSystem"=EXCLUDED."isSystem", "linkedField"=EXCLUDED."linkedField"
          RETURNING id`,
-        [cuid(), groupDef.name, groupDef.order, groupDef.isSystem]
+        [cuid(), groupDef.name, groupDef.order, groupDef.isSystem, groupDef.linkedField ?? null]
       );
       const groupId = res.rows[0].id;
 

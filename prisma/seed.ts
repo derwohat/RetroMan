@@ -30,6 +30,7 @@ const DEFAULT_TAG_GROUPS = [
     name: "Shops",
     order: 1,
     isSystem: true,
+    linkedField: "store",
     values: [
       "eBay", "Amazon", "MediaMarkt", "Saturn", "GameStop",
       "Thalia", "Weltbild", "Otto", "Rebuy", "Momox", "Kleinanzeigen",
@@ -39,6 +40,7 @@ const DEFAULT_TAG_GROUPS = [
   {
     name: "Lagerort",
     order: 2,
+    linkedField: "location",
     isSystem: true,
     values: [],
   },
@@ -62,8 +64,10 @@ async function main() {
   for (const groupDef of DEFAULT_TAG_GROUPS) {
     const group = await prisma.tagGroup.upsert({
       where: { name: groupDef.name },
-      create: { name: groupDef.name, order: groupDef.order, isSystem: groupDef.isSystem },
-      update: { order: groupDef.order, isSystem: groupDef.isSystem },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      create: { name: groupDef.name, order: groupDef.order, isSystem: groupDef.isSystem, linkedField: (groupDef as any).linkedField ?? null },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      update: { order: groupDef.order, isSystem: groupDef.isSystem, linkedField: (groupDef as any).linkedField ?? null },
     });
     for (let i = 0; i < groupDef.values.length; i++) {
       await prisma.tagValue.upsert({
