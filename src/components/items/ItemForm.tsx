@@ -454,7 +454,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
             <input
               type="number" min="1800" max={new Date().getFullYear() + 2}
               value={form.year} onChange={(e) => set("year", e.target.value)}
-              className="retro-field w-full" placeholder="1997"
+              className="retro-field w-full"
             />
           </Field>
 
@@ -602,7 +602,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
             <Field label="Barcode (EAN)">
               <div className="flex gap-1.5">
                 <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
-                  className="retro-field flex-1 font-mono" placeholder="4005209124270"
+                  className="retro-field flex-1 font-mono"
                 />
                 <button
                   type="button"
@@ -640,7 +640,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
               <Field label="Kaufpreis (€)">
                 <input type="number" min="0" step="0.01"
                   value={form.purchasePrice} onChange={(e) => set("purchasePrice", e.target.value)}
-                  className="retro-field w-full" placeholder="29.99"
+                  className="retro-field w-full"
                 />
               </Field>
               <Field label="Kaufdatum">
