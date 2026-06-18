@@ -367,6 +367,7 @@ export default function ItemDetailPage() {
   const [coverResults, setCoverResults]   = useState<CoverResult[]>([]);
   const [coverLoading, setCoverLoading]   = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [refetching, setRefetching]       = useState(false);
   const [uploading, setUploading]   = useState(false);
   const [imageUrlDraft, setImageUrlDraft] = useState("");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -436,6 +437,24 @@ export default function ItemDetailPage() {
     await fetch(`/api/items/${itemId}/grading`, { method: "DELETE" });
     setItem((p) => p ? { ...p, grading: null } : p);
     setGradingEdit(false);
+  }
+
+  async function handleRefetch() {
+    setRefetching(true);
+    try {
+      const res = await fetch(`/api/items/${itemId}/refetch`, { method: "POST" });
+      if (res.ok) {
+        const updated = await res.json();
+        setItem(updated);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        alert((d as { error?: string }).error ?? "Fehler beim Abrufen.");
+      }
+    } catch {
+      alert("Netzwerkfehler.");
+    } finally {
+      setRefetching(false);
+    }
   }
 
   async function saveCoverUrl(url: string | null) {
@@ -661,9 +680,24 @@ export default function ItemDetailPage() {
               <div className="flex items-start justify-between gap-2">
                 <p className="text-lg font-semibold leading-tight">{item.title}</p>
                 {item.externalSource && (
-                  <span className="shrink-0 mt-0.5 rounded-full border border-green-400/30 bg-green-400/10 px-2 py-0.5 text-[10px] font-medium text-green-400">
-                    {item.externalSource}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                    <span className="rounded-full border border-green-400/30 bg-green-400/10 px-2 py-0.5 text-[10px] font-medium text-green-400">
+                      {item.externalSource}
+                    </span>
+                    {item.externalId && (
+                      <button
+                        onClick={handleRefetch}
+                        disabled={refetching}
+                        title="Metadaten & Cover von API neu laden"
+                        className="flex items-center justify-center h-5 w-5 rounded text-muted-foreground hover:text-primary transition disabled:opacity-50"
+                      >
+                        {refetching
+                          ? <span className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent inline-block" />
+                          : <span className="text-xs leading-none">↻</span>
+                        }
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               {item.year && <p className="text-sm text-muted-foreground">{item.year}</p>}
