@@ -84,7 +84,17 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
   }
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 md:h-44 items-center gap-3 md:gap-4 border-b border-border bg-background/95 px-3 md:px-6 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
+      {/* Mobile text logo row */}
+      <div className="md:hidden flex items-center justify-center py-2.5 border-b border-border/50">
+        <Link href="/dashboard" className="font-heading text-base uppercase tracking-widest">
+          <span style={{ color: "#00b4d8" }}>RETRO</span>
+          <span className="text-primary">MAN</span>
+        </Link>
+      </div>
+
+      {/* Controls row */}
+      <div className="flex h-14 md:h-44 items-center gap-3 md:gap-4 px-3 md:px-6">
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuToggle}
@@ -240,6 +250,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
             </div>
           )}
         </div>
+      </div>
       </div>
     </header>
   );
