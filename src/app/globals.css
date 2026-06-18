@@ -351,3 +351,10 @@ input[type="checkbox"]:checked {
 .font-size-large  .text-xs  { font-size: 13px; }
 .font-size-small  .text-sm  { font-size: 12px; }
 .font-size-large  .text-sm  { font-size: 16px; }
+
+/* ─── Migration progress bar ─────────────────────────────── */
+@keyframes progress {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(-100%); }
+}

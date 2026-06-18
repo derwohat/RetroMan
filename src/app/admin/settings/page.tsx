@@ -102,6 +102,7 @@ export default function AdminSettingsPage() {
   const [migrateStatus, setMigrateStatus] = useState<MigrateStatus | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [migrateOutput, setMigrateOutput] = useState<string[] | null>(null);
+  const [migrateSuccess, setMigrateSuccess] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/migrate").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setMigrateStatus(d); });
@@ -163,11 +164,12 @@ export default function AdminSettingsPage() {
   async function runMigration() {
     setMigrating(true);
     setMigrateOutput(null);
+    setMigrateSuccess(null);
     const res = await fetch("/api/admin/migrate", { method: "POST" });
     const data = await res.json();
     setMigrateOutput(data.output ?? []);
+    setMigrateSuccess(data.success === true);
     setMigrating(false);
-    // Refresh status
     fetch("/api/admin/migrate").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setMigrateStatus(d); });
   }
 
@@ -217,6 +219,22 @@ export default function AdminSettingsPage() {
               ) : "Migration ausführen"}
             </button>
           </div>
+
+          {/* Progress bar */}
+          {(migrating || migrateSuccess !== null) && (
+            <div className={`relative h-6 w-full rounded-full overflow-hidden flex items-center justify-center ${
+              migrating ? "bg-border" : migrateSuccess ? "bg-green-500/20" : "bg-destructive/20"
+            }`}>
+              {migrating && (
+                <div className="absolute inset-y-0 w-1/3 bg-primary rounded-full animate-[progress_1.5s_ease-in-out_infinite]" />
+              )}
+              {!migrating && migrateSuccess !== null && (
+                <span className={`relative z-10 text-[10px] font-medium ${migrateSuccess ? "text-green-500" : "text-destructive"}`}>
+                  {migrateSuccess ? "✓ Migration erfolgreich!" : "✗ Migration fehlgeschlagen"}
+                </span>
+              )}
+            </div>
+          )}
 
           {migrateOutput && (
             <div className="rounded-md bg-black/40 border border-border p-3 max-h-48 overflow-y-auto">

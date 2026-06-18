@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { existsSync } from "fs";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 
 const execAsync = promisify(exec);
+
+// In the Docker container, prisma lives in /migrate; in dev it's in the project root
+const MIGRATE_DIR = existsSync("/migrate/node_modules/prisma") ? "/migrate" : null;
+const MIGRATE_CMD = MIGRATE_DIR
+  ? `node ${MIGRATE_DIR}/node_modules/prisma/build/index.js migrate deploy --schema=${MIGRATE_DIR}/schema.prisma`
+  : "npx prisma migrate deploy";
+const SEED_CMD = existsSync("/app/prisma/seed.mjs")
+  ? "node /app/prisma/seed.mjs"
+  : "dotenv -e .env -- npx tsx prisma/seed.ts";
 
 async function checkAdmin(): Promise<NextResponse | null> {
   if (process.env.NODE_ENV !== "production") return null;
@@ -56,7 +66,7 @@ export async function POST() {
     // 1. Run migrations
     lines.push("▶ Führe Datenbank-Migrationen aus…");
     const { stdout: migrateOut, stderr: migrateErr } = await execAsync(
-      "npx prisma migrate deploy",
+      MIGRATE_CMD,
       { cwd: process.cwd(), timeout: 60000 },
     );
     const migrateLog = (migrateOut + migrateErr)
@@ -68,7 +78,7 @@ export async function POST() {
     // 2. Run seed
     lines.push("▶ Führe Seed aus…");
     const { stdout: seedOut, stderr: seedErr } = await execAsync(
-      "npx dotenv -e .env -- npx tsx prisma/seed.ts",
+      SEED_CMD,
       { cwd: process.cwd(), timeout: 60000 },
     );
     const seedLog = (seedOut + seedErr).split("\n").map((l) => l.trim()).filter(Boolean);
