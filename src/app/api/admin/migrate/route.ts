@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 // In the Docker container, prisma lives in /migrate; in dev it's in the project root
 const MIGRATE_DIR = existsSync("/migrate/node_modules/prisma") ? "/migrate" : null;
 const MIGRATE_CMD = MIGRATE_DIR
-  ? `node ${MIGRATE_DIR}/node_modules/prisma/build/index.js migrate deploy --schema=${MIGRATE_DIR}/schema.prisma`
+  ? `node ${MIGRATE_DIR}/node_modules/prisma/build/index.js migrate deploy`
   : "npx prisma migrate deploy";
 const SEED_CMD = existsSync("/app/prisma/seed.mjs")
   ? "node /app/prisma/seed.mjs"
@@ -67,7 +67,7 @@ export async function POST() {
     lines.push("▶ Führe Datenbank-Migrationen aus…");
     const { stdout: migrateOut, stderr: migrateErr } = await execAsync(
       MIGRATE_CMD,
-      { cwd: process.cwd(), timeout: 60000 },
+      { cwd: MIGRATE_DIR ?? process.cwd(), timeout: 60000 },
     );
     const migrateLog = (migrateOut + migrateErr)
       .split("\n")
