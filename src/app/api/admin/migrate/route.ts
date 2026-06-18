@@ -14,7 +14,7 @@ const MIGRATE_CMD = MIGRATE_DIR
   : "npx prisma migrate deploy";
 const SEED_CMD = existsSync("/app/prisma/seed.mjs")
   ? "node /app/prisma/seed.mjs"
-  : "dotenv -e .env -- npx tsx prisma/seed.ts";
+  : "node prisma/seed.mjs";
 
 async function checkAdmin(): Promise<NextResponse | null> {
   if (process.env.NODE_ENV !== "production") return null;
