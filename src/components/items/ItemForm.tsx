@@ -482,7 +482,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                 </button>
 
                 {showCoverPicker && (
-                  <div className="absolute left-0 top-[88px] z-30 w-72 rounded-lg border border-border bg-card shadow-2xl p-3 space-y-2">
+                  <div className="absolute left-0 top-[88px] z-30 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-2xl p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cover-Vorschläge</p>
                       <button type="button" onClick={() => setShowCoverPicker(false)} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
@@ -501,7 +501,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                     )}
                     {!coverLoading && coverResults.length > 0 && (
                       <>
-                        <div className="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto">
                           {coverResults.map((r, i) => (
                             <button
                               key={i}
@@ -584,7 +584,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
               </Field>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Zustand">
                 <select value={form.condition} onChange={(e) => set("condition", e.target.value)} className="retro-field w-full">
                   <option value="">—</option>
@@ -636,7 +636,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
           <div className="space-y-3">
             <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Kauf</p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Kaufpreis (€)">
                 <input type="number" min="0" step="0.01"
                   value={form.purchasePrice} onChange={(e) => set("purchasePrice", e.target.value)}
@@ -671,7 +671,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                   {collection.name}
                 </p>
                 {extraGroups.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {extraGroups.map((g) => (
                       <Field key={g.id} label={g.name}>
                         <select

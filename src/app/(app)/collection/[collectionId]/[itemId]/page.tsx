@@ -334,7 +334,7 @@ function MetaDataContent({ source, metadata, onImageClick }: { source: string | 
   if (entries.length === 0) return null;
 
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
       {entries.map(({ key, label, value }) => {
         const wide = key === "cast";
         return (
@@ -793,7 +793,7 @@ export default function ItemDetailPage() {
 
       {/* Details */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-border bg-card p-5 space-y-4">
             <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</h3>
             <dl className="space-y-3">
@@ -803,7 +803,7 @@ export default function ItemDetailPage() {
                   onSave={(v) => saveField("videoFormat", v)}
                 />
               )}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <InlineEditableField label="Zustand" value={item.condition ?? ""} type="select" options={CONDITIONS} onSave={(v) => saveField("condition", v)} />
                 <InlineEditableField label="Status" value={item.itemStatus ?? ""} type="select" options={ITEM_STATUSES} onSave={(v) => saveField("itemStatus", v)} />
               </div>
@@ -879,7 +879,7 @@ export default function ItemDetailPage() {
 
           {gradingEdit && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Service</label>
                   <input

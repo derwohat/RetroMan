@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import { NextAuthProvider } from "@/components/NextAuthProvider";
 import "./globals.css";
@@ -18,6 +18,11 @@ const pressStart2P = Press_Start_2P({
   subsets: ["latin"],
   weight: "400",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "RetroMan",

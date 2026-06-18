@@ -45,7 +45,7 @@ function IconChevronRight() {
 
 type Collection = { id: string; name: string; icon: string | null; _count: { items: number } };
 
-export function AppSidebar() {
+export function AppSidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [counts, setCounts] = useState({ favorites: 0, wishlist: 0 });
@@ -82,14 +82,28 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className={`flex flex-col border-r border-border bg-sidebar transition-all duration-200 ${collapsed ? "w-12" : "w-52"} shrink-0`}>
-      {/* Collapse toggle */}
-      <div className="flex h-10 items-center justify-end px-2 border-b border-border shrink-0">
+    <aside className={`
+      flex flex-col border-r border-border bg-sidebar transition-all duration-200 shrink-0
+      fixed inset-y-0 left-0 z-40 ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      md:relative md:translate-x-0 md:z-auto
+      ${collapsed ? "w-12" : "w-52"}
+    `}>
+      {/* Collapse toggle — desktop only */}
+      <div className="hidden md:flex h-10 items-center justify-end px-2 border-b border-border shrink-0">
         <button
           onClick={() => setCollapsed((v) => !v)}
           className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-primary transition"
         >
           {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
+        </button>
+      </div>
+      {/* Close button — mobile only */}
+      <div className="md:hidden flex h-14 items-center justify-between px-3 border-b border-border shrink-0">
+        <span className="font-heading text-[10px] text-primary neon-glow uppercase tracking-widest">{t.nav.collections}</span>
+        <button onClick={onClose} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-primary transition">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 

@@ -20,7 +20,7 @@ type SearchItem = {
   images: Array<{ url: string | null; isPrimary: boolean }>;
 };
 
-export function AppHeader() {
+export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const router = useRouter();
   const [query, setQuery]           = useState("");
   const [profile, setProfile]       = useState<Profile | null>(null);
@@ -84,9 +84,20 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 flex h-44 items-center gap-4 border-b border-border bg-background/95 px-6 backdrop-blur">
-      {/* Logo */}
-      <div className="flex items-center w-52 shrink-0">
+    <header className="sticky top-0 z-50 flex h-14 md:h-44 items-center gap-3 md:gap-4 border-b border-border bg-background/95 px-3 md:px-6 backdrop-blur">
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMenuToggle}
+        className="md:hidden flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-primary transition shrink-0"
+        aria-label="Menü"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Logo — desktop only */}
+      <div className="hidden md:flex items-center w-52 shrink-0">
         <Link href="/dashboard" className="relative block w-52 h-[168px]">
           <Image src="/logo.png" alt="RetroMan" fill className="object-contain object-left" />
         </Link>
