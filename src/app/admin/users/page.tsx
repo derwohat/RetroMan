@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type User = {
   id: string;
@@ -14,6 +15,7 @@ type User = {
 };
 
 export default function AdminUsersPage() {
+  const { t } = useTranslations();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -43,7 +45,7 @@ export default function AdminUsersPage() {
       body: JSON.stringify(form),
     });
     setSubmitting(false);
-    if (!res.ok) { setFormError((await res.json()).error ?? "Fehler"); return; }
+    if (!res.ok) { setFormError((await res.json()).error ?? t.common.error); return; }
     const { user, tempPassword } = await res.json();
     setUsers((prev) => [...prev, { ...user, deletedAt: null, mfaEnabled: false }]);
     setShowCreate(false);
@@ -88,30 +90,30 @@ export default function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">
-            Benutzerverwaltung
+            {t.adminUsers.title}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{users.length} Benutzer</p>
+          <p className="mt-1 text-sm text-muted-foreground">{users.length} {t.adminUsers.countLabel}</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
         >
-          + Neuer Benutzer
+          {t.adminUsers.newUser}
         </button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
+        <p className="text-sm text-muted-foreground">{t.common.loading}</p>
       ) : users.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
-          <p className="text-sm text-muted-foreground">Noch keine Benutzer vorhanden.</p>
+          <p className="text-sm text-muted-foreground">{t.adminUsers.empty}</p>
         </div>
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                {["Name", "E-Mail", "Rolle", "Status", "Aktionen"].map((h) => (
+                {[t.adminUsers.colName, t.adminUsers.colEmail, t.adminUsers.colRole, t.adminUsers.colStatus, t.adminUsers.colActions].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground">
                     {h}
                   </th>
@@ -127,7 +129,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3">
                     <p className="text-sm font-medium text-foreground">{user.name}</p>
                     {user.mustChangePassword && (
-                      <p className="text-[10px] text-orange-400">Passwort-Änderung ausstehend</p>
+                      <p className="text-[10px] text-orange-400">{t.adminUsers.passwordPending}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
@@ -137,7 +139,7 @@ export default function AdminUsersPage() {
                         ? "border-primary/50 bg-primary/10 text-primary"
                         : "border-border bg-muted text-muted-foreground"
                     }`}>
-                      {user.role === "ADMIN" ? "Admin" : "Benutzer"}
+                      {user.role === "ADMIN" ? t.adminUsers.roleAdmin : t.adminUsers.roleUser}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -146,7 +148,7 @@ export default function AdminUsersPage() {
                         ? "border-destructive/40 bg-destructive/10 text-destructive"
                         : "border-green-500/40 bg-green-500/10 text-green-500"
                     }`}>
-                      {user.deletedAt ? "Deaktiviert" : "Aktiv"}
+                      {user.deletedAt ? t.adminUsers.statusDeactivated : t.adminUsers.statusActive}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -155,7 +157,7 @@ export default function AdminUsersPage() {
                         onClick={() => handleResetPassword(user.id, user.name)}
                         className="rounded border border-border px-2 py-1 text-[10px] text-muted-foreground hover:border-primary hover:text-primary transition"
                       >
-                        Passwort reset
+                        {t.adminUsers.resetPassword}
                       </button>
                       <button
                         onClick={() => handleToggleActive(user.id)}
@@ -165,12 +167,12 @@ export default function AdminUsersPage() {
                             : "border-destructive/40 text-destructive hover:bg-destructive/10"
                         }`}
                       >
-                        {user.deletedAt ? "Aktivieren" : "Deaktivieren"}
+                        {user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
                       </button>
                       <button
                         onClick={() => { setDeleteTarget(user); setDeleteConfirm(""); }}
                         className="rounded border border-destructive/40 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 transition"
-                        title="Endgültig löschen"
+                        title={t.adminUsers.deleteForever}
                       >
                         🗑
                       </button>
@@ -188,39 +190,39 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5">
             <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">
-              Neuen Benutzer anlegen
+              {t.adminUsers.createTitle}
             </h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Name</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colName}</label>
                 <input
                   required
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-                  placeholder="Max Mustermann"
+                  placeholder={t.adminUsers.namePlaceholder}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">E-Mail</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colEmail}</label>
                 <input
                   required
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-                  placeholder="max@example.com"
+                  placeholder={t.adminUsers.emailPlaceholder}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Rolle</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.role}</label>
                 <select
                   value={form.role}
                   onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
                   className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
                 >
-                  <option value="USER">Benutzer</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="USER">{t.adminUsers.roleUser}</option>
+                  <option value="ADMIN">{t.adminUsers.roleAdmin}</option>
                 </select>
               </div>
               {formError && <p className="text-xs text-destructive">{formError}</p>}
@@ -230,14 +232,14 @@ export default function AdminUsersPage() {
                   onClick={() => { setShowCreate(false); setFormError(""); }}
                   className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
                 >
-                  Abbrechen
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
                 >
-                  {submitting ? "Erstelle…" : "Erstellen"}
+                  {submitting ? t.common.creating : t.common.create}
                 </button>
               </div>
             </form>
@@ -251,14 +253,14 @@ export default function AdminUsersPage() {
           <div className="w-full max-w-sm rounded-xl border border-destructive/50 bg-card p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-destructive text-lg">⚠️</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
+              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Benutzer <span className="font-medium text-foreground">{deleteTarget.name}</span> wird <span className="text-destructive font-medium">unwiderruflich gelöscht</span> — inklusive aller zugehörigen Daten.
+              {t.adminUsers.userLabel} <span className="font-medium text-foreground">{deleteTarget.name}</span> {t.adminUsers.deleteUserText}
             </p>
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                E-Mail-Adresse zur Bestätigung eingeben:
+                {t.adminUsers.confirmEmail}
               </label>
               <input
                 type="email"
@@ -274,14 +276,14 @@ export default function AdminUsersPage() {
                 onClick={() => { setDeleteTarget(null); setDeleteConfirm(""); }}
                 className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
               >
-                Abbrechen
+                {t.common.cancel}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting || deleteConfirm !== deleteTarget.email}
                 className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-40 transition"
               >
-                {deleting ? "Lösche…" : "Endgültig löschen"}
+                {deleting ? t.common.deleting : t.adminUsers.deleteForever}
               </button>
             </div>
           </div>
@@ -293,12 +295,12 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-4">
             <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">
-              Temporäres Passwort
+              {t.adminUsers.tempPassword}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Teile dieses Passwort sicher mit{" "}
-              <span className="font-medium text-foreground">{tempPw.name}</span>.
-              Der Benutzer muss es beim ersten Login ändern.
+              {t.adminUsers.tempPasswordHint}{" "}
+              <span className="font-medium text-foreground">{tempPw.name}</span>.{" "}
+              {t.adminUsers.tempPasswordNote}
             </p>
             <div className="rounded-md border border-primary/30 bg-primary/5 p-4 text-center">
               <code className="font-mono text-xl text-primary tracking-widest select-all">
@@ -309,7 +311,7 @@ export default function AdminUsersPage() {
               onClick={() => setTempPw(null)}
               className="w-full rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 transition"
             >
-              Verstanden
+              {t.adminUsers.understood}
             </button>
           </div>
         </div>

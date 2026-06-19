@@ -4,9 +4,11 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { t } = useStandaloneTranslations();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +28,7 @@ export default function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Ungültige E-Mail oder Passwort.");
+      setError(t.auth.invalidCredentials);
       return;
     }
 
@@ -41,27 +43,27 @@ export default function LoginForm() {
           <div className="relative w-full h-48">
             <Image src="/logo.png" alt="RetroMan" fill className="object-contain" priority />
           </div>
-          <p className="slogan-glow text-sm tracking-widest italic">Rewind your world!</p>
+          <p className="slogan-glow text-sm tracking-widest italic">{t.auth.slogan}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">E-Mail</label>
+            <label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">{t.auth.email}</label>
             <input
               id="email" type="email" required autoComplete="email"
               value={email} onChange={(e) => setEmail(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-              placeholder="name@example.com"
+              placeholder={t.auth.emailPlaceholder}
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider">Passwort</label>
+            <label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider">{t.auth.password}</label>
             <input
               id="password" type="password" required autoComplete="current-password"
               value={password} onChange={(e) => setPassword(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-              placeholder="••••••••"
+              placeholder={t.auth.passwordPlaceholder}
             />
           </div>
 
@@ -71,7 +73,7 @@ export default function LoginForm() {
             type="submit" disabled={loading}
             className="w-full rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50 neon-border"
           >
-            {loading ? "Anmelden…" : "Anmelden"}
+            {loading ? t.auth.signingIn : t.auth.signIn}
           </button>
         </form>
       </div>

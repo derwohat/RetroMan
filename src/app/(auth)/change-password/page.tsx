@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
+  const { t } = useStandaloneTranslations();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -16,11 +18,11 @@ export default function ChangePasswordPage() {
     setError("");
 
     if (password.length < 8) {
-      setError("Passwort muss mindestens 8 Zeichen lang sein.");
+      setError(t.auth.passwordTooShort);
       return;
     }
     if (password !== confirm) {
-      setError("Passwörter stimmen nicht überein.");
+      setError(t.auth.passwordsDoNotMatch);
       return;
     }
 
@@ -36,7 +38,7 @@ export default function ChangePasswordPage() {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Fehler beim Ändern des Passworts.");
+      setError(data.error ?? t.auth.changePasswordError);
       return;
     }
 
@@ -51,16 +53,16 @@ export default function ChangePasswordPage() {
           <div className="relative w-full h-48">
             <Image src="/logo.png" alt="RetroMan" fill className="object-contain" priority />
           </div>
-          <p className="slogan-glow text-sm tracking-widest italic">Rewind your world!</p>
+          <p className="slogan-glow text-sm tracking-widest italic">{t.auth.slogan}</p>
           <p className="text-muted-foreground text-xs">
-            Bitte wähle ein neues Passwort für deinen Account.
+            {t.auth.changePasswordPrompt}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider">
-              Neues Passwort
+              {t.auth.newPassword}
             </label>
             <input
               id="password"
@@ -70,13 +72,13 @@ export default function ChangePasswordPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-              placeholder="Min. 8 Zeichen"
+              placeholder={t.auth.passwordMinPlaceholder}
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="confirm" className="text-xs text-muted-foreground uppercase tracking-wider">
-              Passwort bestätigen
+              {t.auth.confirmPassword}
             </label>
             <input
               id="confirm"
@@ -86,7 +88,7 @@ export default function ChangePasswordPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-              placeholder="••••••••"
+              placeholder={t.auth.passwordPlaceholder}
             />
           </div>
 
@@ -97,7 +99,7 @@ export default function ChangePasswordPage() {
             disabled={loading}
             className="w-full rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Speichern…" : "Passwort speichern"}
+            {loading ? t.auth.saving : t.auth.savePassword}
           </button>
         </form>
       </div>

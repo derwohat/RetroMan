@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area, CartesianGrid,
 } from "recharts";
 import { formatPrice } from "@/lib/format";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type StatsData = {
   total: number;
@@ -21,10 +22,6 @@ type StatsData = {
 const CONDITION_COLORS_HEX: Record<string, string> = {
   MINT: "#22c55e", VERY_GOOD: "#22d3ee", GOOD: "#fbbf24", USED: "#f97316", POOR: "#ef4444", UNKNOWN: "#6b7280",
 };
-const CONDITION_LABELS: Record<string, string> = {
-  MINT: "Mint", VERY_GOOD: "Very Good", GOOD: "Good", USED: "Used", POOR: "Poor", UNKNOWN: "Unbekannt",
-};
-
 const CHART_COLORS = [
   "#ff2d95", "#00f5d4", "#a855f7", "#f97316", "#22d3ee",
   "#fbbf24", "#22c55e", "#e879f9", "#34d399", "#fb7185",
@@ -41,6 +38,7 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 }
 
 export default function StatsPage() {
+  const { t } = useTranslations();
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,13 +60,13 @@ export default function StatsPage() {
   if (!data || data.total === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-sm text-muted-foreground">Noch keine Einträge vorhanden.</p>
+        <p className="text-sm text-muted-foreground">{t.stats.empty}</p>
       </div>
     );
   }
 
   const conditionData = Object.entries(data.byCondition).map(([k, v]) => ({
-    name: CONDITION_LABELS[k] ?? k,
+    name: t.conditions[k as keyof typeof t.conditions] ?? k,
     value: v,
     color: CONDITION_COLORS_HEX[k] ?? "#6b7280",
   }));
@@ -81,22 +79,22 @@ export default function StatsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">Statistiken</h2>
+        <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">{t.stats.title}</h2>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Einträge gesamt" value={data.total} />
-        <StatCard label="Gesamtwert" value={formatPrice(data.totalValue)} />
-        <StatCard label="Favoriten" value={data.favorites} />
-        <StatCard label="Wunschliste" value={data.wishlist} />
+        <StatCard label={t.stats.totalItems} value={data.total} />
+        <StatCard label={t.stats.totalValue} value={formatPrice(data.totalValue)} />
+        <StatCard label={t.stats.favorites} value={data.favorites} />
+        <StatCard label={t.stats.wishlist} value={data.wishlist} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Items per collection */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Einträge pro Sammlung</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">{t.stats.perCollection}</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data.byCollection.slice(0, 10)} margin={{ top: 0, right: 0, bottom: 40, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -106,7 +104,7 @@ export default function StatsPage() {
                 contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 12 }}
                 cursor={{ fill: "rgba(255,45,149,0.08)" }}
               />
-              <Bar dataKey="count" name="Einträge" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="count" name={t.stats.entries} radius={[4, 4, 0, 0]}>
                 {data.byCollection.slice(0, 10).map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
@@ -117,7 +115,7 @@ export default function StatsPage() {
 
         {/* Condition distribution */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Zustand</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">{t.stats.condition}</p>
           <div className="flex items-center gap-6">
             <ResponsiveContainer width={180} height={180}>
               <PieChart>
@@ -148,7 +146,7 @@ export default function StatsPage() {
         {/* Items added per month */}
         {monthLabels.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Hinzugefügt (letzte 12 Monate)</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">{t.stats.addedLast12}</p>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={monthLabels} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <defs>
@@ -164,7 +162,7 @@ export default function StatsPage() {
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 12 }}
                   cursor={{ stroke: "rgba(255,45,149,0.3)" }}
                 />
-                <Area type="monotone" dataKey="count" name="Einträge" stroke="#ff2d95" strokeWidth={2} fill="url(#colorCount)" />
+                <Area type="monotone" dataKey="count" name={t.stats.entries} stroke="#ff2d95" strokeWidth={2} fill="url(#colorCount)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -173,7 +171,7 @@ export default function StatsPage() {
         {/* Items per year */}
         {data.byYear.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Einträge nach Erscheinungsjahr</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">{t.stats.byYear}</p>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={data.byYear} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -183,7 +181,7 @@ export default function StatsPage() {
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 12 }}
                   cursor={{ fill: "rgba(255,45,149,0.08)" }}
                 />
-                <Bar dataKey="count" name="Einträge" fill="#00f5d4" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="count" name={t.stats.entries} fill="#00f5d4" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -194,7 +192,7 @@ export default function StatsPage() {
       {/* Top collections by value */}
       {data.byCollection.some((c) => c.value > 0) && (
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">Wert pro Sammlung</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-4">{t.stats.valuePerCollection}</p>
           <div className="space-y-2">
             {data.byCollection
               .filter((c) => c.value > 0)

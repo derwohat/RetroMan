@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
-import { CONDITION_COLORS, CONDITION_LABELS } from "@/components/views/types";
+import { CONDITION_COLORS } from "@/components/views/types";
 import { formatPrice } from "@/lib/format";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type ItemWithCollection = {
   id: string;
@@ -24,6 +25,7 @@ function getImageUrl(item: ItemWithCollection) {
 }
 
 export default function FavoritesPage() {
+  const { t } = useTranslations();
   const [items, setItems] = useState<ItemWithCollection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,11 +40,11 @@ export default function FavoritesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">
-          Favoriten
+          {t.favorites.title}
         </h2>
         {!loading && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? "Eintrag" : "Einträge"}
+            {items.length} {items.length === 1 ? t.dashboard.entry : t.dashboard.entries}
           </p>
         )}
       </div>
@@ -50,8 +52,8 @@ export default function FavoritesPage() {
       {!loading && items.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <span className="text-5xl mb-4 opacity-20">❤️</span>
-          <p className="text-sm text-muted-foreground">Noch keine Favoriten.</p>
-          <p className="mt-1 text-xs text-muted-foreground">Einträge mit dem Herz-Symbol markieren.</p>
+          <p className="text-sm text-muted-foreground">{t.favorites.emptyTitle}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t.favorites.emptyHint}</p>
         </div>
       )}
 
@@ -74,7 +76,7 @@ export default function FavoritesPage() {
                   )}
                   {item.condition && (
                     <span className={`absolute top-0.5 left-0.5 rounded-full border px-1 py-0.5 text-[8px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? ""}`}>
-                      {CONDITION_LABELS[item.condition]?.charAt(0)}
+                      {t.conditions[item.condition as keyof typeof t.conditions]?.charAt(0)}
                     </span>
                   )}
                   <span className="absolute bottom-0.5 right-0.5 text-xs">❤️</span>

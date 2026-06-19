@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { signOut } from "next-auth/react";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type Profile = { id: string; name: string; email: string; role: string; preferredLanguage: string; mfaEnabled: boolean };
 
@@ -30,6 +31,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslations();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState("");
   const [lang, setLang] = useState("de");
@@ -79,7 +81,7 @@ export default function ProfilePage() {
     if (res.ok) {
       const updated: Profile = await res.json();
       setProfile(updated);
-      setSavedMsg("Gespeichert!");
+      setSavedMsg(t.profile.saved);
       setTimeout(() => setSavedMsg(""), 2500);
     }
   }
@@ -87,8 +89,8 @@ export default function ProfilePage() {
   async function handlePasswordChange(e: FormEvent) {
     e.preventDefault();
     setPwError(""); setPwMsg("");
-    if (pwNew !== pwConfirm) { setPwError("Passwörter stimmen nicht überein."); return; }
-    if (pwNew.length < 8) { setPwError("Mindestens 8 Zeichen erforderlich."); return; }
+    if (pwNew !== pwConfirm) { setPwError(t.profile.passwordMismatch); return; }
+    if (pwNew.length < 8) { setPwError(t.profile.passwordTooShort); return; }
     setPwSaving(true);
     const res = await fetch("/api/user/change-password", {
       method: "POST",
@@ -97,12 +99,12 @@ export default function ProfilePage() {
     });
     setPwSaving(false);
     if (res.ok) {
-      setPwMsg("Passwort erfolgreich geändert!");
+      setPwMsg(t.profile.passwordChanged);
       setPwCurrent(""); setPwNew(""); setPwConfirm("");
       setTimeout(() => setPwMsg(""), 3000);
     } else {
       const d = await res.json().catch(() => ({}));
-      setPwError((d as { error?: string }).error ?? "Fehler beim Ändern.");
+      setPwError((d as { error?: string }).error ?? t.profile.changeError);
     }
   }
 
@@ -115,7 +117,7 @@ export default function ProfilePage() {
       setMfaQr(qrDataUrl);
       setMfaToken("");
     } else {
-      setMfaError("Fehler beim Setup.");
+      setMfaError(t.profile.mfaSetupError);
     }
   }
 
@@ -129,13 +131,13 @@ export default function ProfilePage() {
     });
     setMfaLoading(false);
     if (res.ok) {
-      setMfaMsg("MFA aktiviert!");
+      setMfaMsg(t.profile.mfaActivated);
       setMfaQr(null);
       setMfaToken("");
       setProfile((p) => p ? { ...p, mfaEnabled: true } : p);
     } else {
       const d = await res.json().catch(() => ({}));
-      setMfaError((d as { error?: string }).error ?? "Ungültiger Code.");
+      setMfaError((d as { error?: string }).error ?? t.profile.mfaInvalidCode);
     }
   }
 
@@ -149,13 +151,13 @@ export default function ProfilePage() {
     });
     setMfaLoading(false);
     if (res.ok) {
-      setMfaMsg("MFA deaktiviert.");
+      setMfaMsg(t.profile.mfaDeactivated);
       setShowDisable(false);
       setMfaDisableToken("");
       setProfile((p) => p ? { ...p, mfaEnabled: false } : p);
     } else {
       const d = await res.json().catch(() => ({}));
-      setMfaError((d as { error?: string }).error ?? "Ungültiger Code.");
+      setMfaError((d as { error?: string }).error ?? t.profile.mfaInvalidCode);
     }
   }
 
@@ -173,12 +175,12 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setImportMsg(`${data.created} Einträge importiert, ${data.skipped} übersprungen.`);
+        setImportMsg(t.profile.importSuccess.replace("{created}", String(data.created)).replace("{skipped}", String(data.skipped)));
       } else {
-        setImportError(data.error ?? "Import fehlgeschlagen.");
+        setImportError(data.error ?? t.profile.importError);
       }
     } catch {
-      setImportError("Ungültige JSON-Datei.");
+      setImportError(t.profile.importInvalidJson);
     } finally {
       setImporting(false);
       if (importFileRef.current) importFileRef.current.value = "";
@@ -188,27 +190,27 @@ export default function ProfilePage() {
   return (
     <div className="max-w-xl space-y-8">
       <div>
-        <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">Profil &amp; Einstellungen</h2>
+        <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">{t.profile.title}</h2>
         {profile && <p className="mt-1 text-sm text-muted-foreground">{profile.email}</p>}
       </div>
 
       {/* Profile */}
-      <Section title="Persönliche Daten">
+      <Section title={t.profile.personalData}>
         <form onSubmit={handleSave} className="space-y-4">
-          <Field label="Name">
+          <Field label={t.profile.name}>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="retro-field w-full" required />
           </Field>
-          <Field label="E-Mail" hint="E-Mail kann nur durch einen Admin geändert werden.">
+          <Field label={t.profile.email} hint={t.profile.emailHint}>
             <input type="email" value={profile?.email ?? ""} disabled className="retro-field w-full opacity-50 cursor-not-allowed" />
           </Field>
-          <Field label="Sprache">
+          <Field label={t.profile.language}>
             <select value={lang} onChange={(e) => setLang(e.target.value)} className="retro-field w-full">
               {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
             </select>
           </Field>
           <div className="flex items-center gap-3">
             <button type="submit" disabled={saving} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-              {saving ? "Speichere…" : "Speichern"}
+              {saving ? t.profile.saving : t.profile.save}
             </button>
             {savedMsg && <span className="text-xs text-green-500">{savedMsg}</span>}
           </div>
@@ -216,9 +218,9 @@ export default function ProfilePage() {
       </Section>
 
       {/* Password */}
-      <Section title="Passwort ändern">
+      <Section title={t.profile.changePassword}>
         <form onSubmit={handlePasswordChange} className="space-y-4">
-          {(["Aktuelles Passwort", "Neues Passwort", "Neues Passwort bestätigen"] as const).map((label, i) => {
+          {([t.profile.currentPassword, t.profile.newPassword, t.profile.confirmPassword] as const).map((label, i) => {
             const val = [pwCurrent, pwNew, pwConfirm][i];
             const setter = [setPwCurrent, setPwNew, setPwConfirm][i];
             return (
@@ -230,7 +232,7 @@ export default function ProfilePage() {
           {pwError && <p className="text-xs text-destructive">{pwError}</p>}
           <div className="flex items-center gap-3">
             <button type="submit" disabled={pwSaving} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-              {pwSaving ? "Ändere…" : "Passwort ändern"}
+              {pwSaving ? t.profile.changingPassword : t.profile.changePasswordBtn}
             </button>
             {pwMsg && <span className="text-xs text-green-500">{pwMsg}</span>}
           </div>
@@ -238,11 +240,9 @@ export default function ProfilePage() {
       </Section>
 
       {/* MFA */}
-      <Section title="Zwei-Faktor-Authentifizierung (TOTP)">
+      <Section title={t.profile.mfaTitle}>
         <p className="text-xs text-muted-foreground">
-          {profile?.mfaEnabled
-            ? "MFA ist aktiv. Du wirst beim Login nach einem 6-stelligen Code aus deiner Authenticator-App gefragt."
-            : "Sichere deinen Account mit einem Authenticator (z.B. Google Authenticator, Authy)."}
+          {profile?.mfaEnabled ? t.profile.mfaActiveHint : t.profile.mfaInactiveHint}
         </p>
 
         {mfaMsg && <p className="text-xs text-green-500">{mfaMsg}</p>}
@@ -250,13 +250,13 @@ export default function ProfilePage() {
 
         {!profile?.mfaEnabled && !mfaQr && (
           <button onClick={startMfaSetup} disabled={mfaLoading} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-            {mfaLoading ? "Lade…" : "MFA einrichten"}
+            {mfaLoading ? t.profile.mfaLoading : t.profile.mfaSetup}
           </button>
         )}
 
         {!profile?.mfaEnabled && mfaQr && (
           <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">Scanne diesen QR-Code mit deiner Authenticator-App:</p>
+            <p className="text-xs text-muted-foreground">{t.profile.mfaScanHint}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={mfaQr} alt="QR Code" className="w-40 h-40 rounded-lg border border-border" />
             <form onSubmit={verifyMfa} className="flex gap-2">
@@ -272,22 +272,22 @@ export default function ProfilePage() {
                 required
               />
               <button type="submit" disabled={mfaLoading || mfaToken.length !== 6} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-                {mfaLoading ? "Prüfe…" : "Bestätigen"}
+                {mfaLoading ? t.profile.mfaVerifying : t.profile.mfaConfirm}
               </button>
-              <button type="button" onClick={() => setMfaQr(null)} className="text-xs text-muted-foreground hover:text-foreground">Abbrechen</button>
+              <button type="button" onClick={() => setMfaQr(null)} className="text-xs text-muted-foreground hover:text-foreground">{t.profile.mfaCancel}</button>
             </form>
           </div>
         )}
 
         {profile?.mfaEnabled && !showDisable && (
           <button onClick={() => { setShowDisable(true); setMfaError(""); }} className="rounded-md border border-destructive/50 px-4 py-2 text-xs font-medium text-destructive uppercase tracking-wider hover:bg-destructive/10 transition">
-            MFA deaktivieren
+            {t.profile.mfaDisable}
           </button>
         )}
 
         {profile?.mfaEnabled && showDisable && (
           <form onSubmit={disableMfa} className="space-y-3">
-            <p className="text-xs text-muted-foreground">Code aus deiner Authenticator-App eingeben:</p>
+            <p className="text-xs text-muted-foreground">{t.profile.mfaDisableHint}</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -301,39 +301,39 @@ export default function ProfilePage() {
                 required
               />
               <button type="submit" disabled={mfaLoading || mfaDisableToken.length !== 6} className="rounded-md border border-destructive px-4 py-2 text-xs font-medium text-destructive uppercase tracking-wider hover:bg-destructive/10 disabled:opacity-50 transition">
-                {mfaLoading ? "Prüfe…" : "Deaktivieren"}
+                {mfaLoading ? t.profile.mfaDisabling : t.profile.mfaDisableBtn}
               </button>
-              <button type="button" onClick={() => setShowDisable(false)} className="text-xs text-muted-foreground hover:text-foreground">Abbrechen</button>
+              <button type="button" onClick={() => setShowDisable(false)} className="text-xs text-muted-foreground hover:text-foreground">{t.profile.mfaCancel}</button>
             </div>
           </form>
         )}
       </Section>
 
       {/* Export / Import */}
-      <Section title="Daten Export &amp; Import">
+      <Section title={t.profile.exportTitle}>
         <div className="space-y-4">
           <div>
-            <p className="text-xs text-muted-foreground mb-3">Alle deine Einträge als Datei exportieren:</p>
+            <p className="text-xs text-muted-foreground mb-3">{t.profile.exportHint}</p>
             <div className="flex flex-wrap gap-2">
               <a
                 href="/api/export?format=json"
                 download
                 className="rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition"
               >
-                JSON exportieren
+                {t.profile.exportJson}
               </a>
               <a
                 href="/api/export?format=csv"
                 download
                 className="rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition"
               >
-                CSV exportieren
+                {t.profile.exportCsv}
               </a>
             </div>
           </div>
 
           <div className="border-t border-border pt-4">
-            <p className="text-xs text-muted-foreground mb-3">Einträge aus einer RetroMan-JSON-Exportdatei importieren:</p>
+            <p className="text-xs text-muted-foreground mb-3">{t.profile.importHint}</p>
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
@@ -341,26 +341,26 @@ export default function ProfilePage() {
                 disabled={importing}
                 className="rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
               >
-                {importing ? "Importiere…" : "JSON-Datei wählen"}
+                {importing ? t.profile.importing : t.profile.importBtn}
               </button>
               <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
               {importMsg && <span className="text-xs text-green-500">{importMsg}</span>}
               {importError && <span className="text-xs text-destructive">{importError}</span>}
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Nur das RetroMan-JSON-Format wird unterstützt. Maximal 5.000 Einträge pro Import.</p>
+            <p className="mt-2 text-[10px] text-muted-foreground">{t.profile.importNote}</p>
           </div>
         </div>
       </Section>
 
       {/* DSGVO */}
-      <Section title="Datenschutz (DSGVO)">
-        <p className="text-xs text-muted-foreground">Vollständigen Download aller deiner gespeicherten Daten anfordern:</p>
+      <Section title={t.profile.gdprTitle}>
+        <p className="text-xs text-muted-foreground">{t.profile.gdprHint}</p>
         <a
           href="/api/export?format=gdpr"
           download
           className="inline-block rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition"
         >
-          Datenpakt herunterladen (JSON)
+          {t.profile.gdprDownload}
         </a>
       </Section>
 
@@ -369,13 +369,13 @@ export default function ProfilePage() {
 
       {/* Logout */}
       <div className="rounded-xl border border-destructive/30 bg-card p-6 space-y-3">
-        <h3 className="text-sm font-medium text-destructive">Abmelden</h3>
-        <p className="text-xs text-muted-foreground">Sitzung beenden und zum Login zurückkehren.</p>
+        <h3 className="text-sm font-medium text-destructive">{t.profile.logoutTitle}</h3>
+        <p className="text-xs text-muted-foreground">{t.profile.logoutHint}</p>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="rounded-md border border-destructive px-4 py-2 text-xs font-medium text-destructive uppercase tracking-wider hover:bg-destructive hover:text-white transition"
         >
-          Abmelden
+          {t.profile.logoutBtn}
         </button>
       </div>
     </div>
@@ -383,6 +383,7 @@ export default function ProfilePage() {
 }
 
 function AccountDeleteSection({ onDeleted }: { onDeleted: () => void }) {
+  const { t } = useTranslations();
   const [step, setStep]       = useState<"idle" | "confirm">("idle");
   const [password, setPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -401,35 +402,33 @@ function AccountDeleteSection({ onDeleted }: { onDeleted: () => void }) {
       onDeleted();
     } else {
       const d = await res.json().catch(() => ({}));
-      setError((d as { error?: string }).error ?? "Fehler.");
+      setError((d as { error?: string }).error ?? t.profile.deleteAccountError);
     }
   }
 
   return (
     <div className="rounded-xl border border-destructive/30 bg-card p-6 space-y-3">
-      <h3 className="text-sm font-medium text-destructive">Account löschen</h3>
-      <p className="text-xs text-muted-foreground">
-        Dein Account und alle deine Daten werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
-      </p>
+      <h3 className="text-sm font-medium text-destructive">{t.profile.deleteAccountTitle}</h3>
+      <p className="text-xs text-muted-foreground">{t.profile.deleteAccountHint}</p>
 
       {step === "idle" && (
         <button
           onClick={() => setStep("confirm")}
           className="rounded-md border border-destructive/50 px-4 py-2 text-xs font-medium text-destructive uppercase tracking-wider hover:bg-destructive/10 transition"
         >
-          Account löschen
+          {t.profile.deleteAccountBtn}
         </button>
       )}
 
       {step === "confirm" && (
         <form onSubmit={handleDelete} className="space-y-3">
-          <p className="text-xs text-destructive font-medium">Bestätige mit deinem Passwort:</p>
+          <p className="text-xs text-destructive font-medium">{t.profile.deleteAccountConfirm}</p>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="retro-field w-full"
-            placeholder="Passwort eingeben"
+            placeholder={t.profile.deleteAccountPasswordPlaceholder}
             required
             autoComplete="current-password"
           />
@@ -440,9 +439,9 @@ function AccountDeleteSection({ onDeleted }: { onDeleted: () => void }) {
               disabled={deleting || !password}
               className="rounded-md bg-destructive px-4 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
             >
-              {deleting ? "Lösche…" : "Dauerhaft löschen"}
+              {deleting ? t.profile.deleteAccountDeleting : t.profile.deleteAccountPermDelete}
             </button>
-            <button type="button" onClick={() => { setStep("idle"); setPassword(""); setError(""); }} className="text-xs text-muted-foreground hover:text-foreground">Abbrechen</button>
+            <button type="button" onClick={() => { setStep("idle"); setPassword(""); setError(""); }} className="text-xs text-muted-foreground hover:text-foreground">{t.profile.mfaCancel}</button>
           </div>
         </form>
       )}

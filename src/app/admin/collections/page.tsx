@@ -17,6 +17,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CategoryIcon, ICON_NAMES, ICON_LABELS } from "@/components/ui/CategoryIcon";
+import { useTranslations } from "@/components/LanguageProvider";
+import type { Translations } from "@/lib/i18n";
 
 type Field = {
   id: string;
@@ -49,28 +51,23 @@ type Collection = {
 
 type TagGroupOption = { id: string; name: string };
 
-const MEDIA_TYPES = [
-  { value: "GAME",    label: "Spiele" },
-  { value: "MUSIC",   label: "Musik" },
-  { value: "FILM",    label: "Filme" },
-  { value: "SERIE",   label: "Serien" },
-  { value: "BOOK",    label: "Bücher" },
-  { value: "COMIC",   label: "Comics" },
-  { value: "MANGA",   label: "Manga" },
-  { value: "CONSOLE", label: "Konsolen" },
-];
+const MEDIA_TYPE_VALUES = ["GAME", "MUSIC", "FILM", "SERIE", "BOOK", "COMIC", "MANGA", "CONSOLE"] as const;
+type MediaTypeValue = (typeof MEDIA_TYPE_VALUES)[number];
 
-const FIELD_TYPES = [
-  { value: "TEXT",     label: "Text" },
-  { value: "TEXTAREA", label: "Textbereich" },
-  { value: "NUMBER",   label: "Zahl" },
-  { value: "DATE",     label: "Datum" },
-  { value: "SELECT",   label: "Auswahl" },
-  { value: "BOOLEAN",  label: "Ja/Nein" },
-];
+const FIELD_TYPE_VALUES = ["TEXT", "TEXTAREA", "NUMBER", "DATE", "SELECT", "BOOLEAN"] as const;
+type FieldTypeValue = (typeof FIELD_TYPE_VALUES)[number];
+
+function mediaTypeLabel(t: Translations, value: string): string {
+  return t.collections.mediaTypes[value as MediaTypeValue] ?? value;
+}
+
+function fieldTypeLabel(t: Translations, value: string): string {
+  return t.collections.fieldTypes[value as FieldTypeValue] ?? value;
+}
 
 // ── SVG Icon Picker ────────────────────────────────────────────────────────────
 function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslations();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -91,7 +88,7 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
       >
         <span className="flex items-center gap-2">
           <CategoryIcon icon={value || "box"} className="h-5 w-5" />
-          <span className="text-xs text-muted-foreground">{ICON_LABELS[value] || value || "Icon wählen"}</span>
+          <span className="text-xs text-muted-foreground">{ICON_LABELS[value] || value || t.collections.iconPlaceholder}</span>
         </span>
         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-muted-foreground ml-auto" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -161,6 +158,7 @@ function SortableCollection({
   onToggleTagGroupVisibility: (colId: string, groupId: string) => Promise<void>;
   onToggleGrading: (colId: string) => Promise<void>;
 }) {
+  const { t } = useTranslations();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: col.id });
 
@@ -213,7 +211,7 @@ function SortableCollection({
       body: JSON.stringify(body),
     });
     setSubmitting(false);
-    if (!res.ok) { setFieldError((await res.json()).error ?? "Fehler"); return; }
+    if (!res.ok) { setFieldError((await res.json()).error ?? t.collections.fieldError); return; }
     onReload();
     setShowAdd(false);
     setFieldForm({ name: "", fieldKey: "", fieldType: "TEXT", options: "", required: false });
@@ -261,7 +259,7 @@ function SortableCollection({
             <div>
               <p className="text-sm font-medium text-foreground">{col.name}</p>
               <p className="text-xs text-muted-foreground">
-                {MEDIA_TYPES.find((m) => m.value === col.mediaType)?.label} · {col.fields.length} Felder · {col._count.items} Einträge
+                {mediaTypeLabel(t, col.mediaType)} · {col.fields.length} {t.collections.fieldsSuffix} · {col._count.items} {t.collections.entriesSuffix}
               </p>
             </div>
           )}
@@ -271,7 +269,7 @@ function SortableCollection({
         <button
           onClick={startEditName}
           className="text-[10px] text-muted-foreground hover:text-foreground transition px-1.5 py-0.5 rounded shrink-0"
-          title="Umbenennen"
+          title={t.collections.rename}
         >
           ✎
         </button>
@@ -280,7 +278,7 @@ function SortableCollection({
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="text-[10px] text-destructive/50 hover:text-destructive transition px-1.5 py-0.5 rounded shrink-0"
-          title="Löschen"
+          title={t.collections.delete}
         >
           ✕
         </button>
@@ -291,9 +289,9 @@ function SortableCollection({
         <div className="border-t border-border bg-muted/20 px-4 pb-4 pt-3 space-y-4">
           {/* Fields list */}
           <div className="border-t border-border/50 pt-3 space-y-3">
-            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Felder</p>
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.collections.fields}</p>
             {col.fields.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Keine Felder vorhanden.</p>
+              <p className="text-xs text-muted-foreground">{t.collections.noFields}</p>
             ) : (
               <div className="space-y-1.5">
                 {col.fields.map((field) => (
@@ -302,9 +300,9 @@ function SortableCollection({
                       <span className="text-sm text-foreground">{field.name}</span>
                       <span className="ml-2 text-xs text-muted-foreground font-mono">{field.fieldKey}</span>
                       <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                        {FIELD_TYPES.find((t) => t.value === field.fieldType)?.label}
+                        {fieldTypeLabel(t, field.fieldType)}
                       </span>
-                      {field.required && <span className="ml-1 text-[10px] text-orange-400">Pflichtfeld</span>}
+                      {field.required && <span className="ml-1 text-[10px] text-orange-400">{t.collections.required}</span>}
                     </div>
                     <button
                       onClick={() => handleDeleteField(field.id)}
@@ -319,18 +317,18 @@ function SortableCollection({
 
             {showAdd ? (
               <form onSubmit={handleSubmitField} className="space-y-3 pt-2 border-t border-border">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Neues Feld</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.newField}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     required
-                    placeholder="Feldname (z.B. Plattform)"
+                    placeholder={t.collections.fieldNamePlaceholder}
                     value={fieldForm.name}
                     onChange={(e) => setFieldForm((f) => ({ ...f, name: e.target.value }))}
                     className="retro-field col-span-2"
                   />
                   <input
                     required
-                    placeholder="Key (z.B. platform)"
+                    placeholder={t.collections.fieldKeyPlaceholder}
                     value={fieldForm.fieldKey}
                     onChange={(e) => setFieldForm((f) => ({ ...f, fieldKey: e.target.value.toLowerCase().replace(/\s+/g, "_") }))}
                     className="retro-field font-mono"
@@ -340,11 +338,11 @@ function SortableCollection({
                     onChange={(e) => setFieldForm((f) => ({ ...f, fieldType: e.target.value }))}
                     className="retro-field"
                   >
-                    {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    {FIELD_TYPE_VALUES.map((v) => <option key={v} value={v}>{fieldTypeLabel(t, v)}</option>)}
                   </select>
                   {fieldForm.fieldType === "SELECT" && (
                     <input
-                      placeholder="Optionen kommagetrennt"
+                      placeholder={t.collections.fieldOptionsPlaceholder}
                       value={fieldForm.options}
                       onChange={(e) => setFieldForm((f) => ({ ...f, options: e.target.value }))}
                       className="retro-field col-span-2"
@@ -357,7 +355,7 @@ function SortableCollection({
                       onChange={(e) => setFieldForm((f) => ({ ...f, required: e.target.checked }))}
                       className="rounded"
                     />
-                    Pflichtfeld
+                    {t.collections.required}
                   </label>
                 </div>
                 {fieldError && <p className="text-xs text-destructive">{fieldError}</p>}
@@ -367,14 +365,14 @@ function SortableCollection({
                     onClick={() => { setShowAdd(false); setFieldError(""); setFieldForm({ name: "", fieldKey: "", fieldType: "TEXT", options: "", required: false }); }}
                     className="flex-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition"
                   >
-                    Abbrechen
+                    {t.common.cancel}
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
                     className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition"
                   >
-                    {submitting ? "…" : "Feld hinzufügen"}
+                    {submitting ? "…" : t.collections.addField}
                   </button>
                 </div>
               </form>
@@ -383,17 +381,17 @@ function SortableCollection({
                 onClick={() => setShowAdd(true)}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition"
               >
-                + Feld hinzufügen
+                {t.collections.addFieldShort}
               </button>
             )}
           </div>
 
           {/* Tag-Gruppen */}
           <div className="border-t border-border/50 pt-3 space-y-3">
-            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Tag-Gruppen</p>
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.collections.tagGroups}</p>
 
             {col.tagGroups.length === 0 && (
-              <p className="text-xs text-muted-foreground">Keine Tag-Gruppen zugewiesen.</p>
+              <p className="text-xs text-muted-foreground">{t.collections.noTagGroups}</p>
             )}
 
             {/* Assigned groups */}
@@ -407,7 +405,7 @@ function SortableCollection({
                     onChange={() => onToggleTagGroupVisibility(col.id, tg.groupId)}
                     className="rounded"
                   />
-                  Dashboard
+                  {t.collections.dashboard}
                 </label>
                 <button
                   onClick={() => onRemoveTagGroup(col.id, tg.groupId)}
@@ -425,7 +423,7 @@ function SortableCollection({
                 onChange={(e) => { if (e.target.value) onAssignTagGroup(col.id, e.target.value); }}
                 className="retro-field text-xs"
               >
-                <option value="">+ Tag-Gruppe hinzufügen…</option>
+                <option value="">{t.collections.addTagGroup}</option>
                 {unassignedGroups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
@@ -435,7 +433,7 @@ function SortableCollection({
 
           {/* Grading */}
           <div className="border-t border-border/50 pt-3 space-y-3">
-            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Grading</p>
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.collections.grading}</p>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -443,7 +441,7 @@ function SortableCollection({
                 onChange={() => onToggleGrading(col.id)}
                 className="rounded"
               />
-              <span className="text-sm text-foreground">Grading im Item-Detailbereich anzeigen</span>
+              <span className="text-sm text-foreground">{t.collections.gradingLabel}</span>
             </label>
           </div>
         </div>
@@ -454,6 +452,7 @@ function SortableCollection({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function AdminCollectionsPage() {
+  const { t } = useTranslations();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [allTagGroups, setAllTagGroups] = useState<TagGroupOption[]>([]);
   const [loading,     setLoading]     = useState(true);
@@ -512,7 +511,7 @@ export default function AdminCollectionsPage() {
       }),
     });
     setSubmitting(false);
-    if (!res.ok) { setColError((await res.json()).error ?? "Fehler"); return; }
+    if (!res.ok) { setColError((await res.json()).error ?? t.collections.fieldError); return; }
     await load();
     setShowCreate(false);
     setColForm({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" });
@@ -608,22 +607,22 @@ export default function AdminCollectionsPage() {
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">Sammlungen</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{collections.length} Sammlungen · Reihenfolge per Drag &amp; Drop ändern</p>
+          <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">{t.collections.title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{collections.length} {t.collections.title} · {t.collections.countSuffix}</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
         >
-          + Neue Sammlung
+          + {t.collections.newCollection}
         </button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
+        <p className="text-sm text-muted-foreground">{t.collections.loading}</p>
       ) : collections.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
-          <p className="text-sm text-muted-foreground">Noch keine Sammlungen angelegt.</p>
+          <p className="text-sm text-muted-foreground">{t.collections.empty}</p>
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -654,34 +653,34 @@ export default function AdminCollectionsPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Neue Sammlung</h3>
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.collections.newCollection}</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Name</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.name}</label>
                 <input
                   required
                   value={colForm.name}
                   onChange={(e) => setColForm((f) => ({ ...f, name: e.target.value }))}
                   className="retro-field w-full"
-                  placeholder="z.B. Konsolenspiele"
+                  placeholder={t.collections.namePlaceholder}
                   autoFocus
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Icon</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.icon}</label>
                 <IconPicker value={colForm.icon} onChange={(v) => setColForm((f) => ({ ...f, icon: v }))} />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Medientyp</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.mediaType}</label>
                 <select
                   value={colForm.mediaType}
                   onChange={(e) => setColForm((f) => ({ ...f, mediaType: e.target.value }))}
                   className="retro-field w-full"
                 >
-                  {MEDIA_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  {MEDIA_TYPE_VALUES.map((v) => (
+                    <option key={v} value={v}>{mediaTypeLabel(t, v)}</option>
                   ))}
                 </select>
               </div>
@@ -689,16 +688,16 @@ export default function AdminCollectionsPage() {
               {colForm.mediaType === "CUSTOM" && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Name des Medientyps <span className="text-primary">*</span>
+                    {t.collections.customMediaTypeLabel} <span className="text-primary">*</span>
                   </label>
                   <input
                     required
                     value={colForm.customMediaTypeLabel}
                     onChange={(e) => setColForm((f) => ({ ...f, customMediaTypeLabel: e.target.value }))}
                     className="retro-field w-full"
-                    placeholder="z.B. Actionfiguren"
+                    placeholder={t.collections.customMediaTypePlaceholder}
                   />
-                  <p className="text-[10px] text-muted-foreground">Wird als Bezeichnung für diesen benutzerdefinierten Typ verwendet.</p>
+                  <p className="text-[10px] text-muted-foreground">{t.collections.customMediaTypeHint}</p>
                 </div>
               )}
 
@@ -709,14 +708,14 @@ export default function AdminCollectionsPage() {
                   onClick={() => { setShowCreate(false); setColError(""); }}
                   className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
                 >
-                  Abbrechen
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
                 >
-                  {submitting ? "Erstelle…" : "Erstellen"}
+                  {submitting ? t.collections.creating : t.common.create}
                 </button>
               </div>
             </form>
@@ -730,13 +729,14 @@ export default function AdminCollectionsPage() {
           <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive text-sm">⚠</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
+              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Sammlung <span className="font-medium text-foreground">„{deleteTarget.name}"</span> löschen?{" "}
+              {t.collections.deletePrompt} <span className="font-medium text-foreground">„{deleteTarget.name}"</span> {t.collections.deletePromptSuffix}{" "}
               {deleteTarget._count.items > 0 && (
                 <span className="text-destructive">
-                  Enthält {deleteTarget._count.items} {deleteTarget._count.items === 1 ? "Eintrag" : "Einträge"}, die ebenfalls gelöscht werden.
+                  {t.collections.deleteWarningPrefix} {deleteTarget._count.items}{" "}
+                  {deleteTarget._count.items === 1 ? t.collections.deleteWarningOne : t.collections.deleteWarningMany}
                 </span>
               )}
             </p>
@@ -745,14 +745,14 @@ export default function AdminCollectionsPage() {
                 onClick={() => setDeleteTarget(null)}
                 className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
               >
-                Abbrechen
+                {t.common.cancel}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
               >
-                {deleting ? "Lösche…" : "Dauerhaft löschen"}
+                {deleting ? t.collections.deleting : t.common.permDelete}
               </button>
             </div>
           </div>

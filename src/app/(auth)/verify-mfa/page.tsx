@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
 export default function VerifyMfaPage() {
   const { update } = useSession();
   const router = useRouter();
+  const { t } = useStandaloneTranslations();
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export default function VerifyMfaPage() {
 
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      setError((d as { error?: string }).error ?? "Ungültiger Code.");
+      setError((d as { error?: string }).error ?? t.auth.invalidCode);
       setLoading(false);
       return;
     }
@@ -43,16 +45,16 @@ export default function VerifyMfaPage() {
           <div className="relative w-full h-48">
             <Image src="/logo.png" alt="RetroMan" fill className="object-contain" priority />
           </div>
-          <p className="slogan-glow text-sm tracking-widest italic">Rewind your world!</p>
+          <p className="slogan-glow text-sm tracking-widest italic">{t.auth.slogan}</p>
           <p className="text-muted-foreground text-xs text-center">
-            Gib den 6-stelligen Code aus deiner Authenticator-App ein.
+            {t.auth.mfaPrompt}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="token" className="text-xs text-muted-foreground uppercase tracking-wider">
-              Authenticator-Code
+              {t.auth.authenticatorCode}
             </label>
             <input
               id="token"
@@ -77,7 +79,7 @@ export default function VerifyMfaPage() {
             disabled={loading || token.length !== 6}
             className="w-full rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50 neon-border"
           >
-            {loading ? "Prüfe…" : "Bestätigen"}
+            {loading ? t.auth.verifying : t.auth.confirm}
           </button>
         </form>
       </div>

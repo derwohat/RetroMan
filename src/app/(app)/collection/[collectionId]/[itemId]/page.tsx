@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
-import { CONDITION_LABELS, CONDITION_COLORS } from "@/components/views/types";
+import { CONDITION_COLORS } from "@/components/views/types";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
+import type { Translations } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Field = { id: string; name: string; fieldKey: string; fieldType: string; options: string[]; required: boolean };
@@ -235,7 +236,7 @@ function InlineDateField({ label, value, onSave }: { label: string; value: strin
 }
 
 // ── TagGroupDropdown ──────────────────────────────────────────────────────────
-function TagGroupDropdown({ group, selectedValueId, onSelect }: { group: TagGroup; selectedValueId: string | undefined; onSelect: (groupId: string, tagValueId: string | null) => Promise<void> }) {
+function TagGroupDropdown({ group, selectedValueId, onSelect, noValuesLabel }: { group: TagGroup; selectedValueId: string | undefined; onSelect: (groupId: string, tagValueId: string | null) => Promise<void>; noValuesLabel: string }) {
   const [localValue, setLocalValue] = useState(selectedValueId ?? "");
   const [saved, setSaved] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -245,7 +246,7 @@ function TagGroupDropdown({ group, selectedValueId, onSelect }: { group: TagGrou
     return (
       <div className="space-y-1">
         <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{group.name}</dt>
-        <dd className="text-xs text-muted-foreground/60 italic">Keine Werte definiert — im Admin-Bereich hinzufügen.</dd>
+        <dd className="text-xs text-muted-foreground/60 italic">{noValuesLabel}</dd>
       </div>
     );
   }
@@ -266,49 +267,9 @@ function TagGroupDropdown({ group, selectedValueId, onSelect }: { group: TagGrou
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const CONDITIONS = [
-  { value: "MINT",      label: "Neu / Mint" },
-  { value: "VERY_GOOD", label: "Sehr Gut" },
-  { value: "GOOD",      label: "Gut" },
-  { value: "USED",      label: "Gebraucht" },
-  { value: "POOR",      label: "Schlecht" },
-];
-const ITEM_STATUSES = [
-  { value: "OPENED", label: "Geöffnet" },
-  { value: "SEALED", label: "Versiegelt" },
-  { value: "GRADED", label: "Gegraded" },
-];
-const COLLECTION_STATUSES = [
-  { value: "OWNED",    label: "Vorhanden" },
-  { value: "WISHLIST", label: "Wunschliste" },
-];
-
-// ── MetaDataSection ───────────────────────────────────────────────────────────
-const META_LABELS: Record<string, string> = {
-  // Games
-  platform: "Plattform", publisher: "Publisher", developer: "Entwickler",
-  genre: "Genre", players: "Spieler", rating: "USK",
-  // Music
-  artist: "Künstler / Zeichner", releaseTitle: "Albumtitel", label: "Label", format: "Format",
-  barcode: "Barcode / EAN", tracklist: "Tracklist",
-  // Film
-  localizedTitle: "Titel (DE)", originalTitle: "Originaltitel",
-  director: "Regie", cast: "Darsteller", genres: "Genre",
-  runtime: "Laufzeit", fsk: "FSK", studio: "Studio", imdbRating: "IMDB",
-  // Serie
-  creator: "Erstellt von", network: "Sender / Plattform",
-  numberOfSeasons: "Staffeln", numberOfEpisodes: "Episoden",
-  episodeRuntime: "Episodenlänge", firstAirDate: "Erstausstrahlung",
-  // Books
-  author: "Autor", isbn: "ISBN", pages: "Seiten",
-  language: "Sprache", description: "Beschreibung",
-  // Comics
-  series: "Reihe", issueNumber: "Heft-Nr.", writer: "Autor",
-  // Manga
-  demographic: "Zielgruppe", status: "Status",
-  // Shared
-  overview: "Beschreibung",
-};
+// Localized option lists are built from the translations inside the component.
+const CONDITION_KEYS = ["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"] as const;
+const ITEM_STATUS_KEYS = ["OPENED", "SEALED", "GRADED"] as const;
 
 const META_ORDER: Record<string, string[]> = {
   TheGamesDB:  ["platform", "publisher", "developer", "genre", "rating", "overview"],
@@ -322,13 +283,14 @@ const META_ORDER: Record<string, string[]> = {
 
 type TrackEntry = { pos: string; title: string; dur: string };
 
-function MetaDataContent({ source, metadata, onImageClick }: { source: string | null; metadata: Record<string, unknown> | null; onImageClick?: (url: string) => void }) {
+function MetaDataContent({ source, metadata, t, onImageClick }: { source: string | null; metadata: Record<string, unknown> | null; t: Translations; onImageClick?: (url: string) => void }) {
   if (!source || !metadata || Object.keys(metadata).length === 0) return null;
 
+  const metaLabels = t.item.metaLabels as Record<string, string>;
   const FULL_WIDTH_KEYS = new Set(["overview", "description"]);
   const order = META_ORDER[source] ?? Object.keys(metadata).filter((k) => k !== "backCover" && k !== "tracklist");
   const entries = order
-    .map((key) => ({ key, label: META_LABELS[key] ?? key, value: metadata[key] }))
+    .map((key) => ({ key, label: metaLabels[key] ?? key, value: metadata[key] }))
     .filter(({ key, value }) => !FULL_WIDTH_KEYS.has(key) && key !== "tracklist" && value !== null && value !== undefined && value !== "" && !(Array.isArray(value) && value.length === 0));
 
   if (entries.length === 0) return null;
@@ -354,7 +316,9 @@ function MetaDataContent({ source, metadata, onImageClick }: { source: string | 
 export default function ItemDetailPage() {
   const { collectionId, itemId } = useParams<{ collectionId: string; itemId: string }>();
   const router = useRouter();
-  const { locale } = useTranslations();
+  const { t, locale } = useTranslations();
+  const CONDITIONS = CONDITION_KEYS.map((value) => ({ value, label: t.item.conditionsLong[value] }));
+  const ITEM_STATUSES = ITEM_STATUS_KEYS.map((value) => ({ value, label: t.item.statuses[value] }));
 
   const [item, setItem]             = useState<ItemDetail | null>(null);
   const [tagGroups, setTagGroups]   = useState<TagGroup[]>([]);
@@ -448,10 +412,10 @@ export default function ItemDetailPage() {
         setItem(updated);
       } else {
         const d = await res.json().catch(() => ({}));
-        alert((d as { error?: string }).error ?? "Fehler beim Abrufen.");
+        alert((d as { error?: string }).error ?? t.item.fetchError);
       }
     } catch {
-      alert("Netzwerkfehler.");
+      alert(t.item.networkError);
     } finally {
       setRefetching(false);
     }
@@ -595,8 +559,8 @@ export default function ItemDetailPage() {
   if (!item) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground text-sm">Eintrag nicht gefunden.</p>
-        <Link href={`/collection/${collectionId}`} className="mt-3 text-xs text-primary hover:underline block">← Zurück</Link>
+        <p className="text-muted-foreground text-sm">{t.item.notFound}</p>
+        <Link href={`/collection/${collectionId}`} className="mt-3 text-xs text-primary hover:underline block">{t.common.back}</Link>
       </div>
     );
   }
@@ -614,7 +578,7 @@ export default function ItemDetailPage() {
     <div className="max-w-3xl space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Link href="/dashboard" className="hover:text-primary transition">Sammlungen</Link>
+        <Link href="/dashboard" className="hover:text-primary transition">{t.item.breadcrumbCollections}</Link>
         <span>/</span>
         <Link href={`/collection/${collectionId}`} className="hover:text-primary transition flex items-center gap-1">
           <CategoryIcon icon={category.icon} className="h-3.5 w-3.5" />
@@ -639,10 +603,10 @@ export default function ItemDetailPage() {
               )}
               {item.condition && (
                 <span className={`absolute top-2 left-2 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? ""}`}>
-                  {CONDITION_LABELS[item.condition]}
+                  {t.conditions[item.condition as keyof typeof t.conditions] ?? item.condition}
                 </span>
               )}
-              <button onClick={toggleFavorite} className={`absolute top-2 right-2 text-lg transition ${item.isFavorite ? "opacity-100" : "opacity-30 hover:opacity-60"}`} title={item.isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}>
+              <button onClick={toggleFavorite} className={`absolute top-2 right-2 text-lg transition ${item.isFavorite ? "opacity-100" : "opacity-30 hover:opacity-60"}`} title={item.isFavorite ? t.item.removeFromFavorites : t.item.addToFavorites}>
                 ❤️
               </button>
             </div>
@@ -688,7 +652,7 @@ export default function ItemDetailPage() {
                       <button
                         onClick={handleRefetch}
                         disabled={refetching}
-                        title="Metadaten & Cover von API neu laden"
+                        title={t.item.refetch}
                         className="flex items-center justify-center h-5 w-5 rounded text-muted-foreground hover:text-primary transition disabled:opacity-50"
                       >
                         {refetching
@@ -714,7 +678,7 @@ export default function ItemDetailPage() {
             {item.metadata && item.externalSource && (
               <>
                 <div className="border-t border-border" />
-                <MetaDataContent source={item.externalSource} metadata={item.metadata} onImageClick={setLightboxUrl} />
+                <MetaDataContent source={item.externalSource} metadata={item.metadata} t={t} onImageClick={setLightboxUrl} />
               </>
             )}
           </div>
@@ -736,10 +700,10 @@ export default function ItemDetailPage() {
 
       {/* Cover management */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-        <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Cover</h3>
+        <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.cover}</h3>
         <div className="flex gap-3 items-start">
           <div ref={pickerRef} className="relative shrink-0">
-            <button type="button" onClick={searchCovers} title="Klicken zum Cover suchen"
+            <button type="button" onClick={searchCovers} title={t.item.clickToSearchCover}
               className="group relative w-16 h-20 rounded border border-border bg-muted flex items-center justify-center overflow-hidden hover:border-primary transition"
             >
               {imageUrl ? (
@@ -758,19 +722,19 @@ export default function ItemDetailPage() {
             {showCoverPicker && (
               <div className="absolute left-0 top-[88px] z-30 w-72 rounded-lg border border-border bg-card shadow-2xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cover-Vorschläge</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.coverSuggestions}</p>
                   <button type="button" onClick={() => setShowCoverPicker(false)} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
                 </div>
                 {coverLoading && (
                   <div className="flex items-center justify-center py-6">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    <span className="ml-2 text-xs text-muted-foreground">Suche…</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{t.common.searching}</span>
                   </div>
                 )}
                 {!coverLoading && coverResults.length === 0 && (
                   <div className="py-4 text-center space-y-1">
-                    <p className="text-xs text-muted-foreground">Keine Cover gefunden.</p>
-                    <button type="button" onClick={searchCovers} className="mt-1 text-[10px] text-primary hover:underline">Erneut suchen</button>
+                    <p className="text-xs text-muted-foreground">{t.item.noCovers}</p>
+                    <button type="button" onClick={searchCovers} className="mt-1 text-[10px] text-primary hover:underline">{t.item.searchAgain}</button>
                   </div>
                 )}
                 {!coverLoading && coverResults.length > 0 && (
@@ -786,7 +750,7 @@ export default function ItemDetailPage() {
                         </button>
                       ))}
                     </div>
-                    <p className="text-[9px] text-muted-foreground text-right">Quelle: {[...new Set(coverResults.map((r) => r.source))].join(", ")}</p>
+                    <p className="text-[9px] text-muted-foreground text-right">{t.item.source}: {[...new Set(coverResults.map((r) => r.source))].join(", ")}</p>
                   </>
                 )}
               </div>
@@ -794,15 +758,15 @@ export default function ItemDetailPage() {
           </div>
 
           <div className="flex-1 space-y-2">
-            <input type="url" value={imageUrlDraft} onChange={(e) => setImageUrlDraft(e.target.value)} onBlur={() => { if ((imageUrlDraft || null) !== (imageUrl || null)) saveCoverUrl(imageUrlDraft || null); }} className="retro-field w-full" placeholder="https://… (Cover-URL)" />
+            <input type="url" value={imageUrlDraft} onChange={(e) => setImageUrlDraft(e.target.value)} onBlur={() => { if ((imageUrlDraft || null) !== (imageUrl || null)) saveCoverUrl(imageUrlDraft || null); }} className="retro-field w-full" placeholder={t.item.coverUrlPlaceholder} />
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50">
-                {uploading ? "Lädt hoch…" : "↑ Datei hochladen"}
+                {uploading ? t.item.uploading : t.item.uploadFile}
               </button>
               <button type="button" onClick={searchCovers} className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">
-                🔍 Suchen
+                {t.forms.searchBtn}
               </button>
-              {imageUrl && <button type="button" onClick={() => saveCoverUrl(null)} className="text-xs text-destructive hover:underline">Entfernen</button>}
+              {imageUrl && <button type="button" onClick={() => saveCoverUrl(null)} className="text-xs text-destructive hover:underline">{t.common.remove}</button>}
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           </div>
@@ -812,7 +776,7 @@ export default function ItemDetailPage() {
       {/* Tracklist */}
       {Array.isArray(item.metadata?.tracklist) && (item.metadata.tracklist as TrackEntry[]).length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Tracklist</h3>
+          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.tracklist}</h3>
           <ol className="pl-8">
             {(item.metadata.tracklist as TrackEntry[]).map((t, i) => (
               <li key={i} className="group relative flex items-center gap-2 text-xs py-1">
@@ -829,29 +793,29 @@ export default function ItemDetailPage() {
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</h3>
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.general}</h3>
             <dl className="space-y-3">
               {(category.mediaType === "VIDEO" || category.mediaType === "FILM" || category.mediaType === "SERIE") && (
-                <InlineEditableField label="Medientyp" value={item.videoFormat ?? ""} type="select"
+                <InlineEditableField label={t.item.mediaType} value={item.videoFormat ?? ""} type="select"
                   options={["VHS", "DVD", "Blu-ray", "Ultra HD 4K", "LaserDisc", "HD DVD"].map((f) => ({ value: f, label: f }))}
                   onSave={(v) => saveField("videoFormat", v)}
                 />
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <InlineEditableField label="Zustand" value={item.condition ?? ""} type="select" options={CONDITIONS} onSave={(v) => saveField("condition", v)} />
-                <InlineEditableField label="Status" value={item.itemStatus ?? ""} type="select" options={ITEM_STATUSES} onSave={(v) => saveField("itemStatus", v)} />
+                <InlineEditableField label={t.item.condition} value={item.condition ?? ""} type="select" options={CONDITIONS} onSave={(v) => saveField("condition", v)} />
+                <InlineEditableField label={t.item.status} value={item.itemStatus ?? ""} type="select" options={ITEM_STATUSES} onSave={(v) => saveField("itemStatus", v)} />
               </div>
-              <InlineEditableField label="Barcode (EAN)" value={item.barcode} onSave={(v) => saveField("barcode", v)} />
-              <InlineEditableField label="Lagerort" value={item.location ?? ""} type="select" options={lagerortGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("location", v)} />
+              <InlineEditableField label={t.item.barcode} value={item.barcode} onSave={(v) => saveField("barcode", v)} />
+              <InlineEditableField label={t.item.location} value={item.location ?? ""} type="select" options={lagerortGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("location", v)} />
             </dl>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Kauf</h3>
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.purchase}</h3>
             <dl className="space-y-3">
-              <InlineEditableField label="Kaufpreis (€)" value={item.purchasePrice != null ? item.purchasePrice.toString().replace(".", ",") : ""} type="text" placeholder="0,00" onSave={(v) => saveField("purchasePrice", v ? v.replace(",", ".") : null)} />
-              <InlineDateField label="Kaufdatum" value={toDateInput(item.purchaseDate)} onSave={(v) => saveField("purchaseDate", v)} />
-              <InlineEditableField label="Gekauft bei" value={item.store ?? ""} type="select" options={shopsGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("store", v)} />
+              <InlineEditableField label={t.item.purchasePrice} value={item.purchasePrice != null ? item.purchasePrice.toString().replace(".", ",") : ""} type="text" placeholder="0,00" onSave={(v) => saveField("purchasePrice", v ? v.replace(",", ".") : null)} />
+              <InlineDateField label={t.item.purchaseDate} value={toDateInput(item.purchaseDate)} onSave={(v) => saveField("purchaseDate", v)} />
+              <InlineEditableField label={t.item.purchasedAt} value={item.store ?? ""} type="select" options={shopsGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("store", v)} />
             </dl>
           </div>
         </div>
@@ -880,31 +844,31 @@ export default function ItemDetailPage() {
         {item.collection.gradingEnabled && (
         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Grading</h3>
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.grading}</h3>
             {!gradingEdit && (
               <button onClick={openGradingEdit} className="text-[10px] text-muted-foreground hover:text-primary transition">
-                {item.grading ? "Bearbeiten" : "+ Hinzufügen"}
+                {item.grading ? t.common.edit : t.collection.add}
               </button>
             )}
           </div>
 
           {!gradingEdit && !item.grading && (
-            <p className="text-xs text-muted-foreground/60">Kein Grading eingetragen.</p>
+            <p className="text-xs text-muted-foreground/60">{t.item.gradingNone}</p>
           )}
 
           {!gradingEdit && item.grading && (
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Service</dt>
+                <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.gradingService}</dt>
                 <dd className="font-medium text-foreground">{item.grading.service}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Score</dt>
+                <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.gradingScore}</dt>
                 <dd className="font-medium text-primary neon-glow">{item.grading.score}</dd>
               </div>
               {item.grading.gradedAt && (
                 <div className="flex justify-between">
-                  <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Datum</dt>
+                  <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.gradingDate}</dt>
                   <dd className="text-muted-foreground">{formatDate(item.grading.gradedAt, locale)}</dd>
                 </div>
               )}
@@ -915,7 +879,7 @@ export default function ItemDetailPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Service</label>
+                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.gradingService}</label>
                   <input
                     type="text"
                     value={gradingForm.service}
@@ -925,7 +889,7 @@ export default function ItemDetailPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Score</label>
+                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.gradingScore}</label>
                   <input
                     type="text"
                     value={gradingForm.score}
@@ -936,7 +900,7 @@ export default function ItemDetailPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Datum (optional)</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.item.gradingDateOptional}</label>
                 <input
                   type="date"
                   value={gradingForm.gradedAt}
@@ -950,11 +914,11 @@ export default function ItemDetailPage() {
                   disabled={gradingSaving || !gradingForm.service.trim() || !gradingForm.score.trim()}
                   className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50 transition hover:opacity-90"
                 >
-                  {gradingSaving ? "Speichern…" : "Speichern"}
+                  {gradingSaving ? t.common.saving : t.common.save}
                 </button>
-                <button onClick={() => setGradingEdit(false)} className="text-xs text-muted-foreground hover:text-foreground transition">Abbrechen</button>
+                <button onClick={() => setGradingEdit(false)} className="text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
                 {item.grading && (
-                  <button onClick={deleteGrading} className="ml-auto text-xs text-destructive hover:underline">Entfernen</button>
+                  <button onClick={deleteGrading} className="ml-auto text-xs text-destructive hover:underline">{t.common.remove}</button>
                 )}
               </div>
             </div>
@@ -963,16 +927,16 @@ export default function ItemDetailPage() {
         )}
 
         <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Notizen</h3>
-          <InlineEditableField label="" value={item.notes} type="textarea" placeholder="Notizen…" onSave={(v) => saveField("notes", v)} />
+          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.notes}</h3>
+          <InlineEditableField label="" value={item.notes} type="textarea" placeholder={t.item.notesPlaceholder} onSave={(v) => saveField("notes", v)} />
         </div>
 
         {extraGroups.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Weitere Details</h3>
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.moreDetails}</h3>
             <dl className="space-y-4">
               {extraGroups.map((group) => (
-                <TagGroupDropdown key={group.id} group={group} selectedValueId={item.tags.find((t) => t.groupId === group.id)?.tagValueId} onSelect={setGroupTag} />
+                <TagGroupDropdown key={group.id} group={group} selectedValueId={item.tags.find((tg) => tg.groupId === group.id)?.tagValueId} onSelect={setGroupTag} noValuesLabel={t.item.noValuesDefined} />
               ))}
             </dl>
           </div>
@@ -980,15 +944,15 @@ export default function ItemDetailPage() {
       </div>
 
       <div className="text-xs text-muted-foreground/60 flex gap-4">
-        <span>Erstellt: {formatDate(item.createdAt, locale)}</span>
-        <span>Aktualisiert: {formatDate(item.updatedAt, locale)}</span>
+        <span>{t.item.created}: {formatDate(item.createdAt, locale)}</span>
+        <span>{t.item.updated}: {formatDate(item.updatedAt, locale)}</span>
       </div>
 
       <div className="rounded-xl border border-destructive/20 bg-card p-5 space-y-3">
-        <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
-        <p className="text-xs text-muted-foreground">Eintrag dauerhaft löschen. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
+        <p className="text-xs text-muted-foreground">{t.item.deleteTitle}</p>
         <button onClick={() => setConfirmDel(true)} className="rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition">
-          Eintrag löschen
+          {t.item.deleteButton}
         </button>
       </div>
 
@@ -997,15 +961,15 @@ export default function ItemDetailPage() {
           <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive text-sm">⚠</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
+              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">„{item.title}"</span> wird dauerhaft und unwiderruflich gelöscht.
+              <span className="font-medium text-foreground">„{item.title}"</span> {t.item.deleteConfirm}
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">Abbrechen</button>
+              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
               <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-                {deleting ? "Lösche…" : "Dauerhaft löschen"}
+                {deleting ? t.common.deleting : t.common.permDelete}
               </button>
             </div>
           </div>

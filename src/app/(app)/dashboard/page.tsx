@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type Collection = {
   id: string;
@@ -12,6 +13,7 @@ type Collection = {
 };
 
 export default function DashboardPage() {
+  const { t } = useTranslations();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,11 +30,15 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">
-          Sammlungen
+          {t.dashboard.title}
         </h2>
         {!loading && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {totalItems} {totalItems === 1 ? "Eintrag" : "Einträge"} in {collections.length} {collections.length === 1 ? "Sammlung" : "Sammlungen"}
+            {t.dashboard.summary
+              .replace("{items}", String(totalItems))
+              .replace("{itemWord}", totalItems === 1 ? t.dashboard.entry : t.dashboard.entries)
+              .replace("{count}", String(collections.length))
+              .replace("{colWord}", collections.length === 1 ? t.dashboard.collection : t.dashboard.collections)}
           </p>
         )}
       </div>
@@ -49,7 +55,7 @@ export default function DashboardPage() {
               <div className="text-center">
                 <p className="text-sm font-medium text-foreground group-hover:text-primary transition">{col.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {col._count.items} {col._count.items === 1 ? "Eintrag" : "Einträge"}
+                  {col._count.items} {col._count.items === 1 ? t.dashboard.entry : t.dashboard.entries}
                 </p>
               </div>
             </Link>
@@ -58,9 +64,9 @@ export default function DashboardPage() {
           {collections.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <CategoryIcon icon={null} className="h-16 w-16 opacity-20 mb-4" />
-              <p className="text-sm text-muted-foreground">Noch keine Sammlungen angelegt.</p>
+              <p className="text-sm text-muted-foreground">{t.dashboard.emptyTitle}</p>
               <Link href="/admin/collections" className="mt-3 text-xs text-primary hover:underline">
-                Sammlungen im Admin-Bereich verwalten →
+                {t.dashboard.emptyLink}
               </Link>
             </div>
           )}

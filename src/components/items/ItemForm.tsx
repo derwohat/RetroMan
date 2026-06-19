@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { isoToDE, deToISO } from "@/lib/format";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { BarcodeScanner } from "./BarcodeScanner";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type CollectionField = {
   id: string;
@@ -57,19 +58,8 @@ interface Props {
   onSaved: () => void;
 }
 
-const CONDITIONS = [
-  { value: "MINT",      label: "Mint" },
-  { value: "VERY_GOOD", label: "Very Good" },
-  { value: "GOOD",      label: "Good" },
-  { value: "USED",      label: "Used" },
-  { value: "POOR",      label: "Poor" },
-];
-
-const ITEM_STATUSES = [
-  { value: "OPENED", label: "Geöffnet" },
-  { value: "SEALED", label: "Versiegelt" },
-  { value: "GRADED", label: "Gegraded" },
-];
+const CONDITION_KEYS = ["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"] as const;
+const ITEM_STATUS_KEYS = ["OPENED", "SEALED", "GRADED"] as const;
 
 const STANDARD_GROUP_NAMES = ["Shops", "Lagerort"];
 
@@ -125,6 +115,9 @@ function GermanDateInput({ value, onChange }: { value: string; onChange: (iso: s
 
 // ── Main form ─────────────────────────────────────────────────────────────────
 export function ItemForm({ collection, collectionId, item, onClose, onSaved }: Props) {
+  const { t } = useTranslations();
+  const CONDITIONS = CONDITION_KEYS.map((value) => ({ value, label: t.conditions[value] }));
+  const ITEM_STATUSES = ITEM_STATUS_KEYS.map((value) => ({ value, label: t.item.statuses[value] }));
   const primaryImage = item?.images.find((i) => i.isPrimary) ?? item?.images[0];
 
   const [form, setForm] = useState({
@@ -206,12 +199,12 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
       if (res.ok) {
         setMetaResults(Array.isArray(data) ? data : []);
       } else if (data?.error === "no_key") {
-        setMetaError(`Kein ${data.source}-API-Key hinterlegt. Bitte in Admin → Einstellungen eintragen.`);
+        setMetaError(t.forms.noApiKey.replace("{source}", String(data.source)));
       } else {
-        setMetaError("Suche fehlgeschlagen.");
+        setMetaError(t.forms.searchFailed);
       }
     } catch {
-      setMetaError("Suche nicht erreichbar.");
+      setMetaError(t.forms.searchUnavailable);
     } finally {
       setMetaLoading(false);
     }
@@ -304,7 +297,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.title.trim()) { setError("Titel ist erforderlich."); return; }
+    if (!form.title.trim()) { setError(t.forms.titleRequiredError); return; }
     setSaving(true);
     setError("");
 
@@ -346,7 +339,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
     });
 
     setSaving(false);
-    if (!res.ok) { setError((await res.json()).error ?? "Fehler"); return; }
+    if (!res.ok) { setError((await res.json()).error ?? t.common.error); return; }
     onSaved();
   }
 
@@ -366,9 +359,9 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
           <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest flex items-center gap-1.5">
-            {item ? "Eintrag bearbeiten" : (
+            {item ? t.forms.editItem : (
               <>
-                Neuer Eintrag —
+                {t.forms.newItem}
                 <CategoryIcon icon={collection.icon ?? null} className="h-3.5 w-3.5" />
                 {collection.name}
               </>
@@ -382,7 +375,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
           {/* Title + Metadata typeahead */}
           <div ref={metaRef} className="relative">
-            <Field label="Titel *">
+            <Field label={t.forms.titleRequired}>
               <div className="relative">
                 <input
                   required
@@ -391,8 +384,8 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                   className="retro-field w-full pr-8"
                   placeholder={
                     collection.mediaType && collection.mediaType !== "CUSTOM"
-                      ? "Ab 3 Zeichen werden Vorschläge angezeigt…"
-                      : "Titel des Items"
+                      ? t.forms.titlePlaceholderSuggestions
+                      : t.forms.titlePlaceholderDefault
                   }
                   autoComplete="off"
                 />
@@ -407,14 +400,14 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                 {metaLoading && (
                   <div className="flex items-center justify-center py-6">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    <span className="ml-2 text-xs text-muted-foreground">Suche…</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{t.common.searching}</span>
                   </div>
                 )}
                 {!metaLoading && metaError && (
                   <p className="text-xs text-yellow-500 py-4 text-center px-2">{metaError}</p>
                 )}
                 {!metaLoading && !metaError && metaResults.length === 0 && (
-                  <p className="text-xs text-muted-foreground py-4 text-center">Keine Ergebnisse.</p>
+                  <p className="text-xs text-muted-foreground py-4 text-center">{t.common.noResults}</p>
                 )}
                 {!metaLoading && metaResults.map((r, i) => (
                   <button
@@ -450,7 +443,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
           </div>
 
           {/* Jahr */}
-          <Field label="Jahr">
+          <Field label={t.forms.year}>
             <input
               type="number" min="1800" max={new Date().getFullYear() + 2}
               value={form.year} onChange={(e) => set("year", e.target.value)}
@@ -459,13 +452,13 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
           </Field>
 
           {/* Cover */}
-          <Field label="Cover">
+          <Field label={t.forms.cover}>
             <div className="flex gap-3 items-start">
               <div ref={pickerRef} className="relative shrink-0">
                 <button
                   type="button"
                   onClick={searchCovers}
-                  title="Klicken zum Cover suchen"
+                  title={t.item.clickToSearchCover}
                   className="group relative w-16 h-20 rounded border border-border bg-muted flex items-center justify-center overflow-hidden hover:border-primary transition"
                 >
                   {form.imageUrl ? (
@@ -484,19 +477,19 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                 {showCoverPicker && (
                   <div className="absolute left-0 top-[88px] z-30 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-2xl p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cover-Vorschläge</p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.forms.coverSuggestions}</p>
                       <button type="button" onClick={() => setShowCoverPicker(false)} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
                     </div>
                     {coverLoading && (
                       <div className="flex items-center justify-center py-6">
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        <span className="ml-2 text-xs text-muted-foreground">Suche…</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{t.common.searching}</span>
                       </div>
                     )}
                     {!coverLoading && coverResults.length === 0 && (
                       <div className="py-4 text-center space-y-1">
-                        <p className="text-xs text-muted-foreground">Keine Cover gefunden.</p>
-                        <button type="button" onClick={searchCovers} className="mt-1 text-[10px] text-primary hover:underline">Erneut suchen</button>
+                        <p className="text-xs text-muted-foreground">{t.forms.noCovers}</p>
+                        <button type="button" onClick={searchCovers} className="mt-1 text-[10px] text-primary hover:underline">{t.forms.searchAgain}</button>
                       </div>
                     )}
                     {!coverLoading && coverResults.length > 0 && (
@@ -518,7 +511,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                           ))}
                         </div>
                         <p className="text-[9px] text-muted-foreground text-right">
-                          Quelle: {[...new Set(coverResults.map((r) => r.source))].join(", ")}
+                          {t.forms.source}: {[...new Set(coverResults.map((r) => r.source))].join(", ")}
                         </p>
                       </>
                     )}
@@ -532,7 +525,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                   value={form.imageUrl}
                   onChange={(e) => set("imageUrl", e.target.value)}
                   className="retro-field w-full"
-                  placeholder="https://… (Cover-URL)"
+                  placeholder={t.forms.coverUrlPlaceholder}
                 />
                 <div className="flex items-center gap-2">
                   <button
@@ -541,17 +534,17 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                     disabled={uploading}
                     className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
                   >
-                    {uploading ? "Lädt hoch…" : "↑ Datei hochladen"}
+                    {uploading ? t.forms.uploading : t.forms.uploadFile}
                   </button>
                   <button
                     type="button"
                     onClick={searchCovers}
                     className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition"
                   >
-                    🔍 Suchen
+                    {t.forms.searchBtn}
                   </button>
                   {form.imageUrl && (
-                    <button type="button" onClick={() => set("imageUrl", "")} className="text-xs text-destructive hover:underline">Entfernen</button>
+                    <button type="button" onClick={() => set("imageUrl", "")} className="text-xs text-destructive hover:underline">{t.forms.remove}</button>
                   )}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
@@ -561,10 +554,10 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
           {/* ── Allgemein ─────────────────────────────────────────────── */}
           <div className="space-y-3">
-            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Allgemein</p>
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.forms.general}</p>
 
             {(collection.mediaType === "VIDEO" || collection.mediaType === "FILM" || collection.mediaType === "SERIE") && (
-              <Field label="Medientyp">
+              <Field label={t.forms.mediaType}>
                 <div className="flex flex-wrap gap-1.5">
                   {VIDEO_FORMATS.map((f) => (
                     <button
@@ -585,13 +578,13 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Zustand">
+              <Field label={t.forms.condition}>
                 <select value={form.condition} onChange={(e) => set("condition", e.target.value)} className="retro-field w-full">
                   <option value="">—</option>
                   {CONDITIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
               </Field>
-              <Field label="Status">
+              <Field label={t.forms.status}>
                 <select value={form.itemStatus} onChange={(e) => set("itemStatus", e.target.value)} className="retro-field w-full">
                   <option value="">—</option>
                   {ITEM_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -599,7 +592,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
               </Field>
             </div>
 
-            <Field label="Barcode (EAN)">
+            <Field label={t.forms.barcode}>
               <div className="flex gap-1.5">
                 <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
                   className="retro-field flex-1 font-mono"
@@ -608,7 +601,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                   type="button"
                   onClick={() => setShowScanner(true)}
                   disabled={barcodeLoading}
-                  title="Barcode scannen"
+                  title={t.forms.scanBarcode}
                   className="rounded border border-border px-2 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
                 >
                   {barcodeLoading ? (
@@ -622,7 +615,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
               </div>
             </Field>
 
-            <Field label="Lagerort">
+            <Field label={t.forms.location}>
               <select value={form.location} onChange={(e) => set("location", e.target.value)} className="retro-field w-full">
                 <option value="">—</option>
                 {(tagGroups.find((g) => g.name === "Lagerort")?.values ?? []).map((v) => (
@@ -634,21 +627,21 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
           {/* ── Kauf ─────────────────────────────────────────────────── */}
           <div className="space-y-3">
-            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Kauf</p>
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.forms.purchase}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Kaufpreis (€)">
+              <Field label={t.forms.purchasePrice}>
                 <input type="number" min="0" step="0.01"
                   value={form.purchasePrice} onChange={(e) => set("purchasePrice", e.target.value)}
                   className="retro-field w-full"
                 />
               </Field>
-              <Field label="Kaufdatum">
+              <Field label={t.forms.purchaseDate}>
                 <GermanDateInput value={form.purchaseDate} onChange={(iso) => set("purchaseDate", iso)} />
               </Field>
             </div>
 
-            <Field label="Gekauft bei">
+            <Field label={t.forms.purchasedAt}>
               <select value={form.store} onChange={(e) => set("store", e.target.value)} className="retro-field w-full">
                 <option value="">—</option>
                 {(tagGroups.find((g) => g.name === "Shops")?.values ?? []).map((v) => (
@@ -694,21 +687,21 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
           {/* ── Notizen ──────────────────────────────────────────────── */}
           <div className="space-y-3">
-            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">Notizen</p>
-            <Field label="Beschreibung">
+            <p className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.forms.notes}</p>
+            <Field label={t.forms.description}>
               <textarea
                 value={form.description} onChange={(e) => set("description", e.target.value)}
                 rows={2}
                 className="retro-field w-full resize-none"
-                placeholder="Kurzbeschreibung (wird ggf. aus Metadaten-Suche gefüllt)"
+                placeholder={t.forms.descriptionPlaceholder}
               />
             </Field>
-            <Field label="Notizen">
+            <Field label={t.forms.notes}>
               <textarea
                 value={form.notes} onChange={(e) => set("notes", e.target.value)}
                 rows={2}
                 className="retro-field w-full resize-none"
-                placeholder="Zustand, Besonderheiten, Seriennummer…"
+                placeholder={t.forms.notesPlaceholder}
               />
             </Field>
           </div>
@@ -716,7 +709,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
           {/* Favorite */}
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" checked={form.isFavorite} onChange={(e) => set("isFavorite", e.target.checked)} className="rounded" />
-            <span className="text-sm text-muted-foreground">Als Favorit markieren ❤️</span>
+            <span className="text-sm text-muted-foreground">{t.forms.markAsFavorite}</span>
           </label>
 
           {error && <p className="text-xs text-destructive">{error}</p>}
@@ -725,10 +718,10 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
         {/* Footer */}
         <div className="flex gap-2 border-t border-border px-5 py-4 shrink-0">
           <button type="button" onClick={onClose} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
-            Abbrechen
+            {t.common.cancel}
           </button>
           <button type="submit" disabled={saving} className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-            {saving ? "Speichern…" : item ? "Aktualisieren" : "Hinzufügen"}
+            {saving ? t.common.saving : item ? t.forms.update : t.forms.add}
           </button>
         </div>
       </form>

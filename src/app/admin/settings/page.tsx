@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "@/components/LanguageProvider";
 
 const DONATION_URL = "https://paypal.me/RetroManFree";
 
@@ -91,6 +92,7 @@ const SERVICES = [
 type MigrateStatus = { applied: number; failed: number; lastMigration: string | null; lastApplied: string | null; hasFailed: boolean };
 
 export default function AdminSettingsPage() {
+  const { t } = useTranslations();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -145,7 +147,7 @@ export default function AdminSettingsPage() {
     setSaving(null);
     setSettings((s) => s ? { ...s, [serviceKey]: true } : s);
     setKeys((k) => { const n = { ...k }; delete n[serviceKey]; return n; });
-    showSaved("Key gespeichert");
+    showSaved(t.settings.keySaved);
   }
 
   async function clearKey(serviceKey: string) {
@@ -157,7 +159,7 @@ export default function AdminSettingsPage() {
     });
     setSaving(null);
     setSettings((s) => s ? { ...s, [serviceKey]: false } : s);
-    showSaved("Key gelöscht");
+    showSaved(t.settings.keyDeleted);
   }
 
   async function saveSetting(patch: Record<string, unknown>) {
@@ -166,7 +168,7 @@ export default function AdminSettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-    showSaved("Gespeichert");
+    showSaved(t.common.saved);
   }
 
   async function runMigration() {
@@ -185,9 +187,9 @@ export default function AdminSettingsPage() {
     <div className="space-y-8 max-w-2xl">
       <div>
         <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">
-          Einstellungen
+          {t.settings.title}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">API-Keys und App-Konfiguration</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t.settings.subtitle}</p>
       </div>
 
       {/* Toast */}
@@ -200,18 +202,18 @@ export default function AdminSettingsPage() {
       {/* Datenbank-Migration */}
       <section className="space-y-3">
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-          Datenbank
+          {t.settings.database}
         </h3>
         <div className="rounded-lg border border-border bg-card px-4 py-4 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-foreground">Migration</p>
+              <p className="text-sm font-medium text-foreground">{t.settings.migration}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {migrateStatus
                   ? migrateStatus.hasFailed
-                    ? "⚠ Fehlgeschlagene Migration gefunden"
-                    : `${migrateStatus.applied} Migrationen angewendet${migrateStatus.lastMigration ? ` · Letzte: ${migrateStatus.lastMigration}` : ""}`
-                  : "Lade Status…"}
+                    ? t.settings.migrationFailed
+                    : `${t.settings.migrationApplied.replace("{count}", String(migrateStatus.applied))}${migrateStatus.lastMigration ? ` · ${t.settings.migrationLast}: ${migrateStatus.lastMigration}` : ""}`
+                  : t.settings.migrationLoadingStatus}
               </p>
             </div>
             <button
@@ -222,9 +224,9 @@ export default function AdminSettingsPage() {
               {migrating ? (
                 <span className="flex items-center gap-2">
                   <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Läuft…
+                  {t.settings.migrationRunning}
                 </span>
-              ) : "Migration ausführen"}
+              ) : t.settings.runMigration}
             </button>
           </div>
 
@@ -238,7 +240,7 @@ export default function AdminSettingsPage() {
               )}
               {!migrating && migrateSuccess !== null && (
                 <span className={`relative z-10 text-[10px] font-medium ${migrateSuccess ? "text-green-500" : "text-destructive"}`}>
-                  {migrateSuccess ? "✓ Migration erfolgreich!" : "✗ Migration fehlgeschlagen"}
+                  {migrateSuccess ? t.settings.migrationSuccess : t.settings.migrationError}
                 </span>
               )}
             </div>
@@ -262,7 +264,7 @@ export default function AdminSettingsPage() {
       {/* API Keys */}
       <section className="space-y-3">
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-          API-Keys
+          {t.settings.apiKeys}
         </h3>
 
         {SERVICES.map((service) => {
@@ -284,7 +286,7 @@ export default function AdminSettingsPage() {
                     <span className="text-xs text-muted-foreground">{service.subtitle}</span>
                     {isSet && (
                       <span className="rounded-full bg-green-500/10 border border-green-500/30 px-2 py-0.5 text-[10px] text-green-500">
-                        ✓ Gesetzt
+                        {t.settings.keySet}
                       </span>
                     )}
                   </div>
@@ -297,7 +299,7 @@ export default function AdminSettingsPage() {
                 <div className="border-t border-border px-4 pb-4 pt-3 space-y-4 bg-muted/20">
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-                      Anleitung
+                      {t.settings.instructions}
                     </p>
                     <ol className="space-y-1.5">
                       {service.steps.map((step, i) => (
@@ -313,7 +315,7 @@ export default function AdminSettingsPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-2"
                     >
-                      → {service.url.replace("https://", "").split("/")[0]} öffnen ↗
+                      → {service.url.replace("https://", "").split("/")[0]} {t.settings.open}
                     </a>
                   </div>
 
@@ -322,7 +324,7 @@ export default function AdminSettingsPage() {
                       type="password"
                       value={currentValue}
                       onChange={(e) => setKeys((k) => ({ ...k, [service.key]: e.target.value }))}
-                      placeholder={isSet ? "Neuen Key eingeben, um zu überschreiben" : "API Key eingeben…"}
+                      placeholder={isSet ? t.settings.newKeyPlaceholder : t.settings.enterKeyPlaceholder}
                       className="retro-field flex-1 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     <button
@@ -330,7 +332,7 @@ export default function AdminSettingsPage() {
                       disabled={!currentValue || isSaving}
                       className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition whitespace-nowrap"
                     >
-                      {isSaving ? "…" : "Speichern"}
+                      {isSaving ? "…" : t.common.save}
                     </button>
                     {isSet && (
                       <button
@@ -338,7 +340,7 @@ export default function AdminSettingsPage() {
                         disabled={isSaving}
                         className="rounded-md border border-destructive/50 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 transition"
                       >
-                        Löschen
+                        {t.common.delete}
                       </button>
                     )}
                   </div>
@@ -352,26 +354,27 @@ export default function AdminSettingsPage() {
       {/* App Settings */}
       <section className="space-y-4">
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-          App-Einstellungen
+          {t.settings.appSettings}
         </h3>
 
         <div className="rounded-lg border border-border bg-card px-4 py-4 space-y-5">
           {/* Language */}
           <div>
-            <p className="text-sm font-medium text-foreground mb-1">Sprache</p>
-            <p className="text-xs text-muted-foreground mb-3">Sprache der Benutzeroberfläche</p>
+            <p className="text-sm font-medium text-foreground mb-1">{t.settings.language}</p>
+            <p className="text-xs text-muted-foreground mb-3">{t.settings.languageHint}</p>
             <div className="flex gap-2">
               {(["de", "en", "fr"] as const).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => { setInterfaceLanguage(lang); saveSetting({ interfaceLanguage: lang }); }}
-                  className={`flex-1 rounded-md border py-2 text-xs transition ${
+                  className={`flex-1 rounded-md border py-2 text-xs transition flex items-center justify-center gap-1.5 ${
                     interfaceLanguage === lang
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
-                  {lang === "de" ? "🇩🇪 Deutsch" : lang === "en" ? "🇬🇧 English" : "🇫🇷 Français"}
+                  <span className="text-sm leading-none">{lang === "de" ? "🇩🇪" : lang === "en" ? "🇬🇧" : "🇫🇷"}</span>
+                  <span>{lang === "de" ? "Deutsch" : lang === "en" ? "English" : "Français"}</span>
                 </button>
               ))}
             </div>
@@ -381,8 +384,8 @@ export default function AdminSettingsPage() {
 
           {/* Font size */}
           <div>
-            <p className="text-sm font-medium text-foreground mb-1">Schriftgröße</p>
-            <p className="text-xs text-muted-foreground mb-3">Beeinflusst die Schriftgröße in der gesamten Anwendung</p>
+            <p className="text-sm font-medium text-foreground mb-1">{t.settings.fontSize}</p>
+            <p className="text-xs text-muted-foreground mb-3">{t.settings.fontSizeHint}</p>
             <div className="flex gap-2">
               {(["small", "medium", "large"] as const).map((s) => (
                 <button
@@ -399,7 +402,7 @@ export default function AdminSettingsPage() {
                       : "border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
-                  {s === "small" ? "Klein" : s === "medium" ? "Mittel" : "Groß"}
+                  {s === "small" ? t.settings.fontSmall : s === "medium" ? t.settings.fontMedium : t.settings.fontLarge}
                 </button>
               ))}
             </div>
@@ -409,8 +412,8 @@ export default function AdminSettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-foreground">MFA für alle Benutzer erzwingen</p>
-              <p className="text-xs text-muted-foreground">Alle Konten müssen 2-Faktor-Authentifizierung aktivieren</p>
+              <p className="text-sm font-medium text-foreground">{t.settings.mfa}</p>
+              <p className="text-xs text-muted-foreground">{t.settings.mfaHint}</p>
             </div>
             <button
               onClick={() => { const next = !requireMfa; setRequireMfa(next); saveSetting({ requireMfa: next }); }}
@@ -423,14 +426,14 @@ export default function AdminSettingsPage() {
           <div className="border-t border-border" />
 
           <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground">Spenden</p>
+            <p className="text-sm font-medium text-foreground">{t.settings.donation}</p>
             <div className="flex items-center gap-4">
               {donationQr && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={donationQr} alt="PayPal QR Code" className="w-20 h-20 rounded-lg shrink-0" />
               )}
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Unterstütze RetroMan via PayPal:</p>
+                <p className="text-xs text-muted-foreground">{t.settings.donationHint}</p>
                 <a
                   href={DONATION_URL}
                   target="_blank"
@@ -444,7 +447,7 @@ export default function AdminSettingsPage() {
           </div>
 
           <div className="border-t border-border pt-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">GitHub</p>
+            <p className="text-sm font-medium text-foreground">{t.settings.github}</p>
             <div className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z" />

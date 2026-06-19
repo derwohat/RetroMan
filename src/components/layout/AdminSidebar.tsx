@@ -84,7 +84,7 @@ export function AdminSidebar() {
           className="flex items-center gap-2.5 px-3 py-2.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <span className="shrink-0"><IconArrowLeft /></span>
-          <span className="text-xs">Admin-Bereich verlassen</span>
+          <span className="text-xs">{t.admin.leaveAdmin}</span>
         </Link>
       </nav>
     </aside>

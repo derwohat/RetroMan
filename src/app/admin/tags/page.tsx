@@ -16,18 +16,20 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTranslations } from "@/components/LanguageProvider";
+import type { Translations } from "@/lib/i18n";
 
 type TagValue = { id: string; value: string; order: number };
 type TagGroup = { id: string; name: string; color: string; order: number; isSystem: boolean; values: TagValue[] };
 
 // ── Drag Handle Icon ───────────────────────────────────────────────────────────
-function DragHandle({ listeners, attributes }: { listeners?: object; attributes?: object }) {
+function DragHandle({ listeners, attributes, title }: { listeners?: object; attributes?: object; title: string }) {
   return (
     <span
       {...listeners}
       {...attributes}
       className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition px-1 touch-none select-none"
-      title="Verschieben"
+      title={title}
     >
       ⣿
     </span>
@@ -40,11 +42,13 @@ function SortableValue({
   groupId,
   onDelete,
   onRename,
+  t,
 }: {
   tagValue: TagValue;
   groupId: string;
   onDelete: (groupId: string, valueId: string) => void;
   onRename: (groupId: string, valueId: string, newValue: string) => void;
+  t: Translations;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tagValue.id,
@@ -68,7 +72,7 @@ function SortableValue({
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1 group/value py-1 px-2 rounded hover:bg-muted/30 transition-colors">
-      <DragHandle listeners={listeners} attributes={attributes} />
+      <DragHandle listeners={listeners} attributes={attributes} title={t.adminTags.move} />
       <div className="flex-1 min-w-0">
         {editing ? (
           <input
@@ -87,7 +91,7 @@ function SortableValue({
           <span
             className="text-sm text-foreground cursor-pointer hover:text-primary transition-colors"
             onClick={startEdit}
-            title="Klicken zum Bearbeiten"
+            title={t.adminTags.clickToEdit}
           >
             {tagValue.value}
           </span>
@@ -96,7 +100,7 @@ function SortableValue({
       <button
         onClick={() => onDelete(groupId, tagValue.id)}
         className="opacity-0 group-hover/value:opacity-100 text-[10px] text-destructive/60 hover:text-destructive transition ml-1 shrink-0"
-        title="Löschen"
+        title={t.common.delete}
       >
         ✕
       </button>
@@ -105,7 +109,7 @@ function SortableValue({
 }
 
 // ── Add Value Row ──────────────────────────────────────────────────────────────
-function AddValueRow({ groupId, onAdd }: { groupId: string; onAdd: (groupId: string, value: string) => Promise<void> }) {
+function AddValueRow({ groupId, onAdd, t }: { groupId: string; onAdd: (groupId: string, value: string) => Promise<void>; t: Translations }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -123,7 +127,7 @@ function AddValueRow({ groupId, onAdd }: { groupId: string; onAdd: (groupId: str
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        placeholder="Neuer Wert…"
+        placeholder={t.adminTags.newValuePlaceholder}
         className="retro-field flex-1 py-1 px-2 text-xs"
         disabled={busy}
       />
@@ -132,7 +136,7 @@ function AddValueRow({ groupId, onAdd }: { groupId: string; onAdd: (groupId: str
         disabled={!draft.trim() || busy}
         className="shrink-0 rounded-md bg-primary/80 px-3 py-1 text-[11px] font-medium text-primary-foreground uppercase tracking-wider hover:bg-primary disabled:opacity-40 transition"
       >
-        + Hinzufügen
+        {t.adminTags.addValue}
       </button>
     </form>
   );
@@ -150,6 +154,7 @@ function SortableGroup({
   onRenameGroup,
   onDeleteGroup,
   onColorChange,
+  t,
 }: {
   group: TagGroup;
   isOpen: boolean;
@@ -161,6 +166,7 @@ function SortableGroup({
   onRenameGroup: (groupId: string, name: string) => void;
   onDeleteGroup: (groupId: string) => void;
   onColorChange: (groupId: string, color: string) => void;
+  t: Translations;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: group.id,
@@ -202,8 +208,8 @@ function SortableGroup({
         onClick={() => !editingName && onToggle(group.id)}
       >
         {group.isSystem
-          ? <span className="px-1 text-muted-foreground/30 shrink-0 select-none" title="Systemgruppe">🔒</span>
-          : <DragHandle listeners={listeners} attributes={attributes} />
+          ? <span className="px-1 text-muted-foreground/30 shrink-0 select-none" title={t.adminTags.systemGroup}>🔒</span>
+          : <DragHandle listeners={listeners} attributes={attributes} title={t.adminTags.move} />
         }
 
         {/* Group Name (as colored badge) */}
@@ -233,7 +239,7 @@ function SortableGroup({
         </div>
 
         <span className="text-[10px] text-muted-foreground mr-1 shrink-0">
-          {group.values.length} {group.values.length === 1 ? "Wert" : "Werte"}
+          {group.values.length} {group.values.length === 1 ? t.adminTags.value : t.adminTags.values}
         </span>
 
         {/* Color picker */}
@@ -243,12 +249,12 @@ function SortableGroup({
             value={group.color}
             onChange={(e) => onColorChange(group.id, e.target.value)}
             className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-            title="Farbe wählen"
+            title={t.adminTags.pickColor}
           />
           <div
             className="h-5 w-5 rounded-full border-2 border-white/20"
             style={{ backgroundColor: group.color }}
-            title="Farbe wählen"
+            title={t.adminTags.pickColor}
           />
         </div>
 
@@ -257,7 +263,7 @@ function SortableGroup({
           <button
             onClick={startEditName}
             className="text-[10px] text-muted-foreground hover:text-foreground transition px-1.5 py-0.5 rounded shrink-0"
-            title="Gruppe umbenennen"
+            title={t.adminTags.renameGroup}
           >
             ✎
           </button>
@@ -268,7 +274,7 @@ function SortableGroup({
           <button
             onClick={(e) => { e.stopPropagation(); onDeleteGroup(group.id); }}
             className="text-[10px] text-destructive/50 hover:text-destructive transition px-1.5 py-0.5 rounded shrink-0"
-            title="Gruppe löschen"
+            title={t.adminTags.deleteGroup}
           >
             ✕
           </button>
@@ -279,7 +285,7 @@ function SortableGroup({
       {isOpen && (
         <div className="border-t border-border bg-background/40 pb-3">
           {group.values.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-muted-foreground italic">Noch keine Werte. Füge den ersten hinzu.</p>
+            <p className="px-4 py-3 text-xs text-muted-foreground italic">{t.adminTags.noValues}</p>
           ) : (
             <DndContext sensors={innerSensors} collisionDetection={closestCenter} onDragEnd={handleValueDragEnd}>
               <SortableContext items={group.values.map((v) => v.id)} strategy={verticalListSortingStrategy}>
@@ -291,13 +297,14 @@ function SortableGroup({
                       groupId={group.id}
                       onDelete={onDeleteValue}
                       onRename={onRenameValue}
+                      t={t}
                     />
                   ))}
                 </div>
               </SortableContext>
             </DndContext>
           )}
-          <AddValueRow groupId={group.id} onAdd={onAddValue} />
+          <AddValueRow groupId={group.id} onAdd={onAddValue} t={t} />
         </div>
       )}
     </div>
@@ -306,6 +313,7 @@ function SortableGroup({
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function AdminTagsPage() {
+  const { t } = useTranslations();
   const [groups, setGroups] = useState<TagGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
@@ -347,7 +355,7 @@ export default function AdminTagsPage() {
       body: JSON.stringify({ name: newGroupName.trim() }),
     });
     setCreating(false);
-    if (!res.ok) { setCreateError((await res.json()).error ?? "Fehler"); return; }
+    if (!res.ok) { setCreateError((await res.json()).error ?? t.common.error); return; }
     const newGroup: TagGroup = await res.json();
     setGroups((prev) => [...prev, newGroup]);
     setOpenGroups((prev) => new Set([...prev, newGroup.id]));
@@ -472,25 +480,27 @@ export default function AdminTagsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">Tags</h2>
+          <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">{t.adminTags.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"} · Werte werden beim Anlegen von Einträgen als Optionen angeboten
+            {t.adminTags.subtitle
+              .replace("{count}", String(groups.length))
+              .replace("{word}", groups.length === 1 ? t.adminTags.group : t.adminTags.groups)}
           </p>
         </div>
         <button
           onClick={() => { setShowCreateGroup(true); setNewGroupName(""); setCreateError(""); }}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 shrink-0"
         >
-          + Neue Gruppe
+          {t.adminTags.newGroup}
         </button>
       </div>
 
       {/* Group List */}
       {loading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
+        <p className="text-sm text-muted-foreground">{t.common.loading}</p>
       ) : groups.length === 0 ? (
         <div className="rounded-lg border border-border border-dashed p-10 text-center">
-          <p className="text-sm text-muted-foreground">Noch keine Tag-Gruppen. Erstelle die erste Gruppe.</p>
+          <p className="text-sm text-muted-foreground">{t.adminTags.empty}</p>
         </div>
       ) : (
         <DndContext sensors={outerSensors} collisionDetection={closestCenter} onDragEnd={handleGroupDragEnd}>
@@ -509,6 +519,7 @@ export default function AdminTagsPage() {
                   onRenameGroup={handleRenameGroup}
                   onDeleteGroup={requestDeleteGroup}
                   onColorChange={handleColorChange}
+                  t={t}
                 />
               ))}
             </div>
@@ -520,17 +531,17 @@ export default function AdminTagsPage() {
       {showCreateGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">Neue Tag-Gruppe</h3>
+            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.adminTags.createTitle}</h3>
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Name *</label>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminTags.nameRequired}</label>
                 <input
                   required
                   autoFocus
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
                   className="retro-field w-full"
-                  placeholder="z.B. Shops, Genre, Region…"
+                  placeholder={t.adminTags.groupNamePlaceholder}
                 />
               </div>
               {createError && <p className="text-xs text-destructive">{createError}</p>}
@@ -540,14 +551,14 @@ export default function AdminTagsPage() {
                   onClick={() => { setShowCreateGroup(false); setCreateError(""); }}
                   className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
                 >
-                  Abbrechen
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
                   className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
                 >
-                  {creating ? "…" : "Erstellen"}
+                  {creating ? "…" : t.common.create}
                 </button>
               </div>
             </form>
@@ -561,17 +572,17 @@ export default function AdminTagsPage() {
           <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive text-sm">⚠</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">Danger Zone</h3>
+              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
             </div>
             {deleteTarget.type === "group" ? (
               <p className="text-sm text-muted-foreground">
-                Die Gruppe <span className="font-medium text-foreground">„{deleteTarget.group.name}"</span> und alle{" "}
-                <span className="font-medium text-foreground">{deleteTarget.group.values.length} Werte</span> werden dauerhaft gelöscht.
+                <span className="font-medium text-foreground">„{deleteTarget.group.name}"</span> {t.adminTags.deleteGroupText}{" "}
+                <span className="font-medium text-foreground">{deleteTarget.group.values.length} {t.adminTags.values}</span> {t.adminTags.deleteGroupValues}
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">„{deleteTarget.value.value}"</span> wird aus der Gruppe{" "}
-                <span className="font-medium text-foreground">„{deleteTarget.group.name}"</span> entfernt.
+                <span className="font-medium text-foreground">„{deleteTarget.value.value}"</span> {t.adminTags.deleteValueRemoved}{" "}
+                <span className="font-medium text-foreground">„{deleteTarget.group.name}"</span> {t.adminTags.deleteValueRemovedSuffix}
               </p>
             )}
             <div className="flex gap-2">
@@ -579,13 +590,13 @@ export default function AdminTagsPage() {
                 onClick={() => setDeleteTarget(null)}
                 className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
               >
-                Abbrechen
+                {t.common.cancel}
               </button>
               <button
                 onClick={confirmDelete}
                 className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 transition"
               >
-                Löschen
+                {t.common.delete}
               </button>
             </div>
           </div>

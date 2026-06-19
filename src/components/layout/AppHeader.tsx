@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type Profile = { name: string; email: string; role: string };
 type SearchItem = {
@@ -22,6 +23,7 @@ type SearchItem = {
 
 export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const router = useRouter();
+  const { t } = useTranslations();
   const [query, setQuery]           = useState("");
   const [profile, setProfile]       = useState<Profile | null>(null);
   const [showMenu, setShowMenu]     = useState(false);
@@ -99,7 +101,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
       <button
         onClick={onMenuToggle}
         className="md:hidden flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-primary transition shrink-0"
-        aria-label="Menü"
+        aria-label={t.header.menu}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -130,15 +132,15 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => { if (suggestions.length > 0) setShowDrop(true); }}
-            placeholder="Rewind your world!"
+            placeholder={t.header.searchPlaceholder}
             autoComplete="off"
             className="flex-1 bg-transparent text-sm text-foreground search-slogan-placeholder outline-none"
           />
           {query === "" && (
             <div className="hidden sm:flex items-center gap-1.5">
-              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Name</span>
-              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Typ</span>
-              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">Jahr</span>
+              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">{t.header.chipName}</span>
+              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">{t.header.chipType}</span>
+              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">{t.header.chipYear}</span>
             </div>
           )}
         </form>
@@ -174,7 +176,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
                 onClick={() => { setShowDrop(false); router.push(`/search?q=${encodeURIComponent(query.trim())}`); }}
                 className="text-xs text-primary hover:underline"
               >
-                Alle Ergebnisse für „{query.trim()}" anzeigen →
+                {t.header.allResultsFor} „{query.trim()}" {t.header.showAll}
               </button>
             </div>
           </div>
@@ -190,7 +192,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
           <button
             onClick={() => setShowMenu((v) => !v)}
             className="flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:border-primary hover:text-primary"
-            title="Profil"
+            title={t.header.profile}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -218,7 +220,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Profil & Einstellungen
+                  {t.header.profileSettings}
                 </Link>
 
                 {profile?.role === "ADMIN" && (
@@ -231,7 +233,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Admin-Bereich
+                    {t.header.adminArea}
                   </Link>
                 )}
               </div>
@@ -244,7 +246,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Abmelden
+                  {t.header.logout}
                 </button>
               </div>
             </div>

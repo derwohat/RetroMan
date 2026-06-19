@@ -18,7 +18,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       .then((r) => (r.ok ? r.json() : {}))
       .then((data: { interfaceLanguage?: string }) => {
         const lang = data.interfaceLanguage;
-        if (lang === "de" || lang === "en" || lang === "fr") setLocale(lang);
+        if (lang === "de" || lang === "en" || lang === "fr") {
+          setLocale(lang);
+          localStorage.setItem("retroman_lang", lang);
+        }
       })
       .catch(() => {});
   }, []);
