@@ -7,13 +7,6 @@ import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
-function IconWishlist() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-    </svg>
-  );
-}
 function IconFavorites() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -48,7 +41,7 @@ type Collection = { id: string; name: string; icon: string | null; _count: { ite
 export function AppSidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [counts, setCounts] = useState({ favorites: 0, wishlist: 0 });
+  const [counts, setCounts] = useState({ favorites: 0 });
   const pathname = usePathname();
   const { t } = useTranslations();
 
@@ -158,19 +151,6 @@ export function AppSidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: ()
         <div className="my-2 mx-3 border-t border-border/50" />
 
         {/* Other pages */}
-        {/* Wishlist with count */}
-        {(() => {
-          const href = "/wishlist";
-          const isActive = pathname.startsWith(href);
-          return (
-            <Link href={href} className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-              <span className="shrink-0"><IconWishlist /></span>
-              {!collapsed && <span className="flex-1 truncate text-xs">{t.nav.wishlist}</span>}
-              {!collapsed && counts.wishlist > 0 && <span className="text-[9px] text-muted-foreground tabular-nums">{counts.wishlist}</span>}
-            </Link>
-          );
-        })()}
-
         {/* Favorites with count */}
         {(() => {
           const href = "/favorites";

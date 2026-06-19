@@ -15,10 +15,7 @@ export async function GET() {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [favorites, wishlist] = await Promise.all([
-    prisma.item.count({ where: { userId, isFavorite: true } }),
-    prisma.item.count({ where: { userId, collectionStatus: "WISHLIST" } }),
-  ]);
+  const favorites = await prisma.item.count({ where: { userId, isFavorite: true } });
 
-  return NextResponse.json({ favorites, wishlist });
+  return NextResponse.json({ favorites });
 }

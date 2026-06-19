@@ -12,7 +12,6 @@ type StatsData = {
   total: number;
   totalValue: number;
   favorites: number;
-  wishlist: number;
   byCollection: Array<{ name: string; icon: string | null; count: number; value: number }>;
   byCondition: Record<string, number>;
   byYear: Array<{ year: number; count: number }>;
@@ -83,11 +82,10 @@ export default function StatsPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <StatCard label={t.stats.totalItems} value={data.total} />
         <StatCard label={t.stats.totalValue} value={formatPrice(data.totalValue)} />
         <StatCard label={t.stats.favorites} value={data.favorites} />
-        <StatCard label={t.stats.wishlist} value={data.wishlist} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -67,13 +67,11 @@ export async function GET() {
 
   const totalValue = items.reduce((s, i) => s + (i.purchasePrice ? Number(i.purchasePrice) : 0), 0);
   const favorites = items.filter((i) => i.isFavorite).length;
-  const wishlist = items.filter((i) => i.collectionStatus === "WISHLIST").length;
 
   return NextResponse.json({
     total: items.length,
     totalValue,
     favorites,
-    wishlist,
     byCollection: Object.values(byCollection).sort((a, b) => b.count - a.count),
     byCondition,
     byYear: Object.entries(byYear)
