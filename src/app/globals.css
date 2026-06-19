@@ -137,6 +137,158 @@
   --chart-5: #3b82f6;
 }
 
+/* ─── Retro 90s Light (Windows 95) ───────────────────────── */
+[data-theme="retro90s"] {
+  --background: #d4d0c8;
+  --foreground: #000000;
+  --card: #c0c0c0;
+  --card-foreground: #000000;
+  --popover: #d4d0c8;
+  --popover-foreground: #000000;
+  --primary: #000080;
+  --primary-foreground: #ffffff;
+  --secondary: #c0c0c0;
+  --secondary-foreground: #000000;
+  --muted: #d4d0c8;
+  --muted-foreground: #444444;
+  --accent: #008080;
+  --accent-foreground: #ffffff;
+  --destructive: #cc0000;
+  --border: #808080;
+  --input: #ffffff;
+  --ring: #000080;
+  --neon-pink: #cc0044;
+  --neon-cyan: #008080;
+  --neon-yellow: #cc9900;
+  --sidebar: #c0c0c0;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000080;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d4d0c8;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #808080;
+  --sidebar-ring: #000080;
+  --chart-1: #000080;
+  --chart-2: #008080;
+  --chart-3: #800080;
+  --chart-4: #808000;
+  --chart-5: #800000;
+}
+
+/* ─── Retro 90s Dark (MTV / Grunge) ──────────────────────── */
+[data-theme="retro90s"].dark {
+  --background: #0e0e0e;
+  --foreground: #f0e6d3;
+  --card: #1a1a1a;
+  --card-foreground: #f0e6d3;
+  --popover: #2a2020;
+  --popover-foreground: #f0e6d3;
+  --primary: #e94560;
+  --primary-foreground: #0e0e0e;
+  --secondary: #2a2020;
+  --secondary-foreground: #f0e6d3;
+  --muted: #222222;
+  --muted-foreground: #888888;
+  --accent: #f5a623;
+  --accent-foreground: #0e0e0e;
+  --destructive: #ef4444;
+  --border: #3a3030;
+  --input: #3a3030;
+  --ring: #e94560;
+  --neon-pink: #e94560;
+  --neon-cyan: #00b4d8;
+  --neon-yellow: #f5a623;
+  --sidebar: #0e0e0e;
+  --sidebar-foreground: #f0e6d3;
+  --sidebar-primary: #e94560;
+  --sidebar-primary-foreground: #0e0e0e;
+  --sidebar-accent: #2a2020;
+  --sidebar-accent-foreground: #f0e6d3;
+  --sidebar-border: #3a3030;
+  --sidebar-ring: #e94560;
+  --chart-1: #e94560;
+  --chart-2: #00b4d8;
+  --chart-3: #f5a623;
+  --chart-4: #a855f7;
+  --chart-5: #22c55e;
+}
+
+/* ─── Modern Light ────────────────────────────────────────── */
+[data-theme="modern"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #f8fafc;
+  --popover-foreground: #0f172a;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #0891b2;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #4f46e5;
+  --neon-pink: #4f46e5;
+  --neon-cyan: #0891b2;
+  --neon-yellow: #d97706;
+  --sidebar: #f1f5f9;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f8fafc;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #4f46e5;
+  --chart-1: #4f46e5;
+  --chart-2: #0891b2;
+  --chart-3: #d97706;
+  --chart-4: #059669;
+  --chart-5: #dc2626;
+}
+
+/* ─── Modern Dark ─────────────────────────────────────────── */
+[data-theme="modern"].dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+  --primary: #6366f1;
+  --primary-foreground: #0f172a;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #06b6d4;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --border: #334155;
+  --input: #334155;
+  --ring: #6366f1;
+  --neon-pink: #6366f1;
+  --neon-cyan: #06b6d4;
+  --neon-yellow: #fbbf24;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #334155;
+  --sidebar-ring: #6366f1;
+  --chart-1: #6366f1;
+  --chart-2: #06b6d4;
+  --chart-3: #fbbf24;
+  --chart-4: #34d399;
+  --chart-5: #f87171;
+}
+
 /* ─── Base ────────────────────────────────────────────────── */
 @layer base {
   * {
@@ -154,22 +306,22 @@
   }
 }
 
-/* ─── Neon Effects (Dark Mode only) ──────────────────────── */
-.dark .neon-glow {
+/* ─── Neon Effects (Dark Mode only, not Modern) ──────────── */
+.dark:not([data-theme="modern"]) .neon-glow {
   text-shadow:
     0 0 5px var(--neon-pink),
     0 0 10px var(--neon-pink),
     0 0 20px var(--neon-pink);
 }
 
-.dark .neon-glow-cyan {
+.dark:not([data-theme="modern"]) .neon-glow-cyan {
   text-shadow:
     0 0 5px var(--neon-cyan),
     0 0 10px var(--neon-cyan),
     0 0 20px var(--neon-cyan);
 }
 
-.dark .neon-border {
+.dark:not([data-theme="modern"]) .neon-border {
   box-shadow:
     0 0 5px var(--neon-pink),
     0 0 10px var(--neon-pink),
@@ -196,10 +348,16 @@
 }
 
 /* ─── Synthwave Grid Background ──────────────────────────── */
-.dark .grid-bg {
+.dark:not([data-theme="retro90s"]):not([data-theme="modern"]) .grid-bg {
   background-image:
     linear-gradient(rgba(255, 45, 149, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 45, 149, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+[data-theme="retro90s"].dark .grid-bg {
+  background-image:
+    linear-gradient(rgba(233, 69, 96, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(233, 69, 96, 0.04) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -249,6 +407,12 @@
     0 0 20px var(--neon-cyan);
 }
 
+[data-theme="modern"] .search-slogan-placeholder::placeholder {
+  text-shadow: none;
+  font-style: normal;
+  letter-spacing: normal;
+}
+
 /* ─── Slogan Glow ────────────────────────────────────────── */
 .slogan-glow {
   color: var(--neon-cyan);
@@ -258,6 +422,10 @@
     0 0 20px var(--neon-cyan);
 }
 
+[data-theme="modern"] .slogan-glow {
+  text-shadow: none;
+}
+
 /* ─── Hover Scale for Grid Items ─────────────────────────── */
 .media-card {
   transition: transform 150ms ease, box-shadow 200ms ease;
@@ -265,8 +433,17 @@
 .media-card:hover {
   transform: scale(1.05);
 }
-.dark .media-card:hover {
-  box-shadow: 0 0 12px rgba(255, 45, 149, 0.3);
+.dark:not([data-theme="retro90s"]):not([data-theme="modern"]) .media-card:hover {
+  box-shadow: 0 0 12px rgba(255, 45, 149, 0.3);   /* retro80s pink */
+}
+[data-theme="retro90s"].dark .media-card:hover {
+  box-shadow: 0 0 12px rgba(233, 69, 96, 0.3);    /* retro90s dark red glow */
+}
+[data-theme="retro90s"]:not(.dark) .media-card:hover {
+  box-shadow: 0 0 0 2px var(--primary);            /* retro90s light: solid border */
+}
+[data-theme="modern"] .media-card:hover {
+  box-shadow: 0 0 0 2px var(--primary);
 }
 
 /* ─── Select element readability ─────────────────────────── */

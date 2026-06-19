@@ -42,6 +42,7 @@ export default function RootLayout({
     <html
       lang="de"
       suppressHydrationWarning
+      data-theme="retro80s"
       className={`dark ${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

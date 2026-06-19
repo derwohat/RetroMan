@@ -10,6 +10,8 @@ export function ThemeToggle() {
     const isDark = stored ? stored === "dark" : true;
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
+    const colorTheme = localStorage.getItem("colorTheme") ?? "retro80s";
+    document.documentElement.setAttribute("data-theme", colorTheme);
   }, []);
 
   function toggle() {

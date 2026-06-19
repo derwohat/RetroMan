@@ -54,6 +54,10 @@ export default function ProfilePage() {
   const [mfaDisableToken, setMfaDisableToken] = useState("");
   const [showDisable, setShowDisable] = useState(false);
 
+  // Appearance
+  const [colorTheme, setColorTheme] = useState<"retro80s" | "retro90s" | "modern">("retro80s");
+  const [isDark, setIsDark] = useState(true);
+
   // Export / Import
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState("");
@@ -66,7 +70,22 @@ export default function ProfilePage() {
       .then((d: Profile | null) => {
         if (d) { setProfile(d); setName(d.name); setLang(d.preferredLanguage); }
       });
+    const storedTheme = localStorage.getItem("colorTheme") as "retro80s" | "retro90s" | "modern" | null;
+    if (storedTheme) setColorTheme(storedTheme);
+    setIsDark(localStorage.getItem("theme") !== "light");
   }, []);
+
+  function applyColorTheme(theme: "retro80s" | "retro90s" | "modern") {
+    setColorTheme(theme);
+    localStorage.setItem("colorTheme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
+  function applyDarkMode(dark: boolean) {
+    setIsDark(dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", dark);
+  }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
@@ -193,6 +212,54 @@ export default function ProfilePage() {
         <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">{t.profile.title}</h2>
         {profile && <p className="mt-1 text-sm text-muted-foreground">{profile.email}</p>}
       </div>
+
+      {/* Appearance */}
+      <Section title={t.profile.appearance}>
+        <p className="text-xs text-muted-foreground">{t.profile.appearanceHint}</p>
+
+        {/* Theme cards */}
+        <div className="grid grid-cols-3 gap-3">
+          {([
+            { id: "retro80s", label: t.profile.themeRetro80s, hint: t.profile.themeRetro80sHint,
+              swatches: ["#0d0b1e", "#ff2d95", "#00f5d4", "#161429"] },
+            { id: "retro90s", label: t.profile.themeRetro90s, hint: t.profile.themeRetro90sHint,
+              swatches: ["#0e0e0e", "#e94560", "#f5a623", "#1a1a1a"] },
+            { id: "modern",   label: t.profile.themeModern,   hint: t.profile.themeModernHint,
+              swatches: ["#0f172a", "#6366f1", "#06b6d4", "#1e293b"] },
+          ] as const).map((th) => (
+            <button
+              key={th.id}
+              onClick={() => applyColorTheme(th.id)}
+              className={`rounded-lg border-2 p-3 text-left transition ${colorTheme === th.id ? "border-primary" : "border-border hover:border-primary/50"}`}
+            >
+              {/* Swatch preview */}
+              <div className="flex gap-1 mb-2">
+                {th.swatches.map((c, i) => (
+                  <div key={i} className="h-4 flex-1 rounded" style={{ background: c }} />
+                ))}
+              </div>
+              <p className="text-xs font-medium text-foreground">{th.label}</p>
+              <p className="text-[10px] text-muted-foreground">{th.hint}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Dark / Light toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => applyDarkMode(true)}
+            className={`rounded-md border px-3 py-1.5 text-xs transition ${isDark ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+          >
+            {t.profile.darkMode}
+          </button>
+          <button
+            onClick={() => applyDarkMode(false)}
+            className={`rounded-md border px-3 py-1.5 text-xs transition ${!isDark ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+          >
+            {t.profile.lightMode}
+          </button>
+        </div>
+      </Section>
 
       {/* Profile */}
       <Section title={t.profile.personalData}>
