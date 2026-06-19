@@ -9,10 +9,13 @@ function getImageUrl(item: ViewProps["items"][number]) {
   return primary?.url ?? primary?.filePath ?? null;
 }
 
-export function CdWallView({ items, categoryIcon, visibleTags, chipGroups }: ViewProps) {
+// Calibrated to match ShelfView column counts (7,5,4,3,2) at ~750px content width
+const MIN_WIDTHS = [100, 130, 170, 220, 290];
 
+export function CdWallView({ items, categoryIcon, visibleTags, chipGroups, size = 3 }: ViewProps) {
+  const minW = MIN_WIDTHS[(size - 1) % 5];
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3">
+    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minW}px, 1fr))` }}>
       {items.map((item) => {
         const imageUrl = getImageUrl(item);
         const fieldChips = visibleTags

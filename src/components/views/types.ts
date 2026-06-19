@@ -80,4 +80,5 @@ export interface ViewProps {
   visibleTags: string[];
   fields: CategoryField[];
   chipGroups: Array<{ groupId: string; name: string; color: string; linkedField?: string | null }>;
+  size?: number; // 1 (smallest) – 5 (largest), default 3
 }

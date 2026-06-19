@@ -38,6 +38,7 @@ export default function CollectionPage() {
   const [loading, setLoading]          = useState(true);
   const [activeView, setActiveView]    = useState<ViewType>("SHELF");
   const [visibleTags, setVisibleTags]  = useState<string[]>([]);
+  const [sizeLevel, setSizeLevel]      = useState<number>(3);
   const [showTagPanel, setShowTagPanel] = useState(false);
   const [showForm, setShowForm]        = useState(false);
   const tagPanelRef = useRef<HTMLDivElement>(null);
@@ -51,6 +52,8 @@ export default function CollectionPage() {
   useEffect(() => {
     const stored = localStorage.getItem(`view_${collectionId}`) as ViewType | null;
     if (stored) setActiveView(stored);
+    const storedSize = localStorage.getItem(`view_size_${collectionId}`);
+    if (storedSize) setSizeLevel(Number(storedSize));
 
     fetch(`/api/collection-settings/${collectionId}`)
       .then((r) => r.json())
@@ -93,6 +96,11 @@ export default function CollectionPage() {
     saveViewSettings(view, visibleTags);
   }
 
+  function handleSizeChange(value: number) {
+    setSizeLevel(value);
+    localStorage.setItem(`view_size_${collectionId}`, String(value));
+  }
+
   function toggleTag(key: string) {
     const next = visibleTags.includes(key) ? visibleTags.filter((t) => t !== key) : [...visibleTags, key];
     setVisibleTags(next);
@@ -103,6 +111,8 @@ export default function CollectionPage() {
     ? VIEW_AVAILABILITY[collection.mediaType] ?? ["SHELF", "SIMPLE", "TABLE"]
     : (["SHELF", "SIMPLE", "TABLE"] as ViewType[]);
 
+  const SLIDER_VIEWS: ViewType[] = ["CDWALL", "SHELF", "SIMPLE"];
+
   const viewProps = {
     items,
     categoryIcon: collection?.icon ?? "📦",
@@ -111,6 +121,7 @@ export default function CollectionPage() {
     chipGroups: (collection?.tagGroups ?? [])
       .filter((tg) => tg.showInView)
       .map((tg) => ({ groupId: tg.groupId, name: tg.group.name, color: tg.group.color ?? "#ff2d95", linkedField: tg.group.linkedField })),
+    size: sizeLevel,
   };
 
   return (
@@ -129,8 +140,33 @@ export default function CollectionPage() {
 
         {/* Toolbar */}
         <div className="flex items-center gap-2">
+          {/* Size slider — only for grid views */}
+          {SLIDER_VIEWS.includes(activeView) && (
+            <div className="h-9 flex items-center gap-1.5 rounded-md border border-border bg-muted px-2">
+              <button onClick={() => handleSizeChange(Math.max(1, sizeLevel - 1))} className="shrink-0 text-muted-foreground hover:text-foreground transition" title="Kleiner">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+              </button>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                step={1}
+                value={sizeLevel}
+                onChange={(e) => handleSizeChange(Number(e.target.value))}
+                className="w-16 h-1 accent-primary cursor-pointer"
+              />
+              <button onClick={() => handleSizeChange(Math.min(5, sizeLevel + 1))} className="shrink-0 text-muted-foreground hover:text-foreground transition" title="Größer">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/>
+                </svg>
+              </button>
+            </div>
+          )}
+
           {/* View switcher */}
-          <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted p-1">
+          <div className="h-9 flex items-center gap-0.5 rounded-md border border-border bg-muted px-1">
             {availableViews.map((view) => (
               <button
                 key={view}
@@ -151,7 +187,7 @@ export default function CollectionPage() {
               <button
                 onClick={() => setShowTagPanel((p) => !p)}
                 title={t.collection.visibleFields}
-                className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs transition ${showTagPanel ? "border-primary text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
+                className={`h-9 flex items-center gap-1.5 rounded-md border px-3 text-xs transition ${showTagPanel ? "border-primary text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -178,7 +214,7 @@ export default function CollectionPage() {
           {/* Add button */}
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
+            className="h-9 flex items-center gap-2 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
           >
             {t.collection.add}
           </button>

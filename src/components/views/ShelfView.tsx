@@ -9,10 +9,13 @@ function getImageUrl(item: ViewProps["items"][number]) {
   return primary?.url ?? primary?.filePath ?? null;
 }
 
-export function ShelfView({ items, categoryIcon, chipGroups }: ViewProps) {
+// step 1→9 cols, 2→7 cols, 3→5 cols, 4→4 cols, 5→3 cols at ~900px
+const MIN_WIDTHS = [90, 120, 155, 200, 260];
 
+export function ShelfView({ items, categoryIcon, chipGroups, size = 3 }: ViewProps) {
+  const minW = MIN_WIDTHS[(size - 1) % 5];
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minW}px, 1fr))` }}>
       {items.map((item) => {
         const imageUrl = getImageUrl(item);
         const chips = chipGroups.flatMap(({ groupId, color, linkedField }) => {

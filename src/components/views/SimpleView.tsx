@@ -10,10 +10,15 @@ function getImageUrl(item: ViewProps["items"][number]) {
   return primary?.url ?? primary?.filePath ?? null;
 }
 
-export function SimpleView({ items, categoryIcon, chipGroups }: ViewProps) {
+// 3,2,2,1,1 cols at ~750px; thumbnail grows to visually differentiate same-col steps
+const MIN_WIDTHS = [220, 290, 350, 430, 580];
+const THUMB_SIZES: Array<[number, number]> = [[40,52],[48,64],[56,72],[72,92],[88,112]]; // [w, h] px
 
+export function SimpleView({ items, categoryIcon, chipGroups, size = 3 }: ViewProps) {
+  const minW = MIN_WIDTHS[(size - 1) % 5];
+  const [thumbW, thumbH] = THUMB_SIZES[(size - 1) % 5];
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minW}px, 1fr))` }}>
       {items.map((item) => {
         const imageUrl = getImageUrl(item);
         const chips = chipGroups.flatMap(({ groupId, color, linkedField }) => {
@@ -27,7 +32,7 @@ export function SimpleView({ items, categoryIcon, chipGroups }: ViewProps) {
         return (
           <div key={item.id} className="media-card group relative flex gap-3 rounded-lg border border-border bg-card p-3 overflow-hidden">
             {/* Thumbnail */}
-            <Link href={`/collection/${item.collectionId}/${item.id}`} className="relative w-16 h-20 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center">
+            <Link href={`/collection/${item.collectionId}/${item.id}`} className="relative shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center" style={{ width: thumbW, height: thumbH }}>
               {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
