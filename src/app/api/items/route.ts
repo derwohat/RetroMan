@@ -34,7 +34,16 @@ export async function GET(req: NextRequest) {
     where: {
       userId,
       ...(collectionId ? { collectionId } : {}),
-      ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
+      ...(search ? {
+        OR: [
+          { title:   { contains: search, mode: "insensitive" } },
+          { barcode: { contains: search, mode: "insensitive" } },
+          { store:    { contains: search, mode: "insensitive" } },
+          { location: { contains: search, mode: "insensitive" } },
+          { tags: { some: { tagValue: { value: { contains: search, mode: "insensitive" } } } } },
+          ...(/^\d{4}$/.test(search) ? [{ year: parseInt(search) }] : []),
+        ],
+      } : {}),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(condition ? { condition: condition as any } : {}),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

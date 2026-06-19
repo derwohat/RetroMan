@@ -22,10 +22,19 @@ export async function GET(req: NextRequest) {
   const q = (searchParams.get("q") ?? "").trim();
   if (!q) return NextResponse.json([]);
 
+  const yearNum = /^\d{4}$/.test(q) ? parseInt(q) : null;
+
   const items = await prisma.item.findMany({
     where: {
       userId,
-      title: { contains: q, mode: "insensitive" },
+      OR: [
+        { title:   { contains: q, mode: "insensitive" } },
+        { barcode: { contains: q, mode: "insensitive" } },
+        { store:    { contains: q, mode: "insensitive" } },
+        { location: { contains: q, mode: "insensitive" } },
+        { tags: { some: { tagValue: { value: { contains: q, mode: "insensitive" } } } } },
+        ...(yearNum ? [{ year: yearNum }] : []),
+      ],
     },
     include: {
       collection: { select: { id: true, name: true, icon: true } },
