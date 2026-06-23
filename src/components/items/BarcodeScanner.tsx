@@ -21,31 +21,39 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
         const reader = new BrowserMultiFormatReader();
 
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-        const deviceId = devices.find((d) => /back|rear|environment/i.test(d.label))?.deviceId
-          ?? devices[0]?.deviceId;
-
-        if (!deviceId) {
-          setError("Keine Kamera gefunden.");
-          return;
-        }
-
         if (!videoRef.current || cancelled) return;
 
-        const controls = await reader.decodeFromVideoDevice(deviceId, videoRef.current, (result) => {
-          if (cancelled) return;
-          if (result) {
-            const text = result.getText();
-            if (/^\d{8,14}$/.test(text)) {
-              setScanning(false);
-              onDetected(text);
+        // Use constraints instead of device enumeration — works on mobile before
+        // camera permission is granted (labels are empty until permission is given).
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" } } },
+          videoRef.current,
+          (result, err) => {
+            if (cancelled) return;
+            if (result) {
+              const text = result.getText();
+              if (/^\d{8,14}$/.test(text)) {
+                setScanning(false);
+                onDetected(text);
+              }
+            }
+            // Suppress the continuous "not found" errors from ZXing
+            if (err && err.name !== "NotFoundException") {
+              console.error(err);
             }
           }
-        });
+        );
 
         stopRef.current = () => { try { controls.stop(); } catch {} };
       } catch (e) {
-        if (!cancelled) setError("Kamerazugriff verweigert oder nicht verfügbar.");
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (/permission|denied|not allowed/i.test(msg)) {
+            setError("Kamerazugriff verweigert. Bitte Berechtigung in den Browser-Einstellungen erlauben.");
+          } else {
+            setError("Kamera nicht verfügbar.");
+          }
+        }
         console.error(e);
       }
     }
