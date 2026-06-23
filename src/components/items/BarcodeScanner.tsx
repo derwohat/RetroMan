@@ -22,17 +22,23 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
         if (!videoRef.current || cancelled) return;
         const video = videoRef.current;
 
-        // --- Step 1: get camera stream ---
+        // Get camera stream — only await that can legitimately trigger setError
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
         });
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
 
-        // --- Step 2: attach stream manually (bypass ZXing video handling) ---
-        video.srcObject = stream;
-        video.muted = true;                        // property — required for iOS autoplay
-        video.setAttribute("playsinline", "true"); // required for iOS in-page playback
+        // Configure BEFORE attaching stream (required order for iOS)
+        video.muted = true;
+        video.setAttribute("playsinline", "true");
         video.setAttribute("autoplay", "true");
+        video.srcObject = stream;
+
+        // Fire-and-forget play() — do NOT await.
+        // After getUserMedia's permission dialog the user-gesture context may have
+        // expired, so play() can throw NotAllowedError. We ignore it here because
+        // the autoplay attributes + muted will trigger playback automatically.
+        video.play().catch(() => {});
 
         stopRef.current = () => {
           if (intervalId) clearInterval(intervalId);
@@ -40,29 +46,14 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
           video.srcObject = null;
         };
 
-        // --- Step 3: wait for video to be ready, then play ---
-        await new Promise<void>((resolve, reject) => {
-          const tid = setTimeout(() => reject(new Error("video timeout")), 8000);
-          const onReady = async () => {
-            clearTimeout(tid);
-            video.removeEventListener("canplay", onReady);
-            video.removeEventListener("loadedmetadata", onReady);
-            try { await video.play(); resolve(); } catch (e) { reject(e); }
-          };
-          if (video.readyState >= 3) { onReady(); return; }
-          video.addEventListener("canplay", onReady);
-          video.addEventListener("loadedmetadata", onReady);
-        });
-        if (cancelled) return;
-
-        // --- Step 4: decode frames using ZXing canvas API (no ZXing video handling) ---
+        // Load ZXing once, then poll frames — the loop self-guards with readyState
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
         const reader = new BrowserMultiFormatReader();
         const canvas = document.createElement("canvas");
 
         intervalId = setInterval(() => {
           if (cancelled || video.readyState < 2 || video.videoWidth === 0) return;
-          canvas.width = video.videoWidth;
+          canvas.width  = video.videoWidth;
           canvas.height = video.videoHeight;
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
@@ -71,22 +62,21 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
             const result = reader.decodeFromCanvas(canvas);
             const text = result.getText();
             if (/^\d{8,14}$/.test(text)) {
+              if (intervalId) clearInterval(intervalId);
               setScanning(false);
               onDetected(text);
             }
           } catch {
-            // NotFoundException on every empty frame — expected, ignore
+            // NotFoundException on every empty frame — expected
           }
         }, 250);
 
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : String(e);
-          if (/permission|denied|not allowed/i.test(msg)) {
-            setError("Kamerazugriff verweigert. Bitte Berechtigung in den Browser-Einstellungen erlauben.");
-          } else {
-            setError("Kamera nicht verfügbar.");
-          }
+          setError(/permission|denied|not allowed/i.test(msg)
+            ? "Kamerazugriff verweigert. Bitte in den Browser-Einstellungen erlauben."
+            : "Kamera nicht verfügbar.");
         }
         console.error(e);
       }
