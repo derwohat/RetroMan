@@ -15,45 +15,70 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
     async function start() {
       try {
         if (!videoRef.current || cancelled) return;
         const video = videoRef.current;
 
-        // Required for autoplay on iOS/Android — must be set before play() is called.
-        video.muted = true;
-        video.setAttribute("playsinline", "");
-
-        // Request camera stream directly so we control timing of muted/playsinline.
+        // --- Step 1: get camera stream ---
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
         });
-
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
 
+        // --- Step 2: attach stream manually (bypass ZXing video handling) ---
+        video.srcObject = stream;
+        video.muted = true;                        // property — required for iOS autoplay
+        video.setAttribute("playsinline", "true"); // required for iOS in-page playback
+        video.setAttribute("autoplay", "true");
+
+        stopRef.current = () => {
+          if (intervalId) clearInterval(intervalId);
+          stream.getTracks().forEach((t) => t.stop());
+          video.srcObject = null;
+        };
+
+        // --- Step 3: wait for video to be ready, then play ---
+        await new Promise<void>((resolve, reject) => {
+          const tid = setTimeout(() => reject(new Error("video timeout")), 8000);
+          const onReady = async () => {
+            clearTimeout(tid);
+            video.removeEventListener("canplay", onReady);
+            video.removeEventListener("loadedmetadata", onReady);
+            try { await video.play(); resolve(); } catch (e) { reject(e); }
+          };
+          if (video.readyState >= 3) { onReady(); return; }
+          video.addEventListener("canplay", onReady);
+          video.addEventListener("loadedmetadata", onReady);
+        });
+        if (cancelled) return;
+
+        // --- Step 4: decode frames using ZXing canvas API (no ZXing video handling) ---
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
         const reader = new BrowserMultiFormatReader();
+        const canvas = document.createElement("canvas");
 
-        // decodeFromStream attaches the stream and calls play() — muted is already set.
-        const controls = await reader.decodeFromStream(stream, video, (result, err) => {
-          if (cancelled) return;
-          if (result) {
+        intervalId = setInterval(() => {
+          if (cancelled || video.readyState < 2 || video.videoWidth === 0) return;
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.drawImage(video, 0, 0);
+          try {
+            const result = reader.decodeFromCanvas(canvas);
             const text = result.getText();
             if (/^\d{8,14}$/.test(text)) {
               setScanning(false);
               onDetected(text);
             }
+          } catch {
+            // NotFoundException on every empty frame — expected, ignore
           }
-          if (err && err.name !== "NotFoundException") {
-            console.error(err);
-          }
-        });
+        }, 250);
 
-        stopRef.current = () => {
-          try { controls.stop(); } catch {}
-          stream.getTracks().forEach((t) => t.stop());
-        };
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -71,6 +96,7 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
 
     return () => {
       cancelled = true;
+      if (intervalId) clearInterval(intervalId);
       stopRef.current?.();
     };
   }, [onDetected]);
