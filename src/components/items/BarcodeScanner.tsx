@@ -18,33 +18,42 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
 
     async function start() {
       try {
+        if (!videoRef.current || cancelled) return;
+        const video = videoRef.current;
+
+        // Required for autoplay on iOS/Android — must be set before play() is called.
+        video.muted = true;
+        video.setAttribute("playsinline", "");
+
+        // Request camera stream directly so we control timing of muted/playsinline.
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+        });
+
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
         const reader = new BrowserMultiFormatReader();
 
-        if (!videoRef.current || cancelled) return;
-
-        // Use constraints instead of device enumeration — works on mobile before
-        // camera permission is granted (labels are empty until permission is given).
-        const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: "environment" } } },
-          videoRef.current,
-          (result, err) => {
-            if (cancelled) return;
-            if (result) {
-              const text = result.getText();
-              if (/^\d{8,14}$/.test(text)) {
-                setScanning(false);
-                onDetected(text);
-              }
-            }
-            // Suppress the continuous "not found" errors from ZXing
-            if (err && err.name !== "NotFoundException") {
-              console.error(err);
+        // decodeFromStream attaches the stream and calls play() — muted is already set.
+        const controls = await reader.decodeFromStream(stream, video, (result, err) => {
+          if (cancelled) return;
+          if (result) {
+            const text = result.getText();
+            if (/^\d{8,14}$/.test(text)) {
+              setScanning(false);
+              onDetected(text);
             }
           }
-        );
+          if (err && err.name !== "NotFoundException") {
+            console.error(err);
+          }
+        });
 
-        stopRef.current = () => { try { controls.stop(); } catch {} };
+        stopRef.current = () => {
+          try { controls.stop(); } catch {}
+          stream.getTracks().forEach((t) => t.stop());
+        };
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : String(e);
