@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   const secret = decrypt(user.mfaSecret);
-  const result = verifySync({ token, secret });
+  const result = verifySync({ token, secret, epochTolerance: 30 });
   if (!result.valid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
 
   return NextResponse.json({ success: true });

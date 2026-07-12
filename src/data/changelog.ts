@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.2",
+    date: "12.07.2026",
+    changes: [
+      "2FA: Zeittoleranz auf ±30 Sekunden erhöht — Codes funktionieren auch bei kleiner Uhrzeitabweichung",
+      "Admin: 2FA für Benutzer per Knopfdruck deaktivieren",
+    ],
+  },
+  {
     version: "0.6.1",
     date: "12.07.2026",
     changes: [

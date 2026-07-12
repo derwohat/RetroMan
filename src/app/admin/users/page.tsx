@@ -88,6 +88,20 @@ export default function AdminUsersPage() {
     loadUsers();
   }
 
+  async function handleDisableMfa(id: string) {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "disable-mfa" }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error ?? t.common.error);
+      return;
+    }
+    loadUsers();
+  }
+
   async function handleDelete() {
     if (!deleteTarget || deleteConfirm !== deleteTarget.email) return;
     setDeleting(true);
@@ -213,6 +227,15 @@ export default function AdminUsersPage() {
                       >
                         {t.adminUsers.resetPassword}
                       </button>
+                      {user.mfaEnabled && (
+                        <button
+                          onClick={() => handleDisableMfa(user.id)}
+                          className="rounded border border-amber-500/40 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-500/10 transition"
+                          title={t.adminUsers.disableMfaTitle}
+                        >
+                          {t.adminUsers.disableMfa}
+                        </button>
+                      )}
                       {user.role !== "ADMIN" ? (
                         <>
                           <button

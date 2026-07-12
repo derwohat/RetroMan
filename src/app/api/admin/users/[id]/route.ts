@@ -54,6 +54,11 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   }
 
+  if (body.action === "disable-mfa") {
+    await prisma.user.update({ where: { id }, data: { mfaEnabled: false, mfaSecret: null } });
+    return NextResponse.json({ success: true });
+  }
+
   return NextResponse.json({ error: "Unbekannte Aktion" }, { status: 400 });
 }
 

@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   const secret = decrypt(user.mfaSecret);
-  const result = verifySync({ token, secret });
+  const result = verifySync({ token, secret, epochTolerance: 30 });
   if (!result.valid) return NextResponse.json({ error: "Ungültiger Code." }, { status: 400 });
 
   await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: false, mfaSecret: null } });

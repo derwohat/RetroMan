@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   if (!user?.mfaSecret) return NextResponse.json({ error: "Kein Secret vorhanden. Bitte Setup neu starten." }, { status: 400 });
 
   const secret = decrypt(user.mfaSecret);
-  const result = verifySync({ token, secret });
+  const result = verifySync({ token, secret, epochTolerance: 30 });
   if (!result.valid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
 
   await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: true } });
