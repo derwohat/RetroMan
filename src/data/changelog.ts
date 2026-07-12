@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.3",
+    date: "12.07.2026",
+    changes: [
+      "Discogs-Suche: Interpret und Albumtitel werden automatisch erkannt — kein Trennzeichen (: oder -) mehr nötig",
+      "Discogs-Suche: Ergebnisse werden nach Relevanz sortiert — passendste Treffer erscheinen zuerst",
+    ],
+  },
+  {
     version: "0.6.2",
     date: "12.07.2026",
     changes: [

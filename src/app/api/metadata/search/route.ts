@@ -58,9 +58,13 @@ async function fetchDiscogsTracklist(releaseId: number, apiKey: string): Promise
   }
 }
 
-async function searchDiscogs(query: string, apiKey: string): Promise<MetadataResult[]> {
-  const q = new URLSearchParams({ q: query, type: "release", per_page: "8" });
-  const res = await fetch(`https://api.discogs.com/database/search?${q}`, {
+type DiscogsRaw = {
+  id: number; title: string; cover_image?: string; thumb?: string; year?: string;
+  label?: string[]; format?: string[]; genre?: string[]; barcode?: string[];
+};
+
+async function fetchDiscogsPage(params: URLSearchParams, apiKey: string): Promise<DiscogsRaw[]> {
+  const res = await fetch(`https://api.discogs.com/database/search?${params}`, {
     headers: { Authorization: `Discogs token=${apiKey}`, "User-Agent": "RetroMan/1.0" },
     signal: AbortSignal.timeout(6000),
   });
@@ -70,39 +74,119 @@ async function searchDiscogs(query: string, apiKey: string): Promise<MetadataRes
     throw new Error(`Discogs ${res.status}: ${body.slice(0, 120)}`);
   }
   const data = await res.json();
-  const results: MetadataResult[] = (data.results ?? []).slice(0, 8).map((r: {
-    id: number; title: string; cover_image?: string; thumb?: string; year?: string;
-    label?: string[]; format?: string[]; genre?: string[]; barcode?: string[];
-  }) => {
-    const sepIdx = r.title.indexOf(" - ");
-    const artist = sepIdx > -1 ? r.title.slice(0, sepIdx) : null;
-    const releaseTitle = sepIdx > -1 ? r.title.slice(sepIdx + 3) : r.title;
-    const meta: Record<string, unknown> = {};
-    if (artist) meta.artist = artist;
-    if (releaseTitle !== r.title) meta.releaseTitle = releaseTitle;
-    if (r.label?.[0]) meta.label = r.label[0];
-    if (r.format?.length) meta.format = r.format.filter((f) => !["Album", "Single", "EP", "Compilation"].includes(f)).join(", ") || r.format[0];
-    if (r.genre?.[0]) meta.genre = r.genre[0];
-    if (r.barcode?.[0]) meta.barcode = r.barcode[0];
-    return {
-      title: r.title,
-      year: r.year ? parseInt(r.year) : null,
-      description: null,
-      imageUrl: r.cover_image?.startsWith("http") ? r.cover_image : (r.thumb?.startsWith("http") ? r.thumb : null),
-      externalId: String(r.id),
-      externalSource: "Discogs",
-      metadata: Object.keys(meta).length ? meta : null,
-    };
+  return (data.results ?? []) as DiscogsRaw[];
+}
+
+function mapDiscogsRaw(r: DiscogsRaw): MetadataResult {
+  const sepIdx = r.title.indexOf(" - ");
+  const artist = sepIdx > -1 ? r.title.slice(0, sepIdx) : null;
+  const releaseTitle = sepIdx > -1 ? r.title.slice(sepIdx + 3) : r.title;
+  const meta: Record<string, unknown> = {};
+  if (artist) meta.artist = artist;
+  if (releaseTitle !== r.title) meta.releaseTitle = releaseTitle;
+  if (r.label?.[0]) meta.label = r.label[0];
+  if (r.format?.length) meta.format = r.format.filter((f) => !["Album", "Single", "EP", "Compilation"].includes(f)).join(", ") || r.format[0];
+  if (r.genre?.[0]) meta.genre = r.genre[0];
+  if (r.barcode?.[0]) meta.barcode = r.barcode[0];
+  return {
+    title: r.title,
+    year: r.year ? parseInt(r.year) : null,
+    description: null,
+    imageUrl: r.cover_image?.startsWith("http") ? r.cover_image : (r.thumb?.startsWith("http") ? r.thumb : null),
+    externalId: String(r.id),
+    externalSource: "Discogs",
+    metadata: Object.keys(meta).length ? meta : null,
+  };
+}
+
+// Build multiple candidate search param sets without requiring a separator.
+// Tries splitting the query at artist-name lengths of 1, 2, and 3 words so that
+// "Depeche Mode M" → artist="Depeche Mode" title="M" is found automatically.
+function buildDiscogsParamSets(query: string): URLSearchParams[] {
+  const separatorMatch = query.match(/^(.+?)\s*(?::\s*|-\s+)(.+)$/);
+  if (separatorMatch) {
+    return [new URLSearchParams({ artist: separatorMatch[1].trim(), title: separatorMatch[2].trim(), type: "release", per_page: "8" })];
+  }
+
+  const words = query.trim().split(/\s+/);
+  if (words.length <= 1) {
+    return [new URLSearchParams({ q: query, type: "release", per_page: "8" })];
+  }
+
+  const sets: URLSearchParams[] = [];
+  // Artist name lengths 1..3, title = remaining words
+  const maxArtist = Math.min(3, words.length - 1);
+  for (let i = 1; i <= maxArtist; i++) {
+    sets.push(new URLSearchParams({
+      artist: words.slice(0, i).join(" "),
+      title: words.slice(i).join(" "),
+      type: "release",
+      per_page: "8",
+    }));
+  }
+  // For short queries also include a broad fallback (catches pure artist searches like "Pink Floyd")
+  if (words.length <= 3) {
+    sets.push(new URLSearchParams({ q: query, type: "release", per_page: "8" }));
+  }
+  return sets;
+}
+
+const DISCOGS_STOPWORDS = new Set(["the", "a", "an", "of", "in", "on", "at", "to", "and", "or", "with", "by", "for", "from", "das", "die", "der", "ein", "eine"]);
+
+function scoreDiscogsResult(raw: DiscogsRaw, queryWords: string[]): number {
+  if (queryWords.length === 0) return 0;
+  const resultTokens = new Set(raw.title.toLowerCase().split(/\W+/).filter(Boolean));
+  return queryWords.filter((w) => resultTokens.has(w)).length;
+}
+
+function mergeDiscogsRoundRobin(sets: DiscogsRaw[][], limit: number): DiscogsRaw[] {
+  const seen = new Set<number>();
+  const merged: DiscogsRaw[] = [];
+  const maxLen = sets.reduce((m, s) => Math.max(m, s.length), 0);
+  for (let i = 0; i < maxLen && merged.length < limit; i++) {
+    for (const set of sets) {
+      if (merged.length >= limit) break;
+      if (i < set.length && !seen.has(set[i].id)) {
+        seen.add(set[i].id);
+        merged.push(set[i]);
+      }
+    }
+  }
+  return merged;
+}
+
+async function searchDiscogs(query: string, apiKey: string): Promise<MetadataResult[]> {
+  const paramSets = buildDiscogsParamSets(query);
+  const rawSets = await Promise.allSettled(paramSets.map((p) => fetchDiscogsPage(p, apiKey)));
+
+  const successSets: DiscogsRaw[][] = rawSets.map((r, i) => {
+    if (r.status === "fulfilled") return r.value;
+    console.error(`[Discogs] search variant ${i} failed:`, r.reason);
+    return [];
   });
 
-  // Fetch tracklists for all results in parallel — failures are silently skipped
+  if (rawSets.every((r) => r.status === "rejected")) {
+    throw (rawSets[0] as PromiseRejectedResult).reason;
+  }
+
+  // Merge with round-robin (preserves search-variant priority), then re-rank by relevance
+  const merged = mergeDiscogsRoundRobin(successSets, 24);
+  const queryWords = query.toLowerCase().split(/\W+/).filter((w) => w.length > 0 && !DISCOGS_STOPWORDS.has(w));
+  const ranked = merged
+    .map((r) => ({ r, score: scoreDiscogsResult(r, queryWords) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map((s) => s.r);
+
+  const results = ranked.map(mapDiscogsRaw);
+
+  // Fetch tracklists for the final merged set only
   const tracklists = await Promise.allSettled(
     results.map((r) => fetchDiscogsTracklist(parseInt(r.externalId), apiKey))
   );
 
   return results.map((r, i) => {
-    const settled = tracklists[i];
-    const tl = settled.status === "fulfilled" ? settled.value : null;
+    const tl = tracklists[i].status === "fulfilled" ? tracklists[i].value : null;
     if (!tl || tl.length === 0) return r;
     return { ...r, metadata: { ...(r.metadata ?? {}), tracklist: tl } };
   });
