@@ -6,6 +6,17 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.5",
+    date: "12.07.2026",
+    changes: [
+      "Admin-Einstellungen: Quellen-Übersicht zeigt alle Datenquellen — kostenlose immer aktiv, API-Key-Quellen mit Status",
+      "Admin-Einstellungen: Jede Quelle zeigt ihre Kategorie (Musik, Bücher, Filme, …)",
+      "Navigation: Menüeinträge sind jetzt größer und besser lesbar",
+      "Sicherheit: Automatischer Logout nach 30 Minuten Inaktivität",
+      "Sicherheit: Session läuft nach 30 Minuten ab — kein dauerhafter Login nach App-Neustart",
+    ],
+  },
+  {
     version: "0.6.4",
     date: "12.07.2026",
     changes: [

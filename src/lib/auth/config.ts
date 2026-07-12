@@ -6,7 +6,11 @@ import { rateLimit } from "@/lib/rateLimit";
 import "@/lib/auth/types";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 60,   // token expires after 30 minutes
+    updateAge: 5 * 60, // refresh token when more than 5 minutes old (rolling window)
+  },
   pages: {
     signIn: "/login",
     error: "/login",

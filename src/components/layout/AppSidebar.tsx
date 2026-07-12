@@ -9,14 +9,14 @@ import { useTranslations } from "@/components/LanguageProvider";
 // ── SVG icons ─────────────────────────────────────────────────────────────────
 function IconFavorites() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
     </svg>
   );
 }
 function IconStats() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   );
@@ -63,14 +63,14 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
       <Link
         key={href}
         href={href}
-        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
           isActive
             ? "bg-primary/10 text-primary border-r-2 border-primary"
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
       >
         <span className="shrink-0">{icon}</span>
-        {!collapsed && <span className="flex-1 truncate text-xs">{label}</span>}
+        {!collapsed && <span className="flex-1 truncate text-sm">{label}</span>}
       </Link>
     );
   }
@@ -129,20 +129,20 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
               key={col.id}
               href={href}
               title={collapsed ? col.name : undefined}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+              className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary border-r-2 border-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <span className="shrink-0">
-                <CategoryIcon icon={col.icon} className="h-4 w-4" />
+                <CategoryIcon icon={col.icon} className="h-5 w-5" />
               </span>
               {!collapsed && (
-                <span className="flex-1 truncate text-xs">{col.name}</span>
+                <span className="flex-1 truncate text-sm">{col.name}</span>
               )}
               {!collapsed && col._count.items > 0 && (
-                <span className="text-[9px] text-muted-foreground tabular-nums">{col._count.items}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{col._count.items}</span>
               )}
             </Link>
           );
@@ -157,10 +157,10 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
           const href = "/favorites";
           const isActive = pathname.startsWith(href);
           return (
-            <Link href={href} className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link href={href} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <span className="shrink-0"><IconFavorites /></span>
-              {!collapsed && <span className="flex-1 truncate text-xs">{t.nav.favorites}</span>}
-              {!collapsed && counts.favorites > 0 && <span className="text-[9px] text-muted-foreground tabular-nums">{counts.favorites}</span>}
+              {!collapsed && <span className="flex-1 truncate text-sm">{t.nav.favorites}</span>}
+              {!collapsed && counts.favorites > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">{counts.favorites}</span>}
             </Link>
           );
         })()}

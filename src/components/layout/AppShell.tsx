@@ -1,13 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { signOut } from "next-auth/react";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
 import { ChangelogModal } from "./ChangelogModal";
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [changelogForceOpen, setChangelogForceOpen] = useState(false);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    function reset() {
+      clearTimeout(timer);
+      timer = setTimeout(() => signOut({ callbackUrl: "/login" }), IDLE_TIMEOUT_MS);
+    }
+    const events = ["mousemove", "keydown", "click", "touchstart", "scroll"] as const;
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, []);
 
   return (
     <div className="flex h-screen flex-col bg-background grid-bg">

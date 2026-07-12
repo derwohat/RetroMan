@@ -17,11 +17,17 @@ type Settings = {
   interfaceLanguage: string;
 };
 
+const FREE_SOURCES = [
+  { label: "Open Library", icon: "📖", categories: ["Bücher"],       description: "Freie Bücher-Datenbank mit Millionen von Einträgen.", url: "https://openlibrary.org" },
+  { label: "MangaDex",     icon: "📕", categories: ["Manga"],        description: "Größte freie Manga-Datenbank weltweit.",              url: "https://mangadex.org" },
+  { label: "AniList",      icon: "🎌", categories: ["Manga"],        description: "Umfangreiche Anime- und Manga-Datenbank.",            url: "https://anilist.co" },
+];
+
 const SERVICES = [
   {
     key: "discogsApiKey" as const,
     label: "Discogs",
-    subtitle: "Personal Access Token",
+    categories: ["Musik"],
     icon: "💿",
     description: "Musik-Datenbank für CDs, Vinyl, MCs — Suche und Cover für alle Musiksammlungen.",
     steps: [
@@ -36,7 +42,7 @@ const SERVICES = [
   {
     key: "theGamesDbKey" as const,
     label: "TheGamesDB",
-    subtitle: "API Key",
+    categories: ["Spiele"],
     icon: "🕹️",
     description: "Spiele-Datenbank — Suche, Cover und Metadaten für alle Spielesammlungen.",
     steps: [
@@ -49,9 +55,9 @@ const SERVICES = [
   {
     key: "tmdbApiKey" as const,
     label: "TMDB",
-    subtitle: "The Movie Database",
+    categories: ["Filme", "Serien"],
     icon: "🎬",
-    description: "Film-Datenbank — Suche, Cover und Beschreibungen für alle Filmsammlungen.",
+    description: "Film- und Serien-Datenbank — Suche, Cover und Beschreibungen.",
     steps: [
       "Registriere dich kostenlos auf themoviedb.org",
       'Gehe zu Einstellungen → API → "API-Schlüssel anfragen"',
@@ -63,9 +69,9 @@ const SERVICES = [
   {
     key: "omdbApiKey" as const,
     label: "OMDb",
-    subtitle: "Open Movie Database — IMDB-Bewertungen",
+    categories: ["Filme", "Serien"],
     icon: "⭐",
-    description: "Liefert IMDB-Bewertungen für Filme (1.000 Anfragen/Tag kostenlos). Ergänzt TMDB.",
+    description: "Liefert IMDB-Bewertungen für Filme und Serien (1.000 Anfragen/Tag kostenlos). Ergänzt TMDB.",
     steps: [
       "Gehe zu omdbapi.com/apikey.aspx",
       'Wähle "FREE" (1.000 Anfragen täglich)',
@@ -78,9 +84,9 @@ const SERVICES = [
   {
     key: "comicVineKey" as const,
     label: "ComicVine",
-    subtitle: "Comic-Datenbank",
+    categories: ["Comics"],
     icon: "🦸",
-    description: "Umfangreiche Comic-Datenbank — Suche, Cover und Metadaten für alle Comic-Sammlungen (Marvel, DC, Indie u.v.m.).",
+    description: "Umfangreiche Comic-Datenbank — Suche, Cover und Metadaten (Marvel, DC, Indie u.v.m.).",
     steps: [
       "Registriere dich kostenlos auf comicvine.gamespot.com",
       'Gehe zu comicvine.gamespot.com/api — klicke auf "Get API Key"',
@@ -91,9 +97,9 @@ const SERVICES = [
   {
     key: "googleBooksKey" as const,
     label: "Google Books",
-    subtitle: "Bücher, Comics & Manga",
+    categories: ["Bücher", "Comics"],
     icon: "📚",
-    description: "Google Books ergänzt Bücher-, Comic- und Manga-Suche mit hochwertigen Covern, Beschreibungen und ISBNs (1.000 Anfragen/Tag kostenlos).",
+    description: "Ergänzt Bücher- und Comic-Suche mit hochwertigen Covern und ISBNs (1.000 Anfragen/Tag kostenlos).",
     steps: [
       "Gehe zu console.cloud.google.com und melde dich mit deinem Google-Konto an",
       'Erstelle ein neues Projekt oder wähle ein bestehendes',
@@ -277,12 +283,36 @@ export default function AdminSettingsPage() {
         </div>
       </section>
 
-      {/* API Keys */}
+      {/* Quellen */}
       <section className="space-y-3">
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-          {t.settings.apiKeys}
+          Quellen
         </h3>
 
+        {/* Freie Quellen */}
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Kostenlos · Immer aktiv</p>
+        <div className="rounded-lg border border-border bg-card divide-y divide-border">
+          {FREE_SOURCES.map((src) => (
+            <div key={src.label} className="flex items-center gap-3 px-4 py-3">
+              <span className="text-xl shrink-0">{src.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-foreground">{src.label}</span>
+                  {src.categories.map((c) => (
+                    <span key={c} className="rounded-full bg-muted border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{c}</span>
+                  ))}
+                  <span className="rounded-full bg-green-500/10 border border-green-500/30 px-2 py-0.5 text-[10px] text-green-500">
+                    Aktiv
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{src.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* API-Key-Quellen */}
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-2">API-Key erforderlich</p>
         {SERVICES.map((service) => {
           const isSet = settings?.[service.key] === true;
           const isExpanded = expanded === service.key;
@@ -299,16 +329,22 @@ export default function AdminSettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-foreground">{service.label}</span>
-                    <span className="text-xs text-muted-foreground">{service.subtitle}</span>
-                    {isSet && (
+                    {service.categories.map((c) => (
+                      <span key={c} className="rounded-full bg-muted border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{c}</span>
+                    ))}
+                    {isSet ? (
                       <span className="rounded-full bg-green-500/10 border border-green-500/30 px-2 py-0.5 text-[10px] text-green-500">
-                        {t.settings.keySet}
+                        Aktiv
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[10px] text-amber-400">
+                        Key fehlt
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{service.description}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{service.description}</p>
                 </div>
-                <span className="text-muted-foreground shrink-0">{isExpanded ? "▲" : "▼"}</span>
+                <span className="text-muted-foreground shrink-0 text-xs">{isExpanded ? "▲" : "▼"}</span>
               </button>
 
               {isExpanded && (
