@@ -39,6 +39,9 @@ export async function PATCH(
   if (body.action === "toggle-active") {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    if (user.role === "ADMIN" && !user.deletedAt) {
+      return NextResponse.json({ error: "Admin-Accounts können nicht deaktiviert werden." }, { status: 403 });
+    }
     await prisma.user.update({
       where: { id },
       data: { deletedAt: user.deletedAt ? null : new Date() },
@@ -62,6 +65,11 @@ export async function DELETE(
   if (denied) return denied;
 
   const { id } = await params;
+  const user = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+  if (user.role === "ADMIN") {
+    return NextResponse.json({ error: "Admin-Accounts können nicht gelöscht werden." }, { status: 403 });
+  }
   await prisma.user.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

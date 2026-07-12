@@ -25,7 +25,7 @@ export async function GET() {
     select: {
       id: true, name: true, email: true, role: true,
       mustChangePassword: true, mfaEnabled: true,
-      deletedAt: true, createdAt: true,
+      deletedAt: true, createdAt: true, lastLoginAt: true,
     },
     orderBy: { createdAt: "asc" },
   });

@@ -24,6 +24,10 @@ export async function proxy(req: NextRequest) {
     if (session.user.mustChangePassword && !nextUrl.pathname.startsWith("/change-password") && !isMfaPath) {
       return NextResponse.redirect(new URL("/change-password", nextUrl));
     }
+    // Admin-only pages — redirect non-admins to dashboard
+    if (nextUrl.pathname.startsWith("/admin") && session.user.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+    }
   }
 
   return NextResponse.next();

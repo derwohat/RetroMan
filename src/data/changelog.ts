@@ -6,6 +6,19 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.0",
+    date: "12.07.2026",
+    changes: [
+      "Benutzerverwaltung: Nur der Admin kann neue Benutzer anlegen",
+      "Benutzerverwaltung: Admin kann Passwörter zurücksetzen — temporäres Passwort wird einmalig angezeigt",
+      "Benutzerverwaltung: Neue Benutzer müssen das temporäre Passwort beim ersten Login ändern",
+      "Benutzerverwaltung: Admin-Account ist geschützt und kann nicht gelöscht oder deaktiviert werden",
+      "Benutzerverwaltung: Übersicht zeigt wer sich noch nie angemeldet hat (Erstanmeldung ausstehend)",
+      "Profil & Einstellungen: Sammlungen und Tags direkt im Profil-Bereich verwalten (4 Tabs)",
+      "Navigation: Einstellungen nur noch über den Avatar-Button rechts oben erreichbar",
+    ],
+  },
+  {
     version: "0.5.0",
     date: "12.07.2026",
     changes: [

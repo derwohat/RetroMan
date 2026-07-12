@@ -21,9 +21,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // If MFA is enabled, mark as pending until TOTP is verified
         token.mfaPending = (user as { mfaEnabled?: boolean }).mfaEnabled === true;
       }
-      // Allow client to clear mfaPending after successful TOTP verification
-      if (trigger === "update" && session && typeof session.mfaPending === "boolean") {
-        token.mfaPending = session.mfaPending;
+      // Allow client to clear mfaPending after TOTP verification or mustChangePassword after PW change
+      if (trigger === "update" && session) {
+        if (typeof session.mfaPending === "boolean") token.mfaPending = session.mfaPending;
+        if (typeof session.mustChangePassword === "boolean") token.mustChangePassword = session.mustChangePassword;
       }
       return token;
     },
@@ -67,7 +68,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
         if (!passwordValid) return null;
 
-        // MFA check handled in middleware after session is established
+        // Track login timestamp (fire-and-forget, non-blocking)
+        prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {});
+
         return {
           id: user.id,
           email: user.email,

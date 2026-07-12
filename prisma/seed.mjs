@@ -70,24 +70,41 @@ async function main() {
 
     // ── Upsert Tag Groups ─────────────────────────────────────────────────────
     for (const groupDef of DEFAULT_TAG_GROUPS) {
-      // Upsert group
-      const res = await client.query(
-        `INSERT INTO "TagGroup" (id, name, "order", color, "isSystem", "linkedField", "createdAt")
-         VALUES ($1,$2,$3,'#ff2d95',$4,$5,NOW())
-         ON CONFLICT (name) DO UPDATE SET "order"=EXCLUDED."order", "isSystem"=EXCLUDED."isSystem", "linkedField"=EXCLUDED."linkedField"
-         RETURNING id`,
-        [cuid(), groupDef.name, groupDef.order, groupDef.isSystem, groupDef.linkedField ?? null]
+      // System tag groups have no userId — match on name + isSystem + userId IS NULL
+      const existing = await client.query(
+        `SELECT id FROM "TagGroup" WHERE name=$1 AND "isSystem"=true AND "userId" IS NULL LIMIT 1`,
+        [groupDef.name]
       );
-      const groupId = res.rows[0].id;
+      let groupId;
+      if (existing.rows.length > 0) {
+        groupId = existing.rows[0].id;
+        await client.query(
+          `UPDATE "TagGroup" SET "order"=$1, "linkedField"=$2 WHERE id=$3`,
+          [groupDef.order, groupDef.linkedField ?? null, groupId]
+        );
+      } else {
+        groupId = cuid();
+        await client.query(
+          `INSERT INTO "TagGroup" (id, name, "order", color, "isSystem", "linkedField", "createdAt")
+           VALUES ($1,$2,$3,'#ff2d95',true,$4,NOW())`,
+          [groupId, groupDef.name, groupDef.order, groupDef.linkedField ?? null]
+        );
+      }
 
       // Upsert values
       for (let i = 0; i < groupDef.values.length; i++) {
-        await client.query(
-          `INSERT INTO "TagValue" (id, "groupId", value, "order", "createdAt")
-           VALUES ($1,$2,$3,$4,NOW())
-           ON CONFLICT ("groupId", value) DO UPDATE SET "order"=EXCLUDED."order"`,
-          [cuid(), groupId, groupDef.values[i], i]
+        const existingVal = await client.query(
+          `SELECT id FROM "TagValue" WHERE "groupId"=$1 AND value=$2 LIMIT 1`,
+          [groupId, groupDef.values[i]]
         );
+        if (existingVal.rows.length > 0) {
+          await client.query(`UPDATE "TagValue" SET "order"=$1 WHERE id=$2`, [i, existingVal.rows[0].id]);
+        } else {
+          await client.query(
+            `INSERT INTO "TagValue" (id, "groupId", value, "order", "createdAt") VALUES ($1,$2,$3,$4,NOW())`,
+            [cuid(), groupId, groupDef.values[i], i]
+          );
+        }
       }
       console.log(`✓ Tag group "${groupDef.name}" synced (${groupDef.values.length} values)`);
     }

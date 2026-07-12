@@ -12,7 +12,13 @@ type User = {
   mfaEnabled: boolean;
   deletedAt: string | null;
   createdAt: string;
+  lastLoginAt: string | null;
 };
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 export default function AdminUsersPage() {
   const { t } = useTranslations();
@@ -35,6 +41,8 @@ export default function AdminUsersPage() {
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
+  const neverLoggedInCount = users.filter((u) => !u.deletedAt && !u.lastLoginAt).length;
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -47,7 +55,7 @@ export default function AdminUsersPage() {
     setSubmitting(false);
     if (!res.ok) { setFormError((await res.json()).error ?? t.common.error); return; }
     const { user, tempPassword } = await res.json();
-    setUsers((prev) => [...prev, { ...user, deletedAt: null, mfaEnabled: false }]);
+    setUsers((prev) => [...prev, { ...user, deletedAt: null, mfaEnabled: false, lastLoginAt: null }]);
     setShowCreate(false);
     setForm({ name: "", email: "", role: "USER" });
     setTempPw({ name: user.name, password: tempPassword });
@@ -67,22 +75,54 @@ export default function AdminUsersPage() {
   }
 
   async function handleToggleActive(id: string) {
-    await fetch(`/api/admin/users/${id}`, {
+    const res = await fetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "toggle-active" }),
     });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error ?? t.common.error);
+      return;
+    }
     loadUsers();
   }
 
   async function handleDelete() {
     if (!deleteTarget || deleteConfirm !== deleteTarget.email) return;
     setDeleting(true);
-    await fetch(`/api/admin/users/${deleteTarget.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/users/${deleteTarget.id}`, { method: "DELETE" });
     setDeleting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error ?? t.common.error);
+      setDeleteTarget(null);
+      setDeleteConfirm("");
+      return;
+    }
     setDeleteTarget(null);
     setDeleteConfirm("");
     loadUsers();
+  }
+
+  function loginStatus(user: User) {
+    if (!user.lastLoginAt) {
+      return (
+        <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+          {t.adminUsers.neverLoggedIn}
+        </span>
+      );
+    }
+    if (user.mustChangePassword) {
+      return (
+        <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-400" title={formatDate(user.lastLoginAt)}>
+          {t.adminUsers.firstLoginPending}
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] text-muted-foreground tabular-nums">{formatDate(user.lastLoginAt)}</span>
+    );
   }
 
   return (
@@ -102,6 +142,17 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
+      {/* Never-logged-in banner */}
+      {neverLoggedInCount > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+          <span className="text-amber-400 text-sm">⚠</span>
+          <p className="text-xs text-amber-400">
+            <span className="font-semibold">{neverLoggedInCount} {t.adminUsers.countLabel}</span>{" "}
+            {neverLoggedInCount === 1 ? t.adminUsers.neverLoggedInBanner : t.adminUsers.neverLoggedInBannerPlural}.
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-muted-foreground">{t.common.loading}</p>
       ) : users.length === 0 ? (
@@ -113,7 +164,7 @@ export default function AdminUsersPage() {
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                {[t.adminUsers.colName, t.adminUsers.colEmail, t.adminUsers.colRole, t.adminUsers.colStatus, t.adminUsers.colActions].map((h) => (
+                {[t.adminUsers.colName, t.adminUsers.colEmail, t.adminUsers.colRole, t.adminUsers.colStatus, t.adminUsers.colLastLogin, t.adminUsers.colActions].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground">
                     {h}
                   </th>
@@ -152,6 +203,9 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    {loginStatus(user)}
+                  </td>
+                  <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleResetPassword(user.id, user.name)}
@@ -159,23 +213,31 @@ export default function AdminUsersPage() {
                       >
                         {t.adminUsers.resetPassword}
                       </button>
-                      <button
-                        onClick={() => handleToggleActive(user.id)}
-                        className={`rounded border px-2 py-1 text-[10px] transition ${
-                          user.deletedAt
-                            ? "border-green-500/40 text-green-500 hover:bg-green-500/10"
-                            : "border-destructive/40 text-destructive hover:bg-destructive/10"
-                        }`}
-                      >
-                        {user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
-                      </button>
-                      <button
-                        onClick={() => { setDeleteTarget(user); setDeleteConfirm(""); }}
-                        className="rounded border border-destructive/40 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 transition"
-                        title={t.adminUsers.deleteForever}
-                      >
-                        🗑
-                      </button>
+                      {user.role !== "ADMIN" ? (
+                        <>
+                          <button
+                            onClick={() => handleToggleActive(user.id)}
+                            className={`rounded border px-2 py-1 text-[10px] transition ${
+                              user.deletedAt
+                                ? "border-green-500/40 text-green-500 hover:bg-green-500/10"
+                                : "border-destructive/40 text-destructive hover:bg-destructive/10"
+                            }`}
+                          >
+                            {user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
+                          </button>
+                          <button
+                            onClick={() => { setDeleteTarget(user); setDeleteConfirm(""); }}
+                            className="rounded border border-destructive/40 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 transition"
+                            title={t.adminUsers.deleteForever}
+                          >
+                            🗑
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/50 italic" title={t.adminUsers.adminProtected}>
+                          —
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>

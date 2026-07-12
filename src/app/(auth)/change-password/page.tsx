@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
 export default function ChangePasswordPage() {
-  const router = useRouter();
+  const { update } = useSession();
   const { t } = useStandaloneTranslations();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -42,8 +42,9 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    // Refresh JWT so middleware no longer redirects to this page
+    await update({ mustChangePassword: false });
+    window.location.href = "/";
   }
 
   return (
