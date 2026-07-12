@@ -767,6 +767,12 @@ export default function ItemDetailPage() {
                 {t.forms.searchBtn}
               </button>
               {imageUrl && <button type="button" onClick={() => saveCoverUrl(null)} className="text-xs text-destructive hover:underline">{t.common.remove}</button>}
+              {!imageUrl && item.externalSource && item.externalId && (
+                <button type="button" onClick={handleRefetch} disabled={refetching}
+                  className="rounded border border-primary/40 px-3 py-1.5 text-xs text-primary hover:bg-primary/10 transition disabled:opacity-50">
+                  {refetching ? "…" : t.item.restoreCover}
+                </button>
+              )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           </div>

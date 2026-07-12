@@ -8,7 +8,8 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { lastSeenChangelog: true } });
-  const seen = user?.lastSeenChangelog === CURRENT_VERSION;
+  const lastSeenVersion = user?.lastSeenChangelog ?? null;
+  const seen = lastSeenVersion === CURRENT_VERSION;
 
-  return NextResponse.json({ entries: CHANGELOG, currentVersion: CURRENT_VERSION, seen });
+  return NextResponse.json({ entries: CHANGELOG, currentVersion: CURRENT_VERSION, seen, lastSeenVersion });
 }

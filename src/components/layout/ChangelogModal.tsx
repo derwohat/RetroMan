@@ -8,9 +8,18 @@ type Props = {
   onClose?: () => void;
 };
 
+function semverGt(a: string, b: string): boolean {
+  const [ma, mi, pa] = a.split(".").map(Number);
+  const [mb, mib, pb] = b.split(".").map(Number);
+  if (ma !== mb) return ma > mb;
+  if (mi !== mib) return mi > mib;
+  return pa > pb;
+}
+
 export function ChangelogModal({ forceOpen = false, onClose }: Props) {
   const [open, setOpen] = useState(false);
-  const [entries, setEntries] = useState<ChangelogEntry[]>([]);
+  const [allEntries, setAllEntries] = useState<ChangelogEntry[]>([]);
+  const [visibleEntries, setVisibleEntries] = useState<ChangelogEntry[]>([]);
   const [currentVersion, setCurrentVersion] = useState("");
 
   const dismiss = useCallback(async () => {
@@ -24,16 +33,39 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;
-        setEntries(data.entries ?? []);
-        setCurrentVersion(data.currentVersion ?? "");
-        if (forceOpen || (!data.seen && (data.entries ?? []).length > 0)) {
+        const all: ChangelogEntry[] = data.entries ?? [];
+        const lastSeen: string | null = data.lastSeenVersion ?? null;
+        const current: string = data.currentVersion ?? "";
+
+        setAllEntries(all);
+        setCurrentVersion(current);
+
+        if (forceOpen) {
+          setVisibleEntries(all);
+          setOpen(true);
+        } else if (!data.seen && all.length > 0) {
+          // Show only entries newer than the last seen version
+          const unseen = lastSeen
+            ? all.filter((e) => semverGt(e.version, lastSeen))
+            : all;
+          setVisibleEntries(unseen.length > 0 ? unseen : all);
           setOpen(true);
         }
       })
       .catch(() => {});
   }, [forceOpen]);
 
-  if (!open || entries.length === 0) return null;
+  // When forceOpen toggles to true after initial load, show all entries
+  useEffect(() => {
+    if (forceOpen && allEntries.length > 0) {
+      setVisibleEntries(allEntries);
+      setOpen(true);
+    }
+  }, [forceOpen, allEntries]);
+
+  if (!open || visibleEntries.length === 0) return null;
+
+  const isFullHistory = forceOpen || visibleEntries.length === allEntries.length;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -41,7 +73,9 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <p className="font-heading text-[10px] text-primary neon-glow uppercase tracking-widest">Changelog</p>
+            <p className="font-heading text-[10px] text-primary neon-glow uppercase tracking-widest">
+              {isFullHistory ? "Changelog" : "Was ist neu?"}
+            </p>
             <p className="mt-0.5 text-xs text-muted-foreground">RetroMan v{currentVersion}</p>
           </div>
           <button
@@ -54,7 +88,7 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
 
         {/* Entries */}
         <div className="max-h-[60vh] overflow-y-auto px-5 py-4 space-y-5">
-          {entries.map((entry) => (
+          {visibleEntries.map((entry) => (
             <div key={entry.version}>
               <div className="flex items-baseline gap-3 mb-2">
                 <span className="font-heading text-xs font-semibold text-primary">v{entry.version}</span>

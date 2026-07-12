@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.1",
+    date: "12.07.2026",
+    changes: [
+      "Changelog zeigt jetzt alle Versionen seit dem letzten Login — nicht nur die neueste",
+      "Cover-Wiederherstellung: Button erscheint wenn Cover gelöscht wurde und eine Originalquelle vorhanden ist",
+      "Mobile: Mehr Abstand am unteren Seitenrand — Add-Button nicht mehr vom Browser verdeckt",
+      "Suchleiste und Login-Felder ohne Platzhaltertext",
+    ],
+  },
+  {
     version: "0.6.0",
     date: "12.07.2026",
     changes: [

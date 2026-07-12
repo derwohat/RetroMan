@@ -132,7 +132,6 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => { if (suggestions.length > 0) setShowDrop(true); }}
-            placeholder={t.header.searchPlaceholder}
             autoComplete="off"
             className="flex-1 bg-transparent text-sm text-foreground search-slogan-placeholder outline-none"
           />

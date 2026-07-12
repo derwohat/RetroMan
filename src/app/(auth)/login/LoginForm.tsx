@@ -53,7 +53,6 @@ export default function LoginForm() {
               id="email" type="email" required autoComplete="email"
               value={email} onChange={(e) => setEmail(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-              placeholder={t.auth.emailPlaceholder}
             />
           </div>
 
@@ -63,7 +62,6 @@ export default function LoginForm() {
               id="password" type="password" required autoComplete="current-password"
               value={password} onChange={(e) => setPassword(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-              placeholder={t.auth.passwordPlaceholder}
             />
           </div>
 
