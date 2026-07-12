@@ -116,6 +116,7 @@ model AppSettings {
   googleSearchCx   String?
   omdbApiKey       String?
   comicVineKey     String?
+  googleBooksKey   String?
   donationUrl      String?
   githubUrl        String?
   requireMfa       Boolean @default(false)

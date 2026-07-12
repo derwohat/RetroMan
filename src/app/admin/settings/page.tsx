@@ -11,6 +11,7 @@ type Settings = {
   tmdbApiKey: boolean;
   omdbApiKey: boolean;
   comicVineKey: boolean;
+  googleBooksKey: boolean;
   requireMfa: boolean;
   fontSize: string;
   interfaceLanguage: string;
@@ -86,6 +87,21 @@ const SERVICES = [
       "Kopiere den API Key",
     ],
     url: "https://comicvine.gamespot.com/api/",
+  },
+  {
+    key: "googleBooksKey" as const,
+    label: "Google Books",
+    subtitle: "Bücher, Comics & Manga",
+    icon: "📚",
+    description: "Google Books ergänzt Bücher-, Comic- und Manga-Suche mit hochwertigen Covern, Beschreibungen und ISBNs (1.000 Anfragen/Tag kostenlos).",
+    steps: [
+      "Gehe zu console.cloud.google.com und melde dich mit deinem Google-Konto an",
+      'Erstelle ein neues Projekt oder wähle ein bestehendes',
+      'Suche in der API-Bibliothek nach "Books API" und aktiviere sie',
+      'Gehe zu "Anmeldedaten" → "Anmeldedaten erstellen" → "API-Schlüssel"',
+      "Kopiere den generierten API-Schlüssel",
+    ],
+    url: "https://console.cloud.google.com/apis/library/books.googleapis.com",
   },
 ];
 

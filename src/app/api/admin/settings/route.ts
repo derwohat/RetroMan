@@ -6,7 +6,7 @@ import { encrypt } from "@/lib/crypto/encryption";
 const ENCRYPTED_FIELDS = [
   "tmdbApiKey", "igdbClientId", "igdbSecret",
   "discogsApiKey", "pricechartingKey", "theGamesDbKey", "mobyGamesKey",
-  "googleSearchKey", "googleSearchCx", "omdbApiKey", "comicVineKey",
+  "googleSearchKey", "googleSearchCx", "omdbApiKey", "comicVineKey", "googleBooksKey",
 ];
 
 async function checkAdmin(): Promise<NextResponse | null> {

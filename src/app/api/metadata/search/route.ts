@@ -606,6 +606,152 @@ async function searchMangaDex(query: string): Promise<MetadataResult[]> {
   });
 }
 
+async function searchGoogleBooks(query: string, apiKey: string): Promise<MetadataResult[]> {
+  const q = new URLSearchParams({ q: query, key: apiKey, maxResults: "8", printType: "books" });
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?${q}`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`GoogleBooks ${res.status}: ${body.slice(0, 120)}`);
+  }
+  const data = await res.json();
+
+  return ((data.items ?? []) as Array<{
+    id: string;
+    volumeInfo: {
+      title: string; subtitle?: string; authors?: string[]; publisher?: string;
+      publishedDate?: string; description?: string;
+      industryIdentifiers?: Array<{ type: string; identifier: string }>;
+      pageCount?: number; categories?: string[];
+      imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+    };
+  }>).map((item) => {
+    const v = item.volumeInfo;
+    const meta: Record<string, unknown> = {};
+    if (v.authors?.length) meta.author = v.authors.slice(0, 2).join(", ");
+    if (v.publisher) meta.publisher = v.publisher;
+    if (v.pageCount) meta.pages = v.pageCount;
+    const isbn13 = v.industryIdentifiers?.find((i) => i.type === "ISBN_13")?.identifier;
+    const isbn10 = v.industryIdentifiers?.find((i) => i.type === "ISBN_10")?.identifier;
+    if (isbn13 ?? isbn10) meta.isbn = isbn13 ?? isbn10;
+    if (v.categories?.length) meta.genre = v.categories.slice(0, 3).join(", ");
+
+    const rawThumb = v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail ?? null;
+    const imageUrl = rawThumb
+      ? rawThumb.replace("zoom=1", "zoom=3").replace(/^http:\/\//, "https://")
+      : null;
+
+    const title = v.subtitle ? `${v.title}: ${v.subtitle}` : v.title;
+    const yearRaw = v.publishedDate ? parseInt(v.publishedDate.slice(0, 4)) : null;
+
+    return {
+      title,
+      year: yearRaw && !isNaN(yearRaw) ? yearRaw : null,
+      description: v.description?.slice(0, 500) ?? null,
+      imageUrl,
+      externalId: item.id,
+      externalSource: "GoogleBooks",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+}
+
+async function searchAniList(query: string): Promise<MetadataResult[]> {
+  const gql = `
+    query ($search: String) {
+      Page(perPage: 8) {
+        media(search: $search, type: MANGA, sort: [SEARCH_MATCH]) {
+          id
+          title { romaji english native }
+          description(asHtml: false)
+          coverImage { large medium }
+          startDate { year }
+          genres status chapters volumes
+          staff(sort: RELEVANCE, perPage: 4) {
+            edges { role node { name { full } } }
+          }
+        }
+      }
+    }
+  `;
+  const res = await fetch("https://graphql.anilist.co", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ query: gql, variables: { search: query } }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`AniList ${res.status}`);
+  const data = await res.json();
+
+  return ((data?.data?.Page?.media ?? []) as Array<{
+    id: number;
+    title: { romaji: string | null; english: string | null; native: string | null };
+    description: string | null;
+    coverImage: { large: string | null; medium: string | null };
+    startDate: { year: number | null } | null;
+    genres: string[];
+    status: string | null;
+    chapters: number | null;
+    volumes: number | null;
+    staff: { edges: Array<{ role: string; node: { name: { full: string } } }> };
+  }>).map((r) => {
+    const title = r.title.english ?? r.title.romaji ?? r.title.native ?? "Unbekannt";
+    const meta: Record<string, unknown> = {};
+    if (r.title.native) meta.originalTitle = r.title.native;
+    if (r.title.romaji && r.title.romaji !== title) meta.romajiTitle = r.title.romaji;
+
+    const storyEdges = r.staff.edges.filter((e) => e.role.toLowerCase().includes("story"));
+    const artEdges   = r.staff.edges.filter((e) => e.role.toLowerCase().includes("art"));
+    const allEdges   = r.staff.edges;
+    const storyNames = storyEdges.map((e) => e.node.name.full);
+    const artNames   = artEdges.map((e) => e.node.name.full);
+    if (storyNames.length) meta.author = storyNames.join(", ");
+    else if (allEdges.length) meta.author = allEdges.slice(0, 2).map((e) => e.node.name.full).join(", ");
+    if (artNames.length && artNames.join() !== storyNames.join()) meta.artist = artNames.join(", ");
+
+    if (r.genres?.length) meta.genres = r.genres.slice(0, 4).join(", ");
+    if (r.chapters) meta.chapters = r.chapters;
+    if (r.volumes) meta.volumes = r.volumes;
+    const statusMap: Record<string, string> = {
+      FINISHED: "Abgeschlossen", RELEASING: "Laufend",
+      NOT_YET_RELEASED: "Angekündigt", CANCELLED: "Abgebrochen", HIATUS: "Pause",
+    };
+    if (r.status) meta.status = statusMap[r.status] ?? r.status;
+
+    const cleanDesc = r.description
+      ? r.description.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/g, " ").trim().slice(0, 500)
+      : null;
+
+    return {
+      title,
+      year: r.startDate?.year ?? null,
+      description: cleanDesc,
+      imageUrl: r.coverImage.large ?? r.coverImage.medium ?? null,
+      externalId: String(r.id),
+      externalSource: "AniList",
+      metadata: Object.keys(meta).length ? meta : null,
+    };
+  });
+}
+
+function mergeSources(sets: MetadataResult[][], limit = 8): MetadataResult[] {
+  const seen = new Set<string>();
+  const merged: MetadataResult[] = [];
+  const maxLen = sets.reduce((m, s) => Math.max(m, s.length), 0);
+  for (let i = 0; i < maxLen && merged.length < limit; i++) {
+    for (const set of sets) {
+      if (merged.length >= limit) break;
+      if (i < set.length) {
+        const item = set[i];
+        const key = `${item.externalSource}:${item.externalId}`;
+        if (!seen.has(key)) { seen.add(key); merged.push(item); }
+      }
+    }
+  }
+  return merged;
+}
+
 async function searchTmdbTv(query: string, apiKey: string, omdbKey?: string): Promise<MetadataResult[]> {
   const q = new URLSearchParams({ query, language: "de-DE" });
   const res = await fetch(`https://api.themoviedb.org/3/search/tv?${q}`, {
@@ -729,14 +875,38 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(await searchTmdbTv(title, decrypt(settings.tmdbApiKey), omdbKey));
     }
     if (mediaType === "BOOK") {
+      if (settings?.googleBooksKey) {
+        const [gb, ol] = await Promise.allSettled([
+          searchGoogleBooks(title, decrypt(settings.googleBooksKey)),
+          searchOpenLibrary(title),
+        ]);
+        return NextResponse.json(mergeSources([
+          gb.status === "fulfilled" ? gb.value : [],
+          ol.status === "fulfilled" ? ol.value : [],
+        ]));
+      }
       return NextResponse.json(await searchOpenLibrary(title));
     }
     if (mediaType === "COMIC") {
       if (!settings?.comicVineKey) return NextResponse.json({ error: "no_key", source: "ComicVine" }, { status: 503 });
+      if (settings?.googleBooksKey) {
+        const [cv, gb] = await Promise.allSettled([
+          searchComicVine(title, decrypt(settings.comicVineKey)),
+          searchGoogleBooks(title, decrypt(settings.googleBooksKey)),
+        ]);
+        return NextResponse.json(mergeSources([
+          cv.status === "fulfilled" ? cv.value : [],
+          gb.status === "fulfilled" ? gb.value : [],
+        ]));
+      }
       return NextResponse.json(await searchComicVine(title, decrypt(settings.comicVineKey)));
     }
     if (mediaType === "MANGA") {
-      return NextResponse.json(await searchMangaDex(title));
+      const [al, md] = await Promise.allSettled([searchAniList(title), searchMangaDex(title)]);
+      return NextResponse.json(mergeSources([
+        al.status === "fulfilled" ? al.value : [],
+        md.status === "fulfilled" ? md.value : [],
+      ]));
     }
   } catch (err) {
     console.error("[metadata/search] error:", err);

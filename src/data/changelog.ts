@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.4",
+    date: "12.07.2026",
+    changes: [
+      "Google Books: neue Suchquelle für Bücher, Comics und Graphic Novels (API-Key in den Admin-Einstellungen)",
+      "AniList: neue Suchquelle für Manga — kein API-Key nötig, automatisch aktiv",
+      "Bücher-Suche: Google Books und Open Library laufen parallel, Ergebnisse werden zusammengeführt",
+      "Manga-Suche: AniList und MangaDex laufen parallel für maximale Trefferquote",
+    ],
+  },
+  {
     version: "0.6.3",
     date: "12.07.2026",
     changes: [
