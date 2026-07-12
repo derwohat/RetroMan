@@ -62,13 +62,12 @@ async function main() {
 
   // ── Upsert default tag groups ─────────────────────────────────────────────────
   for (const groupDef of DEFAULT_TAG_GROUPS) {
-    const group = await prisma.tagGroup.upsert({
-      where: { name: groupDef.name },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      create: { name: groupDef.name, order: groupDef.order, isSystem: groupDef.isSystem, linkedField: (groupDef as any).linkedField ?? null },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      update: { order: groupDef.order, isSystem: groupDef.isSystem, linkedField: (groupDef as any).linkedField ?? null },
-    });
+    const existing = await prisma.tagGroup.findFirst({ where: { name: groupDef.name, isSystem: true } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tagData = { order: groupDef.order, isSystem: groupDef.isSystem, linkedField: (groupDef as any).linkedField ?? null };
+    const group = existing
+      ? await prisma.tagGroup.update({ where: { id: existing.id }, data: tagData, include: { values: true } })
+      : await prisma.tagGroup.create({ data: { name: groupDef.name, ...tagData }, include: { values: true } });
     for (let i = 0; i < groupDef.values.length; i++) {
       await prisma.tagValue.upsert({
         where: { groupId_value: { groupId: group.id, value: groupDef.values[i] } },

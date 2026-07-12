@@ -89,10 +89,13 @@ model User {
   dateFormat         DateFormat @default(EUROPEAN)
   gdprConsentAt      DateTime?
   deletedAt          DateTime?
+  lastSeenChangelog  String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   items              Item[]
+  collections        Collection[]
+  tagGroups          TagGroup[]
   viewSettings       CollectionViewSettings[]
   collectionSettings CollectionSettings[]
 }
@@ -124,13 +127,15 @@ model AppSettings {
 
 model TagGroup {
   id           String     @id @default(cuid())
-  name         String     @unique
+  name         String
   order        Int        @default(0)
   color        String     @default("#ff2d95")
   linkedField  String?
   isSystem     Boolean    @default(false)
+  userId       String?
   createdAt    DateTime   @default(now())
 
+  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   values      TagValue[]
   itemTags    ItemTag[]
   collections CollectionTagGroup[]
@@ -159,8 +164,10 @@ model Collection {
   customMediaTypeLabel String?
   order                Int       @default(0)
   gradingEnabled       Boolean   @default(false)
+  userId               String
   createdAt            DateTime  @default(now())
 
+  user               User              @relation(fields: [userId], references: [id])
   items              Item[]
   fields             CollectionField[]
   tagGroups          CollectionTagGroup[]

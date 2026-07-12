@@ -46,10 +46,8 @@ export function AdminSidebar() {
   const { t } = useTranslations();
 
   const NAV = [
-    { href: "/admin/users",       icon: <IconUsers />,       label: t.admin.users },
-    { href: "/admin/collections", icon: <IconCollections />, label: t.admin.collections },
-    { href: "/admin/tags",        icon: <IconTags />,        label: t.admin.tags },
-    { href: "/admin/settings",    icon: <IconSettings />,    label: t.admin.settings },
+    { href: "/admin/users",    icon: <IconUsers />,    label: t.admin.users },
+    { href: "/admin/settings", icon: <IconSettings />, label: t.admin.settings },
   ];
 
   return (

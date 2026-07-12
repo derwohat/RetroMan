@@ -3,15 +3,21 @@
 import { useState } from "react";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
+import { ChangelogModal } from "./ChangelogModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [changelogForceOpen, setChangelogForceOpen] = useState(false);
 
   return (
     <div className="flex h-screen flex-col bg-background grid-bg">
       <AppHeader onMenuToggle={() => setSidebarOpen((v) => !v)} />
       <div className="flex flex-1 overflow-hidden">
-        <AppSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <AppSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onOpenChangelog={() => setChangelogForceOpen(true)}
+        />
         {/* Mobile backdrop */}
         {sidebarOpen && (
           <div
@@ -23,6 +29,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <ChangelogModal
+        forceOpen={changelogForceOpen}
+        onClose={() => setChangelogForceOpen(false)}
+      />
     </div>
   );
 }

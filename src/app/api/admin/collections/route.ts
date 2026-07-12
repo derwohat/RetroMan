@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/config";
+import { getUserId } from "@/lib/api/auth";
 import { prisma } from "@/lib/db/prisma";
 
-async function checkAdmin(): Promise<NextResponse | null> {
-  if (process.env.NODE_ENV !== "production") return null;
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  return null;
-}
-
 export async function GET() {
-  const denied = await checkAdmin();
-  if (denied) return denied;
+  const userId = await getUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const collections = await prisma.collection.findMany({
+      where: { userId },
       include: {
         fields: { orderBy: { order: "asc" } },
         tagGroups: { include: { group: true }, orderBy: { createdAt: "asc" } },
@@ -31,8 +23,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await checkAdmin();
-  if (denied) return denied;
+  const userId = await getUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { name, icon, mediaType, customMediaTypeLabel } = await req.json();
   if (!name?.trim() || !mediaType) {
@@ -40,11 +32,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const agg = await prisma.collection.aggregate({ _max: { order: true } });
+    const agg = await prisma.collection.aggregate({ where: { userId }, _max: { order: true } });
     const nextOrder = (agg._max.order ?? -1) + 1;
     const collection = await prisma.collection.create({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { name: name.trim(), icon: icon || null, mediaType: mediaType as any, customMediaTypeLabel: customMediaTypeLabel || null, order: nextOrder },
+      data: { name: name.trim(), icon: icon || null, mediaType: mediaType as any, customMediaTypeLabel: customMediaTypeLabel || null, order: nextOrder, userId },
       include: {
         fields: { orderBy: { order: "asc" } },
         tagGroups: { include: { group: true }, orderBy: { createdAt: "asc" } },

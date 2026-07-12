@@ -21,6 +21,14 @@ function IconStats() {
     </svg>
   );
 }
+function IconSettings() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
 function IconChevronLeft() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -38,7 +46,7 @@ function IconChevronRight() {
 
 type Collection = { id: string; name: string; icon: string | null; _count: { items: number } };
 
-export function AppSidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
+export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: boolean; onClose?: () => void; onOpenChangelog?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [counts, setCounts] = useState({ favorites: 0 });
@@ -165,14 +173,19 @@ export function AppSidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: ()
         })()}
 
         {navLink("/stats",     <IconStats />,     t.nav.stats)}
+        {navLink("/settings", <IconSettings />,  t.nav.settings)}
       </nav>
 
       {/* Footer */}
       {!collapsed && (
         <div className="border-t border-border p-3 shrink-0">
-          <p className="text-[9px] text-muted-foreground">
+          <button
+            onClick={onOpenChangelog}
+            className="text-[9px] text-muted-foreground hover:text-primary transition-colors"
+            title="Changelog anzeigen"
+          >
             RetroMan v{process.env.NEXT_PUBLIC_APP_VERSION}
-          </p>
+          </button>
         </div>
       )}
     </aside>

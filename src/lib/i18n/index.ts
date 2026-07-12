@@ -6,6 +6,7 @@ const de = {
     wishlist: "Wunschliste",
     favorites: "Favoriten",
     stats: "Statistiken",
+    settings: "Einstellungen",
     items: "Items",
     item: "Item",
   },
@@ -132,6 +133,7 @@ const de = {
       COMIC: "Comics",
       MANGA: "Manga",
       CONSOLE: "Konsolen",
+      CUSTOM: "Benutzerdefiniert",
     },
     fieldTypes: {
       TEXT: "Text",
@@ -456,6 +458,13 @@ const de = {
     darkMode: "Dunkel",
     lightMode: "Hell",
   },
+  userSettings: {
+    title: "Meine Einstellungen",
+    tabCollections: "Sammlungen",
+    tabTags: "Tags",
+    collectionsHint: "Verwalte deine Sammlungen — Reihenfolge per Drag & Drop änderbar.",
+    tagsHint: "Verwalte deine Tag-Gruppen und Werte.",
+  },
   // Header search & profile dropdown
   header: {
     menu: "Menü",
@@ -541,6 +550,7 @@ export const translations: Record<Locale, Translations> = {
       wishlist: "Wishlist",
       favorites: "Favorites",
       stats: "Statistics",
+      settings: "Settings",
       items: "Items",
       item: "Item",
     },
@@ -667,6 +677,7 @@ export const translations: Record<Locale, Translations> = {
         COMIC: "Comics",
         MANGA: "Manga",
         CONSOLE: "Consoles",
+        CUSTOM: "Custom",
       },
       fieldTypes: {
         TEXT: "Text",
@@ -981,6 +992,13 @@ export const translations: Record<Locale, Translations> = {
       darkMode: "Dark",
       lightMode: "Light",
     },
+    userSettings: {
+      title: "My Settings",
+      tabCollections: "Collections",
+      tabTags: "Tags",
+      collectionsHint: "Manage your collections — drag & drop to reorder.",
+      tagsHint: "Manage your tag groups and values.",
+    },
     header: {
       menu: "Menu",
       searchPlaceholder: "Search… title, barcode, year",
@@ -1058,6 +1076,7 @@ export const translations: Record<Locale, Translations> = {
       wishlist: "Liste de souhaits",
       favorites: "Favoris",
       stats: "Statistiques",
+      settings: "Paramètres",
       items: "Articles",
       item: "Article",
     },
@@ -1184,6 +1203,7 @@ export const translations: Record<Locale, Translations> = {
         COMIC: "BD",
         MANGA: "Manga",
         CONSOLE: "Consoles",
+        CUSTOM: "Personnalisé",
       },
       fieldTypes: {
         TEXT: "Texte",
@@ -1497,6 +1517,13 @@ export const translations: Record<Locale, Translations> = {
       themeModernHint: "Épuré & Minimaliste",
       darkMode: "Sombre",
       lightMode: "Clair",
+    },
+    userSettings: {
+      title: "Mes paramètres",
+      tabCollections: "Collections",
+      tabTags: "Tags",
+      collectionsHint: "Gérez vos collections — réordonnez par glisser-déposer.",
+      tagsHint: "Gérez vos groupes de tags et leurs valeurs.",
     },
     header: {
       menu: "Menu",
