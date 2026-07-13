@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.2",
+    date: "13.07.2026",
+    changes: [
+      "Manga-Suche: AniList und MangaDex entfernt — die App sammelt physische Medien, keine Streaming-Serien",
+      "Manga-Suche: nutzt jetzt Google Books + Open Library für gedruckte Bände und Deluxe-Editionen mit ISBN",
+    ],
+  },
+  {
     version: "0.7.1",
     date: "13.07.2026",
     changes: [

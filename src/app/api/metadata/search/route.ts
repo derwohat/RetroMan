@@ -544,68 +544,6 @@ async function searchComicVine(query: string, apiKey: string): Promise<MetadataR
   });
 }
 
-async function searchMangaDex(query: string): Promise<MetadataResult[]> {
-  const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&limit=8&includes[]=author&includes[]=artist&includes[]=cover_art&order[relevance]=desc`;
-  const data = await httpsGet(url, 8000).then(JSON.parse);
-  if (!data.data) return [];
-
-  return (data.data as Array<{
-    id: string;
-    attributes: {
-      title: Record<string, string>;
-      altTitles: Array<Record<string, string>>;
-      description: Record<string, string>;
-      publicationDemographic: string | null;
-      status: string;
-      year: number | null;
-      tags: Array<{ attributes: { name: Record<string, string>; group: string } }>;
-    };
-    relationships: Array<{ type: string; attributes?: { name?: string; fileName?: string } }>;
-  }>).map((r) => {
-    const attr = r.attributes;
-    // Title: prefer German, then English, then first available
-    const title = attr.title["de"] ?? attr.title["en"] ?? Object.values(attr.title)[0] ?? "Unbekannt";
-    // Original Japanese title
-    const jaTitle = attr.altTitles.find((t) => t["ja"] || t["ja-ro"]);
-    // Description: prefer German then English
-    const desc = attr.description["de"] ?? attr.description["en"] ?? null;
-
-    const meta: Record<string, unknown> = {};
-    if (jaTitle) meta.originalTitle = jaTitle["ja"] ?? jaTitle["ja-ro"];
-    // Author/Artist
-    const author = r.relationships.find((rel) => rel.type === "author")?.attributes?.name;
-    const artist = r.relationships.find((rel) => rel.type === "artist")?.attributes?.name;
-    if (author) meta.author = author;
-    if (artist && artist !== author) meta.artist = artist;
-    // Demographic
-    if (attr.publicationDemographic) {
-      const demMap: Record<string, string> = { shonen: "Shōnen", shojo: "Shōjo", seinen: "Seinen", josei: "Josei" };
-      meta.demographic = demMap[attr.publicationDemographic] ?? attr.publicationDemographic;
-    }
-    // Genres (tags of type "genre")
-    const genres = attr.tags.filter((t) => t.attributes.group === "genre").map((t) => t.attributes.name["de"] ?? t.attributes.name["en"]).filter(Boolean).slice(0, 4);
-    if (genres.length) meta.genres = genres.join(", ");
-    // Status
-    const statusMap: Record<string, string> = { ongoing: "Laufend", completed: "Abgeschlossen", hiatus: "Pause", cancelled: "Abgebrochen" };
-    if (attr.status) meta.status = statusMap[attr.status] ?? attr.status;
-
-    // Cover art
-    const coverRel = r.relationships.find((rel) => rel.type === "cover_art");
-    const coverFile = coverRel?.attributes?.fileName;
-    const imageUrl = coverFile ? `https://uploads.mangadex.org/covers/${r.id}/${coverFile}.256.jpg` : null;
-
-    return {
-      title,
-      year: attr.year,
-      description: desc?.slice(0, 500) ?? null,
-      imageUrl,
-      externalId: r.id,
-      externalSource: "MangaDex",
-      metadata: Object.keys(meta).length ? meta : null,
-    };
-  });
-}
-
 async function searchGoogleBooks(query: string, apiKey: string): Promise<MetadataResult[]> {
   const q = new URLSearchParams({ q: query, key: apiKey, maxResults: "8", printType: "books" });
   const res = await fetch(`https://www.googleapis.com/books/v1/volumes?${q}`, {
@@ -652,84 +590,6 @@ async function searchGoogleBooks(query: string, apiKey: string): Promise<Metadat
       imageUrl,
       externalId: item.id,
       externalSource: "GoogleBooks",
-      metadata: Object.keys(meta).length ? meta : null,
-    };
-  });
-}
-
-async function searchAniList(query: string): Promise<MetadataResult[]> {
-  const gql = `
-    query ($search: String) {
-      Page(perPage: 8) {
-        media(search: $search, type: MANGA, sort: [SEARCH_MATCH]) {
-          id
-          title { romaji english native }
-          description(asHtml: false)
-          coverImage { large medium }
-          startDate { year }
-          genres status chapters volumes
-          staff(sort: RELEVANCE, perPage: 4) {
-            edges { role node { name { full } } }
-          }
-        }
-      }
-    }
-  `;
-  const res = await fetch("https://graphql.anilist.co", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query: gql, variables: { search: query } }),
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) throw new Error(`AniList ${res.status}`);
-  const data = await res.json();
-
-  return ((data?.data?.Page?.media ?? []) as Array<{
-    id: number;
-    title: { romaji: string | null; english: string | null; native: string | null };
-    description: string | null;
-    coverImage: { large: string | null; medium: string | null };
-    startDate: { year: number | null } | null;
-    genres: string[];
-    status: string | null;
-    chapters: number | null;
-    volumes: number | null;
-    staff: { edges: Array<{ role: string; node: { name: { full: string } } }> };
-  }>).map((r) => {
-    const title = r.title.english ?? r.title.romaji ?? r.title.native ?? "Unbekannt";
-    const meta: Record<string, unknown> = {};
-    if (r.title.native) meta.originalTitle = r.title.native;
-    if (r.title.romaji && r.title.romaji !== title) meta.romajiTitle = r.title.romaji;
-
-    const storyEdges = r.staff.edges.filter((e) => e.role.toLowerCase().includes("story"));
-    const artEdges   = r.staff.edges.filter((e) => e.role.toLowerCase().includes("art"));
-    const allEdges   = r.staff.edges;
-    const storyNames = storyEdges.map((e) => e.node.name.full);
-    const artNames   = artEdges.map((e) => e.node.name.full);
-    if (storyNames.length) meta.author = storyNames.join(", ");
-    else if (allEdges.length) meta.author = allEdges.slice(0, 2).map((e) => e.node.name.full).join(", ");
-    if (artNames.length && artNames.join() !== storyNames.join()) meta.artist = artNames.join(", ");
-
-    if (r.genres?.length) meta.genres = r.genres.slice(0, 4).join(", ");
-    if (r.chapters) meta.chapters = r.chapters;
-    if (r.volumes) meta.volumes = r.volumes;
-    const statusMap: Record<string, string> = {
-      FINISHED: "Abgeschlossen", RELEASING: "Laufend",
-      NOT_YET_RELEASED: "Angekündigt", CANCELLED: "Abgebrochen", HIATUS: "Pause",
-    };
-    if (r.status) meta.status = statusMap[r.status] ?? r.status;
-
-    const cleanDesc = r.description
-      ? r.description.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/g, " ").trim().slice(0, 500)
-      : null;
-
-    return {
-      title,
-      year: r.startDate?.year ?? null,
-      description: cleanDesc,
-      imageUrl: r.coverImage.large ?? r.coverImage.medium ?? null,
-      externalId: String(r.id),
-      externalSource: "AniList",
       metadata: Object.keys(meta).length ? meta : null,
     };
   });
@@ -902,11 +762,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(await searchComicVine(title, decrypt(settings.comicVineKey)));
     }
     if (mediaType === "MANGA") {
-      const [al, md] = await Promise.allSettled([searchAniList(title), searchMangaDex(title)]);
-      return NextResponse.json(mergeSources([
-        al.status === "fulfilled" ? al.value : [],
-        md.status === "fulfilled" ? md.value : [],
-      ]));
+      if (settings?.googleBooksKey) {
+        const [gb, ol] = await Promise.allSettled([
+          searchGoogleBooks(title, decrypt(settings.googleBooksKey)),
+          searchOpenLibrary(title),
+        ]);
+        return NextResponse.json(mergeSources([
+          gb.status === "fulfilled" ? gb.value : [],
+          ol.status === "fulfilled" ? ol.value : [],
+        ]));
+      }
+      return NextResponse.json(await searchOpenLibrary(title));
     }
   } catch (err) {
     console.error("[metadata/search] error:", err);

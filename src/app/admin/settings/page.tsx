@@ -18,9 +18,7 @@ type Settings = {
 };
 
 const FREE_SOURCES = [
-  { label: "Open Library", icon: "📖", categories: ["Bücher"],       description: "Freie Bücher-Datenbank mit Millionen von Einträgen.", url: "https://openlibrary.org" },
-  { label: "MangaDex",     icon: "📕", categories: ["Manga"],        description: "Größte freie Manga-Datenbank weltweit.",              url: "https://mangadex.org" },
-  { label: "AniList",      icon: "🎌", categories: ["Manga"],        description: "Umfangreiche Anime- und Manga-Datenbank.",            url: "https://anilist.co" },
+  { label: "Open Library", icon: "📖", categories: ["Bücher", "Manga"], description: "Freie Bücher-Datenbank mit Millionen von Einträgen — inkl. Manga-Bände.", url: "https://openlibrary.org" },
 ];
 
 const SERVICES = [
