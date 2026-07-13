@@ -46,15 +46,24 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
   const pathname = usePathname();
   const { t } = useTranslations();
 
-  useEffect(() => {
+  function refreshCollections() {
     fetch("/api/collections")
       .then((r) => (r.ok ? r.json() : []))
       .then((cols: Collection[]) => setCollections(cols))
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    refreshCollections();
     fetch("/api/counts")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d) setCounts(d); })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("collections-updated", refreshCollections);
+    return () => window.removeEventListener("collections-updated", refreshCollections);
   }, []);
 
   function navLink(href: string, icon: React.ReactNode, label: string, exact = false) {

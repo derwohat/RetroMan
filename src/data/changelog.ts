@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.0",
+    date: "13.07.2026",
+    changes: [
+      "Neue Sammlung: Inline-Formular direkt auf der Seite — kein Modal mehr, Speichern-Button direkt daneben",
+      "Neue Sammlung: Icon wird automatisch passend zum Medientyp gewählt",
+      "Sidebar: Aktualisiert sich sofort wenn eine Sammlung hinzugefügt, umbenannt, gelöscht oder neu sortiert wird",
+    ],
+  },
+  {
     version: "0.6.6",
     date: "13.07.2026",
     changes: [

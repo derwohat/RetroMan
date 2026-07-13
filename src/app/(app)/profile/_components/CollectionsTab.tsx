@@ -19,6 +19,11 @@ type Collection = { id: string; name: string; icon: string | null; mediaType: st
 type TagGroupOption = { id: string; name: string };
 
 const MEDIA_TYPE_VALUES = ["GAME", "MUSIC", "FILM", "SERIE", "BOOK", "COMIC", "MANGA", "CONSOLE", "CUSTOM"] as const;
+
+const MEDIA_TYPE_DEFAULT_ICONS: Record<string, string> = {
+  GAME: "gamepad", MUSIC: "music", FILM: "film", SERIE: "tv",
+  BOOK: "book", COMIC: "comic", MANGA: "manga", CONSOLE: "console", CUSTOM: "star",
+};
 type MediaTypeValue = (typeof MEDIA_TYPE_VALUES)[number];
 const FIELD_TYPE_VALUES = ["TEXT", "TEXTAREA", "NUMBER", "DATE", "SELECT", "BOOLEAN"] as const;
 type FieldTypeValue = (typeof FIELD_TYPE_VALUES)[number];
@@ -232,7 +237,7 @@ export function CollectionsTab() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [colForm, setColForm] = useState({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" });
+  const [colForm, setColForm] = useState({ name: "", mediaType: "GAME", customMediaTypeLabel: "" });
   const [colError, setColError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
@@ -257,26 +262,32 @@ export function CollectionsTab() {
     const reordered = arrayMove(collections, oldIndex, newIndex);
     setCollections(reordered);
     await fetch("/api/collections/reorder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map((c) => c.id) }) });
+    notifySidebar();
   }
+
+  function notifySidebar() { window.dispatchEvent(new CustomEvent("collections-updated")); }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setColError(""); setSubmitting(true);
+    const icon = MEDIA_TYPE_DEFAULT_ICONS[colForm.mediaType] ?? "star";
     const res = await fetch("/api/collections", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: colForm.name, icon: colForm.icon, mediaType: colForm.mediaType, customMediaTypeLabel: colForm.mediaType === "CUSTOM" ? colForm.customMediaTypeLabel : null }) });
+      body: JSON.stringify({ name: colForm.name, icon, mediaType: colForm.mediaType, customMediaTypeLabel: colForm.mediaType === "CUSTOM" ? colForm.customMediaTypeLabel : null }) });
     setSubmitting(false);
     if (!res.ok) { setColError((await res.json()).error ?? t.collections.fieldError); return; }
-    await load(); setShowCreate(false); setColForm({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" });
+    notifySidebar();
+    await load(); setShowCreate(false); setColForm({ name: "", mediaType: "GAME", customMediaTypeLabel: "" });
   }
 
   async function handleRename(id: string, name: string) {
     const res = await fetch(`/api/collections/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-    if (res.ok) setCollections((prev) => prev.map((c) => c.id === id ? { ...c, name } : c));
+    if (res.ok) { setCollections((prev) => prev.map((c) => c.id === id ? { ...c, name } : c)); notifySidebar(); }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return; setDeleting(true);
     await fetch(`/api/collections/${deleteTarget.id}`, { method: "DELETE" });
     setCollections((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+    notifySidebar();
     setDeleteTarget(null); setDeleting(false);
   }
 
@@ -309,12 +320,53 @@ export function CollectionsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{t.userSettings.collectionsHint}</p>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90">
-          + {t.collections.newCollection}
-        </button>
+        {!showCreate && (
+          <button onClick={() => setShowCreate(true)} className="flex shrink-0 items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90">
+            + {t.collections.newCollection}
+          </button>
+        )}
       </div>
+
+      {showCreate && (
+        <form onSubmit={handleCreate} className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              required autoFocus
+              value={colForm.name}
+              onChange={(e) => setColForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder={t.collections.namePlaceholder}
+              className="retro-field flex-1 min-w-0"
+            />
+            <select
+              value={colForm.mediaType}
+              onChange={(e) => setColForm((f) => ({ ...f, mediaType: e.target.value }))}
+              className="retro-field shrink-0"
+            >
+              {MEDIA_TYPE_VALUES.map((v) => <option key={v} value={v}>{mediaTypeLabel(t, v)}</option>)}
+            </select>
+            <button type="submit" disabled={submitting}
+              className="shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
+              {submitting ? "…" : t.common.save}
+            </button>
+            <button type="button" onClick={() => { setShowCreate(false); setColError(""); setColForm({ name: "", mediaType: "GAME", customMediaTypeLabel: "" }); }}
+              className="shrink-0 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
+              ✕
+            </button>
+          </div>
+          {colForm.mediaType === "CUSTOM" && (
+            <input
+              required
+              value={colForm.customMediaTypeLabel}
+              onChange={(e) => setColForm((f) => ({ ...f, customMediaTypeLabel: e.target.value }))}
+              placeholder={t.collections.customMediaTypePlaceholder}
+              className="retro-field w-full"
+            />
+          )}
+          {colError && <p className="text-xs text-destructive">{colError}</p>}
+        </form>
+      )}
 
       {loading ? <p className="text-sm text-muted-foreground">{t.collections.loading}</p>
         : collections.length === 0 ? (
@@ -335,43 +387,6 @@ export function CollectionsTab() {
             </SortableContext>
           </DndContext>
         )}
-
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.collections.newCollection}</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.name}</label>
-                <input required value={colForm.name} onChange={(e) => setColForm((f) => ({ ...f, name: e.target.value }))} className="retro-field w-full" placeholder={t.collections.namePlaceholder} autoFocus />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.icon}</label>
-                <IconPicker value={colForm.icon} onChange={(v) => setColForm((f) => ({ ...f, icon: v }))} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.mediaType}</label>
-                <select value={colForm.mediaType} onChange={(e) => setColForm((f) => ({ ...f, mediaType: e.target.value }))} className="retro-field w-full">
-                  {MEDIA_TYPE_VALUES.map((v) => <option key={v} value={v}>{mediaTypeLabel(t, v)}</option>)}
-                </select>
-              </div>
-              {colForm.mediaType === "CUSTOM" && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.collections.customMediaTypeLabel}</label>
-                  <input required value={colForm.customMediaTypeLabel} onChange={(e) => setColForm((f) => ({ ...f, customMediaTypeLabel: e.target.value }))} className="retro-field w-full" placeholder={t.collections.customMediaTypePlaceholder} />
-                  <p className="text-[10px] text-muted-foreground">{t.collections.customMediaTypeHint}</p>
-                </div>
-              )}
-              {colError && <p className="text-xs text-destructive">{colError}</p>}
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => { setShowCreate(false); setColError(""); }} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
-                <button type="submit" disabled={submitting} className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-                  {submitting ? t.collections.creating : t.common.create}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
