@@ -151,7 +151,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
                 <span className="flex-1 truncate text-sm">{col.name}</span>
               )}
               {!collapsed && col._count.items > 0 && (
-                <span className="text-[11px] text-muted-foreground tabular-nums">{col._count.items}</span>
+                <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{col._count.items}</span>
               )}
             </Link>
           );
@@ -169,7 +169,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
             <Link href={href} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <span className="shrink-0"><IconFavorites /></span>
               {!collapsed && <span className="flex-1 truncate text-sm">{t.nav.favorites}</span>}
-              {!collapsed && counts.favorites > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">{counts.favorites}</span>}
+              {!collapsed && counts.favorites > 0 && <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{counts.favorites}</span>}
             </Link>
           );
         })()}

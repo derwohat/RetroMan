@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.4",
+    date: "13.07.2026",
+    changes: [
+      "Sidebar: Anzahl der Einheiten je Sammlung als Badge rechtsbündig im Menüeintrag",
+      "Sidebar: Favoriten-Zähler ebenfalls als Badge",
+    ],
+  },
+  {
     version: "0.7.3",
     date: "13.07.2026",
     changes: [
