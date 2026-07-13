@@ -9,8 +9,8 @@ function getImageUrl(item: ViewProps["items"][number]) {
   return primary?.url ?? primary?.filePath ?? null;
 }
 
-// step 1→9 cols, 2→7 cols, 3→5 cols, 4→4 cols, 5→3 cols at ~900px
-const MIN_WIDTHS = [90, 120, 155, 200, 260];
+// 6,5,4,3,2 cols at 1100–1200px; size 1 = former middle
+const MIN_WIDTHS = [160, 200, 255, 325, 430];
 
 export function ShelfView({ items, categoryIcon, chipGroups, size = 3 }: ViewProps) {
   const minW = MIN_WIDTHS[(size - 1) % 5];

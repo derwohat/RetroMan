@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.6",
+    date: "13.07.2026",
+    changes: [
+      "Ansichtsgrößen: Kacheln, CD-Wand und Regal — Stufen neu kalibriert, frühere Mittelgröße ist jetzt die kleinste Stufe",
+      "Ansichtsgrößen: Zwei neue größere Stufen hinzugefügt — bei 1100–1200px Inhaltsbreite alle 5 Stufen klar unterscheidbar",
+      "Regal-Ansicht: Thumbnail wächst sichtbar zwischen benachbarten Stufen für klare visuelle Differenzierung",
+    ],
+  },
+  {
     version: "0.7.5",
     date: "13.07.2026",
     changes: [

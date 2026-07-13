@@ -10,9 +10,9 @@ function getImageUrl(item: ViewProps["items"][number]) {
   return primary?.url ?? primary?.filePath ?? null;
 }
 
-// 3,2,2,1,1 cols at ~750px; thumbnail grows to visually differentiate same-col steps
-const MIN_WIDTHS = [220, 290, 350, 430, 580];
-const THUMB_SIZES: Array<[number, number]> = [[40,52],[48,64],[56,72],[72,92],[88,112]]; // [w, h] px
+// 3,2,2,1,1 cols at 1100px; thumbnail grows to differentiate same-col steps
+const MIN_WIDTHS = [350, 415, 490, 565, 640];
+const THUMB_SIZES: Array<[number, number]> = [[56,72],[72,92],[88,112],[108,136],[132,168]]; // [w, h] px
 
 export function SimpleView({ items, categoryIcon, chipGroups, size = 3 }: ViewProps) {
   const minW = MIN_WIDTHS[(size - 1) % 5];

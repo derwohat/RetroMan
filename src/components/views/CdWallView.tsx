@@ -9,8 +9,8 @@ function getImageUrl(item: ViewProps["items"][number]) {
   return primary?.url ?? primary?.filePath ?? null;
 }
 
-// Calibrated to match ShelfView column counts (7,5,4,3,2) at ~750px content width
-const MIN_WIDTHS = [100, 130, 170, 220, 290];
+// 6,5,4,3,2 cols at 1100–1200px; size 1 = former middle
+const MIN_WIDTHS = [170, 205, 260, 310, 420];
 
 export function CdWallView({ items, categoryIcon, visibleTags, chipGroups, size = 3 }: ViewProps) {
   const minW = MIN_WIDTHS[(size - 1) % 5];
