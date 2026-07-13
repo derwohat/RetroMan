@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.1",
+    date: "13.07.2026",
+    changes: [
+      "Neue Sammlung: Formular als Karte — gleiche Breite wie die anderen Sammlungen",
+      "Neue Sammlung: Name-Eingabe in eigener Zeile — volle Breite, Text immer sichtbar",
+      "Neue Sammlung: Icon-Auswahl wieder verfügbar — wechselt automatisch mit dem Medientyp, manuell überschreibbar",
+    ],
+  },
+  {
     version: "0.7.0",
     date: "13.07.2026",
     changes: [

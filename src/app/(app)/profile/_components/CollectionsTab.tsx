@@ -45,7 +45,7 @@ function DragHandleDots(props: React.HTMLAttributes<SVGElement>) {
   );
 }
 
-function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function IconPicker({ value, onChange, compact = false }: { value: string; onChange: (v: string) => void; compact?: boolean }) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -55,16 +55,18 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
     return () => document.removeEventListener("mousedown", handler);
   }, []);
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative shrink-0" ref={ref}>
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-2 w-full retro-field text-sm justify-between ${open ? "border-primary" : ""}`}>
-        <span className="flex items-center gap-2">
-          <CategoryIcon icon={value || "box"} className="h-5 w-5" />
-          <span className="text-xs text-muted-foreground">{ICON_LABELS[value] || value || t.collections.iconPlaceholder}</span>
-        </span>
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-muted-foreground ml-auto" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
+        className={`flex items-center gap-2 retro-field text-sm justify-between ${open ? "border-primary" : ""} ${compact ? "px-2 py-2" : "w-full"}`}>
+        <CategoryIcon icon={value || "box"} className="h-5 w-5" />
+        {!compact && (
+          <>
+            <span className="text-xs text-muted-foreground">{ICON_LABELS[value] || value || t.collections.iconPlaceholder}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-muted-foreground ml-auto" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </>
+        )}
       </button>
       {open && (
         <div className="absolute left-0 top-full mt-1 z-30 w-72 rounded-xl border border-border bg-card shadow-2xl p-3">
@@ -237,7 +239,7 @@ export function CollectionsTab() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [colForm, setColForm] = useState({ name: "", mediaType: "GAME", customMediaTypeLabel: "" });
+  const [colForm, setColForm] = useState({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" });
   const [colError, setColError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
@@ -269,13 +271,12 @@ export function CollectionsTab() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setColError(""); setSubmitting(true);
-    const icon = MEDIA_TYPE_DEFAULT_ICONS[colForm.mediaType] ?? "star";
     const res = await fetch("/api/collections", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: colForm.name, icon, mediaType: colForm.mediaType, customMediaTypeLabel: colForm.mediaType === "CUSTOM" ? colForm.customMediaTypeLabel : null }) });
+      body: JSON.stringify({ name: colForm.name, icon: colForm.icon, mediaType: colForm.mediaType, customMediaTypeLabel: colForm.mediaType === "CUSTOM" ? colForm.customMediaTypeLabel : null }) });
     setSubmitting(false);
     if (!res.ok) { setColError((await res.json()).error ?? t.collections.fieldError); return; }
     notifySidebar();
-    await load(); setShowCreate(false); setColForm({ name: "", mediaType: "GAME", customMediaTypeLabel: "" });
+    await load(); setShowCreate(false); setColForm({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" });
   }
 
   async function handleRename(id: string, name: string) {
@@ -330,19 +331,27 @@ export function CollectionsTab() {
       </div>
 
       {showCreate && (
-        <form onSubmit={handleCreate} className="space-y-2">
+        <form onSubmit={handleCreate} className="rounded-lg border border-border bg-card px-4 py-3 space-y-2">
+          <input
+            required autoFocus
+            value={colForm.name}
+            onChange={(e) => setColForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder={t.collections.namePlaceholder}
+            className="retro-field w-full"
+          />
           <div className="flex gap-2">
-            <input
-              required autoFocus
-              value={colForm.name}
-              onChange={(e) => setColForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder={t.collections.namePlaceholder}
-              className="retro-field flex-1 min-w-0"
+            <IconPicker
+              value={colForm.icon}
+              onChange={(v) => setColForm((f) => ({ ...f, icon: v }))}
+              compact
             />
             <select
               value={colForm.mediaType}
-              onChange={(e) => setColForm((f) => ({ ...f, mediaType: e.target.value }))}
-              className="retro-field shrink-0"
+              onChange={(e) => {
+                const mt = e.target.value;
+                setColForm((f) => ({ ...f, mediaType: mt, icon: MEDIA_TYPE_DEFAULT_ICONS[mt] ?? f.icon }));
+              }}
+              className="retro-field flex-1 min-w-0 text-xs"
             >
               {MEDIA_TYPE_VALUES.map((v) => <option key={v} value={v}>{mediaTypeLabel(t, v)}</option>)}
             </select>
@@ -350,7 +359,7 @@ export function CollectionsTab() {
               className="shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
               {submitting ? "…" : t.common.save}
             </button>
-            <button type="button" onClick={() => { setShowCreate(false); setColError(""); setColForm({ name: "", mediaType: "GAME", customMediaTypeLabel: "" }); }}
+            <button type="button" onClick={() => { setShowCreate(false); setColError(""); setColForm({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" }); }}
               className="shrink-0 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
               ✕
             </button>
