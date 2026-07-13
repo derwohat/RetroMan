@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.6",
+    date: "13.07.2026",
+    changes: [
+      "Sicherheit: Nach App-Neustart wird die Session sofort ungültig — Neuanmeldung erforderlich",
+    ],
+  },
+  {
     version: "0.6.5",
     date: "12.07.2026",
     changes: [

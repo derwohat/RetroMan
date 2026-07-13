@@ -5,6 +5,13 @@ import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import "@/lib/auth/types";
 
+// Set once when this module loads (= server/process start).
+// In production: any JWT issued before this moment is rejected → forces re-login after restart.
+// In dev: always 0 so HMR saves don't log the user out constantly.
+const SERVER_BOOT_AT = process.env.NODE_ENV === "production"
+  ? Math.floor(Date.now() / 1000)
+  : 0;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
@@ -24,6 +31,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.mfaEnabled = (user as { mfaEnabled?: boolean }).mfaEnabled;
         // If MFA is enabled, mark as pending until TOTP is verified
         token.mfaPending = (user as { mfaEnabled?: boolean }).mfaEnabled === true;
+        return token;
+      }
+      // Reject any token issued before this server started (forces re-login after restart)
+      if (SERVER_BOOT_AT > 0 && typeof token.iat === "number" && token.iat < SERVER_BOOT_AT) {
+        return null;
       }
       // Allow client to clear mfaPending after TOTP verification or mustChangePassword after PW change
       if (trigger === "update" && session) {
