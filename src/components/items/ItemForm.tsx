@@ -159,6 +159,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
   const pickerRef    = useRef<HTMLDivElement>(null);
   const metaRef      = useRef<HTMLDivElement>(null);
   const metaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const metaAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -186,7 +187,13 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
   const searchMetadata = useCallback(async (titleOverride?: string) => {
     const q = (titleOverride ?? form.title).trim();
-    if (q.length < 3 || !collection.mediaType || collection.mediaType === "CUSTOM") return;
+    if (q.length < 2 || !collection.mediaType || collection.mediaType === "CUSTOM") return;
+
+    // Cancel any in-flight request before starting a new one
+    metaAbortRef.current?.abort();
+    const controller = new AbortController();
+    metaAbortRef.current = controller;
+
     setShowMeta(true);
     setMetaLoading(true);
     setMetaResults([]);
@@ -194,7 +201,8 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
     const p = new URLSearchParams({ title: q, mediaType: collection.mediaType });
     if (form.year) p.set("year", form.year);
     try {
-      const res = await fetch(`/api/metadata/search?${p}`);
+      const res = await fetch(`/api/metadata/search?${p}`, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       const data = await res.json();
       if (res.ok) {
         setMetaResults(Array.isArray(data) ? data : []);
@@ -203,10 +211,11 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
       } else {
         setMetaError(t.forms.searchFailed);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setMetaError(t.forms.searchUnavailable);
     } finally {
-      setMetaLoading(false);
+      if (!controller.signal.aborted) setMetaLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collection.mediaType, form.year]);
@@ -214,7 +223,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
   function handleTitleChange(value: string) {
     set("title", value);
     if (metaTimerRef.current) clearTimeout(metaTimerRef.current);
-    if (value.trim().length >= 3 && collection.mediaType && collection.mediaType !== "CUSTOM") {
+    if (value.trim().length >= 2 && collection.mediaType && collection.mediaType !== "CUSTOM") {
       metaTimerRef.current = setTimeout(() => searchMetadata(value.trim()), 400);
     } else {
       setShowMeta(false);

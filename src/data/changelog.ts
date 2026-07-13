@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.5",
+    date: "13.07.2026",
+    changes: [
+      "Musik-Suche: Discogs-Varianten werden jetzt von spezifischster zu allgemeinster geprüft — 'Depeche Mode M' findet zuerst artist=Depeche Mode / title=M statt falsch aufgeteilt",
+      "Musik-Suche: Breiter Fallback-Query läuft immer zuerst — fängt reine Interpreten-Suchen wie 'Depeche Mode' korrekt ab",
+      "Suche allgemein: Kurzsuchen ab 2 Zeichen möglich — Album-Titel wie 'M' oder 'OK' werden nicht mehr blockiert",
+      "Suche allgemein: AbortController verhindert Race Conditions — veraltete Requests überschreiben keine neuen Ergebnisse mehr",
+    ],
+  },
+  {
     version: "0.7.4",
     date: "13.07.2026",
     changes: [

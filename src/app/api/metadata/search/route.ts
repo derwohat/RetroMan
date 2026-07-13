@@ -100,8 +100,9 @@ function mapDiscogsRaw(r: DiscogsRaw): MetadataResult {
 }
 
 // Build multiple candidate search param sets without requiring a separator.
-// Tries splitting the query at artist-name lengths of 1, 2, and 3 words so that
-// "Depeche Mode M" → artist="Depeche Mode" title="M" is found automatically.
+// Generates artist/title splits from longest-artist to shortest so the most
+// likely correct split comes first in round-robin merging.
+// "Depeche Mode M" → tries artist="Depeche Mode"/title="M" before artist="Depeche"/title="Mode M"
 function buildDiscogsParamSets(query: string): URLSearchParams[] {
   const separatorMatch = query.match(/^(.+?)\s*(?::\s*|-\s+)(.+)$/);
   if (separatorMatch) {
@@ -114,20 +115,23 @@ function buildDiscogsParamSets(query: string): URLSearchParams[] {
   }
 
   const sets: URLSearchParams[] = [];
-  // Artist name lengths 1..3, title = remaining words
+
+  // Broad full-query fallback first — catches single-artist queries like "Depeche Mode"
+  // and acts as the best-effort net for any word count
+  sets.push(new URLSearchParams({ q: query, type: "release", per_page: "8" }));
+
+  // Artist/title splits from longest-artist-name to shortest (most → least specific)
+  // so round-robin merge picks the most likely correct split early
   const maxArtist = Math.min(3, words.length - 1);
-  for (let i = 1; i <= maxArtist; i++) {
+  for (let i = maxArtist; i >= 1; i--) {
     sets.push(new URLSearchParams({
       artist: words.slice(0, i).join(" "),
-      title: words.slice(i).join(" "),
+      title:  words.slice(i).join(" "),
       type: "release",
       per_page: "8",
     }));
   }
-  // For short queries also include a broad fallback (catches pure artist searches like "Pink Floyd")
-  if (words.length <= 3) {
-    sets.push(new URLSearchParams({ q: query, type: "release", per_page: "8" }));
-  }
+
   return sets;
 }
 
@@ -712,7 +716,7 @@ export async function GET(req: NextRequest) {
   const mediaType = searchParams.get("mediaType") ?? "CUSTOM";
   const year      = searchParams.get("year") ?? undefined;
 
-  if (title.length < 3) return NextResponse.json([]);
+  if (title.length < 2) return NextResponse.json([]);
 
   const settings = await prisma.appSettings.findFirst({ where: { id: "singleton" } });
 
