@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.7",
+    date: "13.07.2026",
+    changes: [
+      "Favicon: RetroMan-Logo wird jetzt korrekt im Browser-Tab angezeigt — ersetzt den Next.js-Platzhalter",
+      "Favicon: 32×32 ICO für Browser-Tab, 64×64 PNG für moderne Browser, 192×192 PNG für Apple Touch Icon",
+    ],
+  },
+  {
     version: "0.7.6",
     date: "13.07.2026",
     changes: [

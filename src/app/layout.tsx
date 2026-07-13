@@ -28,8 +28,11 @@ export const metadata: Metadata = {
   title: "RetroMan",
   description: "Your personal physical media collection manager",
   icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+      { url: "/icon.png",    sizes: "64x64",  type: "image/png" },
+    ],
+    apple: "/icon-192.png",
   },
 };
 
