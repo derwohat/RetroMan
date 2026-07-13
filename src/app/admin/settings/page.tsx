@@ -95,9 +95,10 @@ const SERVICES = [
   {
     key: "googleBooksKey" as const,
     label: "Google Books",
-    categories: ["Bücher", "Comics"],
+    categories: ["Bücher", "Manga", "Comics"],
     icon: "📚",
-    description: "Ergänzt Bücher- und Comic-Suche mit hochwertigen Covern und ISBNs (1.000 Anfragen/Tag kostenlos).",
+    optional: true,
+    description: "Funktioniert ohne Key (1.000 Anfragen/Tag). Key hinterlegen für höheres Rate Limit.",
     steps: [
       "Gehe zu console.cloud.google.com und melde dich mit deinem Google-Konto an",
       'Erstelle ein neues Projekt oder wähle ein bestehendes',
@@ -310,7 +311,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* API-Key-Quellen */}
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-2">API-Key erforderlich</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-2">API-Key (teilweise optional)</p>
         {SERVICES.map((service) => {
           const isSet = settings?.[service.key] === true;
           const isExpanded = expanded === service.key;
@@ -333,6 +334,10 @@ export default function AdminSettingsPage() {
                     {isSet ? (
                       <span className="rounded-full bg-green-500/10 border border-green-500/30 px-2 py-0.5 text-[10px] text-green-500">
                         Aktiv
+                      </span>
+                    ) : "optional" in service && service.optional ? (
+                      <span className="rounded-full bg-green-500/10 border border-green-500/30 px-2 py-0.5 text-[10px] text-green-500">
+                        Aktiv (kein Key)
                       </span>
                     ) : (
                       <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[10px] text-amber-400">

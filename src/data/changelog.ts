@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.3",
+    date: "13.07.2026",
+    changes: [
+      "Google Books: funktioniert jetzt ohne API-Key (1.000 Anfragen/Tag kostenlos) — Key ist nur für höhere Rate Limits nötig",
+      "Manga-Suche: Google Books + Open Library jetzt immer aktiv, kein Key erforderlich",
+      "Admin-Einstellungen: Google Books zeigt 'Aktiv (kein Key)' wenn kein Key hinterlegt ist",
+    ],
+  },
+  {
     version: "0.7.2",
     date: "13.07.2026",
     changes: [

@@ -544,8 +544,9 @@ async function searchComicVine(query: string, apiKey: string): Promise<MetadataR
   });
 }
 
-async function searchGoogleBooks(query: string, apiKey: string): Promise<MetadataResult[]> {
-  const q = new URLSearchParams({ q: query, key: apiKey, maxResults: "8", printType: "books" });
+async function searchGoogleBooks(query: string, apiKey?: string): Promise<MetadataResult[]> {
+  const q = new URLSearchParams({ q: query, maxResults: "8", printType: "books" });
+  if (apiKey) q.set("key", apiKey);
   const res = await fetch(`https://www.googleapis.com/books/v1/volumes?${q}`, {
     signal: AbortSignal.timeout(8000),
   });
@@ -735,44 +736,38 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(await searchTmdbTv(title, decrypt(settings.tmdbApiKey), omdbKey));
     }
     if (mediaType === "BOOK") {
-      if (settings?.googleBooksKey) {
-        const [gb, ol] = await Promise.allSettled([
-          searchGoogleBooks(title, decrypt(settings.googleBooksKey)),
-          searchOpenLibrary(title),
-        ]);
-        return NextResponse.json(mergeSources([
-          gb.status === "fulfilled" ? gb.value : [],
-          ol.status === "fulfilled" ? ol.value : [],
-        ]));
-      }
-      return NextResponse.json(await searchOpenLibrary(title));
+      const gbKey = settings?.googleBooksKey ? decrypt(settings.googleBooksKey) : undefined;
+      const [gb, ol] = await Promise.allSettled([
+        searchGoogleBooks(title, gbKey),
+        searchOpenLibrary(title),
+      ]);
+      return NextResponse.json(mergeSources([
+        gb.status === "fulfilled" ? gb.value : [],
+        ol.status === "fulfilled" ? ol.value : [],
+      ]));
     }
     if (mediaType === "COMIC") {
       if (!settings?.comicVineKey) return NextResponse.json({ error: "no_key", source: "ComicVine" }, { status: 503 });
-      if (settings?.googleBooksKey) {
-        const [cv, gb] = await Promise.allSettled([
-          searchComicVine(title, decrypt(settings.comicVineKey)),
-          searchGoogleBooks(title, decrypt(settings.googleBooksKey)),
-        ]);
-        return NextResponse.json(mergeSources([
-          cv.status === "fulfilled" ? cv.value : [],
-          gb.status === "fulfilled" ? gb.value : [],
-        ]));
-      }
-      return NextResponse.json(await searchComicVine(title, decrypt(settings.comicVineKey)));
+      const gbKey = settings?.googleBooksKey ? decrypt(settings.googleBooksKey) : undefined;
+      const [cv, gb] = await Promise.allSettled([
+        searchComicVine(title, decrypt(settings.comicVineKey)),
+        searchGoogleBooks(title, gbKey),
+      ]);
+      return NextResponse.json(mergeSources([
+        cv.status === "fulfilled" ? cv.value : [],
+        gb.status === "fulfilled" ? gb.value : [],
+      ]));
     }
     if (mediaType === "MANGA") {
-      if (settings?.googleBooksKey) {
-        const [gb, ol] = await Promise.allSettled([
-          searchGoogleBooks(title, decrypt(settings.googleBooksKey)),
-          searchOpenLibrary(title),
-        ]);
-        return NextResponse.json(mergeSources([
-          gb.status === "fulfilled" ? gb.value : [],
-          ol.status === "fulfilled" ? ol.value : [],
-        ]));
-      }
-      return NextResponse.json(await searchOpenLibrary(title));
+      const gbKey = settings?.googleBooksKey ? decrypt(settings.googleBooksKey) : undefined;
+      const [gb, ol] = await Promise.allSettled([
+        searchGoogleBooks(title, gbKey),
+        searchOpenLibrary(title),
+      ]);
+      return NextResponse.json(mergeSources([
+        gb.status === "fulfilled" ? gb.value : [],
+        ol.status === "fulfilled" ? ol.value : [],
+      ]));
     }
   } catch (err) {
     console.error("[metadata/search] error:", err);
