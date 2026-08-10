@@ -3,10 +3,29 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
+import { ThemeToggle } from "./ThemeToggle";
+
+type Profile = { name: string; email: string; role: string };
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
+function IconProfile() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
+  );
+}
+function IconAdmin() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
 function IconFavorites() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -39,12 +58,26 @@ function IconChevronRight() {
 
 type Collection = { id: string; name: string; icon: string | null; _count: { items: number } };
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: boolean; onClose?: () => void; onOpenChangelog?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [counts, setCounts] = useState({ favorites: 0 });
+  const [profile, setProfile] = useState<Profile | null>(null);
   const pathname = usePathname();
   const { t } = useTranslations();
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setProfile(d))
+      .catch(() => {});
+  }, []);
 
   function refreshCollections() {
     fetch("/api/collections")
@@ -175,18 +208,46 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
         })()}
 
         {navLink("/stats",     <IconStats />,     t.nav.stats)}
+        {navLink("/profile",   <IconProfile />,    t.header.profileSettings)}
+        {profile?.role === "ADMIN" && navLink("/admin", <IconAdmin />, t.header.adminArea)}
       </nav>
 
-      {/* Footer */}
+      {/* Footer: Versions-Chip + Theme-Toggle, darunter Nutzer-Block (Avatar/Name/Rolle/Logout) —
+          Man-Suite Designsprache §11, IPMan-Referenz. Ersetzt das frühere Profil-Dropdown im Header. */}
       {!collapsed && (
         <div className="border-t border-border p-3 shrink-0">
-          <button
-            onClick={onOpenChangelog}
-            className="text-[9px] text-muted-foreground hover:text-primary transition-colors"
-            title="Changelog anzeigen"
-          >
-            RetroMan v{process.env.NEXT_PUBLIC_APP_VERSION}
-          </button>
+          <div className="mb-3 flex items-center gap-1.5">
+            <button
+              onClick={onOpenChangelog}
+              title="Changelog anzeigen"
+              className="flex h-7 flex-1 items-center justify-end rounded-md bg-muted px-2.5 font-mono text-[10px] font-semibold tracking-wide text-muted-foreground hover:text-primary transition-colors"
+            >
+              RetroMan v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </button>
+            <ThemeToggle compact />
+          </div>
+
+          {profile && (
+            <div className="overflow-hidden rounded-md bg-muted">
+              <Link href="/profile" className="flex items-center gap-2.5 p-2.5 hover:bg-border/50 transition-colors">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary font-heading text-xs font-bold text-primary-foreground">
+                  {initials(profile.name)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-foreground">{profile.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {profile.role === "ADMIN" ? t.adminUsers.roleAdmin : t.adminUsers.roleUser}
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="w-full border-t border-border py-2 pl-[46px] pr-2.5 text-left text-xs font-medium text-muted-foreground hover:bg-border/50 hover:text-destructive transition-colors"
+              >
+                {t.header.logout}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </aside>

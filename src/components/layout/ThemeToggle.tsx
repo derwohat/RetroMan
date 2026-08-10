@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export function ThemeToggle() {
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
@@ -25,7 +25,11 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       title={dark ? "Light Mode" : "Dark Mode"}
-      className="flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:border-primary hover:text-primary"
+      className={
+        compact
+          ? "grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground hover:text-primary transition-colors"
+          : "flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:border-primary hover:text-primary"
+      }
     >
       {dark ? (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

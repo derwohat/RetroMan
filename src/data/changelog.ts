@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.8",
+    date: "10.08.2026",
+    changes: [
+      "Design-/Theme-Umschalter und Profilmenü aus der Kopfzeile in die Seitenleiste verschoben — sitzen jetzt zusammen mit der Versionsnummer/dem Changelog unten in der Sidebar",
+      "„Profil & Einstellungen“ und „Admin-Bereich“ sind jetzt feste Menüpunkte in der Seitenleiste statt Einträgen in einem Dropdown-Menü",
+    ],
+  },
+  {
     version: "0.7.7",
     date: "13.07.2026",
     changes: [
