@@ -9,6 +9,7 @@ import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 export default function SetupPage() {
   const router = useRouter();
   const { t } = useStandaloneTranslations();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +44,7 @@ export default function SetupPage() {
     const res = await fetch("/api/setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name, password }),
+      body: JSON.stringify({ username, email, name, password }),
     });
 
     if (!res.ok) {
@@ -54,7 +55,7 @@ export default function SetupPage() {
     }
 
     // Auto-login after account creation
-    const result = await signIn("credentials", { email, password, redirect: false });
+    const result = await signIn("credentials", { username, password, redirect: false });
     setLoading(false);
 
     if (result?.error) {
@@ -92,6 +93,22 @@ export default function SetupPage() {
               onChange={(e) => setName(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               placeholder={t.auth.namePlaceholder}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="username" className="text-xs text-muted-foreground uppercase tracking-wider">
+              {t.auth.username}
+            </label>
+            <input
+              id="username"
+              type="text"
+              required
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              placeholder={t.auth.usernamePlaceholder}
             />
           </div>
 

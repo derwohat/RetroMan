@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.8.0",
+    date: "11.08.2026",
+    changes: [
+      "Login läuft jetzt über Benutzername + Passwort statt E-Mail-Adresse (Man-Suite-weite Standardumstellung) — E-Mail bleibt als Zusatzfeld für das Nutzerkonto erhalten",
+      "Bestehende Accounts haben automatisch einen Benutzernamen aus dem bisherigen E-Mail-Namen erhalten",
+    ],
+  },
+  {
     version: "0.7.8",
     date: "10.08.2026",
     changes: [

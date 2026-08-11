@@ -23,7 +23,7 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     select: {
-      id: true, name: true, email: true, role: true,
+      id: true, username: true, name: true, email: true, role: true,
       mustChangePassword: true, mfaEnabled: true,
       deletedAt: true, createdAt: true, lastLoginAt: true,
     },
@@ -36,13 +36,23 @@ export async function POST(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const { name, email, role } = await req.json();
-  if (!name || !email) {
-    return NextResponse.json({ error: "Name und E-Mail erforderlich." }, { status: 400 });
+  const { username, name, email, role } = await req.json();
+  if (!username || !name || !email) {
+    return NextResponse.json({ error: "Benutzername, Name und E-Mail erforderlich." }, { status: 400 });
+  }
+  const normalizedUsername = String(username).trim().toLowerCase();
+  if (!/^[a-z0-9_.-]{3,32}$/.test(normalizedUsername)) {
+    return NextResponse.json({
+      error: "Benutzername muss 3-32 Zeichen lang sein und darf nur Kleinbuchstaben, Ziffern, '_', '.' und '-' enthalten.",
+    }, { status: 400 });
   }
 
-  const existing = await prisma.user.findFirst({ where: { email } });
-  if (existing) {
+  const existingUsername = await prisma.user.findFirst({ where: { username: normalizedUsername } });
+  if (existingUsername) {
+    return NextResponse.json({ error: "Benutzername bereits vergeben." }, { status: 409 });
+  }
+  const existingEmail = await prisma.user.findFirst({ where: { email } });
+  if (existingEmail) {
     return NextResponse.json({ error: "E-Mail bereits vergeben." }, { status: 409 });
   }
 
@@ -51,12 +61,12 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.create({
     data: {
-      name, email, passwordHash,
+      username: normalizedUsername, name, email, passwordHash,
       role: role === "ADMIN" ? "ADMIN" : "USER",
       mustChangePassword: true,
     },
     select: {
-      id: true, name: true, email: true, role: true,
+      id: true, username: true, name: true, email: true, role: true,
       mustChangePassword: true, createdAt: true,
     },
   });

@@ -26,6 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        token.username = (user as { username?: string }).username;
         token.role = (user as { role?: string }).role;
         token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword;
         token.mfaEnabled = (user as { mfaEnabled?: boolean }).mfaEnabled;
@@ -47,6 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
+        session.user.username = token.username as string;
         session.user.role = token.role as string;
         session.user.mustChangePassword = token.mustChangePassword as boolean;
         session.user.mfaEnabled = token.mfaEnabled as boolean;
@@ -59,21 +61,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
         totp: { label: "Authenticator Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.username || !credentials?.password) return null;
 
-        const key = `login:${(credentials.email as string).toLowerCase()}`;
+        const username = (credentials.username as string).toLowerCase();
+        const key = `login:${username}`;
         const { ok, retryAfterSecs } = rateLimit(key);
         if (!ok) {
           throw new Error(`Zu viele Anmeldeversuche. Bitte in ${retryAfterSecs} Sekunden erneut versuchen.`);
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string, deletedAt: null },
+          where: { username, deletedAt: null },
         });
 
         if (!user) return null;
@@ -89,6 +92,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         return {
           id: user.id,
+          username: user.username,
           email: user.email,
           name: user.name,
           role: user.role,

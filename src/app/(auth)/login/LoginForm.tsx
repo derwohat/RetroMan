@@ -9,7 +9,7 @@ import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 export default function LoginForm() {
   const router = useRouter();
   const { t } = useStandaloneTranslations();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ export default function LoginForm() {
     setLoading(true);
 
     const result = await signIn("credentials", {
-      email,
+      username,
       password,
       redirect: false,
     });
@@ -48,10 +48,10 @@ export default function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">{t.auth.email}</label>
+            <label htmlFor="username" className="text-xs text-muted-foreground uppercase tracking-wider">{t.auth.username}</label>
             <input
-              id="email" type="email" required autoComplete="email"
-              value={email} onChange={(e) => setEmail(e.target.value)}
+              id="username" type="text" required autoComplete="username"
+              value={username} onChange={(e) => setUsername(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
