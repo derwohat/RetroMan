@@ -396,7 +396,7 @@ retro-man/
 │   ├── Dockerfile
 │   └── nginx.conf
 ├── docker-compose.yml     (Produktion)
-├── docker-compose.dev.yml (Entwicklung mit Hot Reload)
+├── compose.dev.yml (Entwicklung mit Hot Reload)
 └── README.md
 ```
 

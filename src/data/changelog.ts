@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.8.1",
+    date: "27.08.2026",
+    changes: [
+      "In den Docker-Compose-Dateien sind jetzt alle Secrets (Datenbank-Passwort, Sitzungs-Schlüssel, Verschlüsselungs-Schlüssel) direkt mit Erzeugungsbefehl erklärt, statt nur in .env.example nachschlagen zu müssen",
+    ],
+  },
+  {
     version: "0.8.0",
     date: "11.08.2026",
     changes: [

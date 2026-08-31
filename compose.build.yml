@@ -5,6 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-retroman}
       POSTGRES_USER: ${POSTGRES_USER:-retroman}
+      # Example: MeinSicheresPasswort42!
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -22,7 +23,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-retroman}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-retroman}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost}
+      # Random secret - generate with: openssl rand -base64 32
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # Exactly 64 hex characters - generate with: openssl rand -hex 32
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       NODE_ENV: production
     volumes:

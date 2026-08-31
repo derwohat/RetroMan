@@ -3,7 +3,7 @@
 #
 # Setup:
 #   1. Replace all example values below with your own
-#   2. docker compose -f docker-compose.prod.yml up -d
+#   2. docker compose up -d
 
 services:
   db:
