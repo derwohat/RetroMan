@@ -1,9 +1,14 @@
 import NextAuth from "next-auth";
+import { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import "@/lib/auth/types";
+
+class RateLimitedError extends CredentialsSignin {
+  code = "RateLimited";
+}
 
 // Set once when this module loads (= server/process start).
 // In production: any JWT issued before this moment is rejected → forces re-login after restart.
@@ -70,9 +75,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const username = (credentials.username as string).toLowerCase();
         const key = `login:${username}`;
-        const { ok, retryAfterSecs } = rateLimit(key);
+        const { ok } = rateLimit(key);
         if (!ok) {
-          throw new Error(`Zu viele Anmeldeversuche. Bitte in ${retryAfterSecs} Sekunden erneut versuchen.`);
+          throw new RateLimitedError();
         }
 
         const user = await prisma.user.findUnique({

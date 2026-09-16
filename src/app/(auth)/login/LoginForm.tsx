@@ -28,7 +28,8 @@ export default function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError(t.auth.invalidCredentials);
+      const code = result.url ? new URL(result.url, window.location.origin).searchParams.get("code") : null;
+      setError(code === "RateLimited" ? t.auth.tooManyAttempts : t.auth.invalidCredentials);
       return;
     }
 

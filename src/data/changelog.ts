@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.8.2",
+    date: "16.09.2026",
+    changes: [
+      "Zu viele fehlgeschlagene Anmeldeversuche zeigen jetzt eine eigene Meldung statt des generischen Falsches-Passwort-Hinweises",
+      "Neues Update-Banner in der Seitenleiste: Ist eine neue Version verfügbar, erscheint ein Hinweis mit Neu-laden-Schaltfläche — kein stilles Weiterarbeiten mit altem Code mehr",
+      "iOS-Startbildschirm-Icon: schwarze Vinyl-Scheibe auf Neon-Pink-Hintergrund",
+    ],
+  },
+  {
     version: "0.8.1",
     date: "27.08.2026",
     changes: [

@@ -155,6 +155,7 @@ const de = {
     signIn: "Anmelden",
     signingIn: "Anmelden…",
     invalidCredentials: "Ungültiger Benutzername oder Passwort.",
+    tooManyAttempts: "Zu viele Anmeldeversuche. Bitte warte kurz und versuche es erneut.",
     setupWelcome: "Willkommen! Erstelle deinen Admin-Account, um RetroMan einzurichten.",
     name: "Name",
     namePlaceholder: "Dein Name",
@@ -175,6 +176,10 @@ const de = {
     savePassword: "Passwort speichern",
     saving: "Speichern…",
     changePasswordError: "Fehler beim Ändern des Passworts.",
+  },
+  versionBanner: {
+    available: "Neue Version verfügbar",
+    reload: "Jetzt neu laden",
   },
   // Single collection page
   collection: {
@@ -714,6 +719,7 @@ export const translations: Record<Locale, Translations> = {
       signIn: "Sign in",
       signingIn: "Signing in…",
       invalidCredentials: "Invalid username or password.",
+      tooManyAttempts: "Too many sign-in attempts. Please wait a moment and try again.",
       setupWelcome: "Welcome! Create your admin account to set up RetroMan.",
       name: "Name",
       namePlaceholder: "Your name",
@@ -734,6 +740,10 @@ export const translations: Record<Locale, Translations> = {
       savePassword: "Save password",
       saving: "Saving…",
       changePasswordError: "Error changing the password.",
+    },
+    versionBanner: {
+      available: "New version available",
+      reload: "Reload now",
     },
     collection: {
       fallbackName: "Collection",
@@ -1255,6 +1265,7 @@ export const translations: Record<Locale, Translations> = {
       signIn: "Se connecter",
       signingIn: "Connexion…",
       invalidCredentials: "Nom d'utilisateur ou mot de passe invalide.",
+      tooManyAttempts: "Trop de tentatives de connexion. Veuillez patienter et réessayer.",
       setupWelcome: "Bienvenue ! Créez votre compte administrateur pour configurer RetroMan.",
       name: "Nom",
       namePlaceholder: "Votre nom",
@@ -1275,6 +1286,10 @@ export const translations: Record<Locale, Translations> = {
       savePassword: "Enregistrer le mot de passe",
       saving: "Enregistrement…",
       changePasswordError: "Erreur lors du changement de mot de passe.",
+    },
+    versionBanner: {
+      available: "Nouvelle version disponible",
+      reload: "Recharger maintenant",
     },
     collection: {
       fallbackName: "Collection",

@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 import { ThemeToggle } from "./ThemeToggle";
+import { VersionBanner } from "./VersionBanner";
 
 type Profile = { name: string; email: string; role: string };
 
@@ -216,6 +217,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
           Man-Suite Designsprache §11, IPMan-Referenz. Ersetzt das frühere Profil-Dropdown im Header. */}
       {!collapsed && (
         <div className="border-t border-border p-3 shrink-0">
+          <VersionBanner />
           <div className="mb-3 flex items-center gap-1.5">
             <button
               onClick={onOpenChangelog}
