@@ -179,7 +179,7 @@ const de = {
   },
   versionBanner: {
     available: "Neue Version verfügbar",
-    reload: "Jetzt neu laden",
+    reload: "Jetzt updaten!",
   },
   // Single collection page
   collection: {
@@ -743,7 +743,7 @@ export const translations: Record<Locale, Translations> = {
     },
     versionBanner: {
       available: "New version available",
-      reload: "Reload now",
+      reload: "Update now!",
     },
     collection: {
       fallbackName: "Collection",
@@ -1289,7 +1289,7 @@ export const translations: Record<Locale, Translations> = {
     },
     versionBanner: {
       available: "Nouvelle version disponible",
-      reload: "Recharger maintenant",
+      reload: "Mettre à jour !",
     },
     collection: {
       fallbackName: "Collection",

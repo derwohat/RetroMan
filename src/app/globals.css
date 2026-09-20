@@ -549,3 +549,44 @@ input[type="checkbox"]:checked {
     font-size: 16px !important;
   }
 }
+
+/* ─── Version banner ─────────────────────────────────────── */
+/* Codebook product-standards.md, "Form: Gefüllte Karte in der Markenfarbe":
+   replaces the earlier warning-tone version. Derived from --primary via
+   color-mix so every theme (retro80s/90s, modern, light/dark) gets a fitting
+   surface without its own token. */
+.version-banner-card {
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border-left: 3px solid var(--primary);
+  color: var(--primary);
+}
+
+/* "Wanderndes Licht": a directional sweep reads as a hint, a blink reads as
+   an alarm. pointer-events:none so it never swallows the button click, and
+   no animation at all when the viewer asked for reduced motion. */
+.streiflicht::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    105deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 30%, transparent) 45%,
+    transparent 70%
+  );
+  background-size: 140px 100%;
+  background-repeat: no-repeat;
+  background-position: -140px 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .streiflicht::after {
+    animation: streiflicht-wandern 2.8s ease-in-out infinite;
+  }
+}
+/* 200px = card width (184px: 208px sidebar minus p-3) plus margin, so the
+   sweep leaves the card entirely instead of resting at the edge. */
+@keyframes streiflicht-wandern {
+  from { background-position: -140px 0; }
+  to   { background-position: 200px 0; }
+}

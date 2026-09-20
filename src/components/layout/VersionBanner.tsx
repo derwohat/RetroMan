@@ -9,18 +9,18 @@ export function VersionBanner() {
 
   if (!updateAvailable) return null;
 
+  // relative + overflow-hidden carry the .streiflicht pseudo-element; the
+  // class itself only defines the sweep.
   return (
-    <div className="mb-2 rounded-md border-l-[3px] bg-muted px-3 py-2.5" style={{ borderLeftColor: "var(--neon-yellow)" }}>
+    <div className="version-banner-card streiflicht relative overflow-hidden mb-2 rounded-md px-3 py-2.5">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium text-foreground leading-snug">
+        <p className="text-xs font-medium leading-snug">
           {t.versionBanner.available}{" "}
-          <span className="font-mono" style={{ color: "var(--neon-yellow)" }}>
-            v{latestVersion}
-          </span>
+          <span className="font-mono">v{latestVersion}</span>
         </p>
         <button
           onClick={dismiss}
-          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors text-xs leading-none"
+          className="shrink-0 text-xs leading-none opacity-70 hover:opacity-100 transition-opacity"
           aria-label="Schließen"
         >
           ✕
@@ -28,7 +28,7 @@ export function VersionBanner() {
       </div>
       <button
         onClick={() => window.location.reload()}
-        className="mt-2 w-full rounded bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
+        className="mt-2 w-full rounded bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground hover:opacity-90 transition-opacity"
       >
         {t.versionBanner.reload}
       </button>
