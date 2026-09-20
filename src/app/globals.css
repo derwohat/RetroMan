@@ -535,3 +535,17 @@ input[type="checkbox"]:checked {
   50%  { transform: translateX(150%); }
   100% { transform: translateX(-100%); }
 }
+
+/* ─── No auto-zoom on touch devices ──────────────────────── */
+/* iOS Safari zooms in when a field smaller than 16px gains focus, and never
+   zooms back out. Fields here are 14px (.retro-field, .text-sm), so every
+   form triggers it. !important is required: the utility classes above and
+   Tailwind's own text-sm outrank a bare element selector. Touch only —
+   desktop keeps 14px so dense layouts stay intact. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

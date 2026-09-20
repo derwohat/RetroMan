@@ -27,12 +27,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "RetroMan",
   description: "Your personal physical media collection manager",
+  // Defining `icons` at all suppresses the App Router's apple-icon file
+  // convention, so the home-screen icon has to be named explicitly here.
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
       { url: "/icon.png",    sizes: "64x64",  type: "image/png" },
     ],
-    apple: "/icon-192.png",
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    title: "RetroMan",
   },
 };
 
