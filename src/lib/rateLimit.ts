@@ -5,7 +5,10 @@ const store = new Map<string, Entry>();
 const WINDOW_MS  = 15 * 60 * 1000; // 15 minutes
 const MAX_HITS   = 10;              // max attempts per window
 
-export function rateLimit(key: string): { ok: boolean; retryAfterSecs: number } {
+export function rateLimit(
+  key: string,
+  maxHits: number = MAX_HITS,
+): { ok: boolean; retryAfterSecs: number } {
   const now = Date.now();
   const entry = store.get(key);
 
@@ -15,7 +18,7 @@ export function rateLimit(key: string): { ok: boolean; retryAfterSecs: number } 
   }
 
   entry.count += 1;
-  if (entry.count > MAX_HITS) {
+  if (entry.count > maxHits) {
     return { ok: false, retryAfterSecs: Math.ceil((entry.resetAt - now) / 1000) };
   }
 

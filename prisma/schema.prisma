@@ -81,6 +81,10 @@ model User {
   email              String    @unique
   name               String
   passwordHash       String
+  // Sessions are JWTs, so there is no session table to clear on a password
+  // change. The jwt callback compares this against the value stamped into the
+  // token and drops any token minted before the change.
+  passwordChangedAt  DateTime  @default(now())
   mustChangePassword Boolean   @default(true)
   mfaEnabled         Boolean   @default(false)
   mfaSecret          String?
@@ -100,6 +104,22 @@ model User {
   tagGroups          TagGroup[]
   viewSettings       CollectionViewSettings[]
   collectionSettings CollectionSettings[]
+  passwordResets     PasswordResetToken[]
+}
+
+// Only the hash is stored: a leaked database must not yield working reset
+// links. Man-Suite Codebook docs/security.md, "Passwort-vergessen-Flow".
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ─── App-wide settings (singleton row) ───────────────────────────────────────

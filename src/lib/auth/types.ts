@@ -7,6 +7,8 @@ declare module "next-auth" {
     mustChangePassword: boolean;
     mfaEnabled: boolean;
     mfaPending?: boolean;
+    /** Epoch millis; the jwt callback drops tokens whose stamp is stale. */
+    passwordChangedAt: number;
   }
   interface Session {
     user: {
@@ -27,5 +29,6 @@ declare module "next-auth" {
     mustChangePassword: boolean;
     mfaEnabled: boolean;
     mfaPending?: boolean;
+    passwordChangedAt: number;
   }
 }

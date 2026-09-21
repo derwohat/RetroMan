@@ -37,11 +37,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.mfaEnabled = (user as { mfaEnabled?: boolean }).mfaEnabled;
         // If MFA is enabled, mark as pending until TOTP is verified
         token.mfaPending = (user as { mfaEnabled?: boolean }).mfaEnabled === true;
+        token.passwordChangedAt = (user as { passwordChangedAt?: number }).passwordChangedAt;
         return token;
       }
       // Reject any token issued before this server started (forces re-login after restart)
       if (SERVER_BOOT_AT > 0 && typeof token.iat === "number" && token.iat < SERVER_BOOT_AT) {
         return null;
+      }
+      // Sessions are JWTs, so a password reset cannot delete them server-side.
+      // Instead every request re-checks the account: a token whose stamp no
+      // longer matches the stored value was minted before the password
+      // changed, and dies here. This also drops tokens for deleted accounts.
+      if (typeof token.id === "string") {
+        const current = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: {
+            deletedAt: true,
+            passwordChangedAt: true,
+            role: true,
+            mustChangePassword: true,
+          },
+        });
+        if (!current || current.deletedAt) return null;
+        if (current.passwordChangedAt.getTime() !== token.passwordChangedAt) return null;
+        // Picked up without a re-login when an admin changes them.
+        token.role = current.role;
+        token.mustChangePassword = current.mustChangePassword;
       }
       // Allow client to clear mfaPending after TOTP verification or mustChangePassword after PW change
       if (trigger === "update" && session) {
@@ -103,6 +124,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           mustChangePassword: user.mustChangePassword,
           mfaEnabled: user.mfaEnabled,
+          passwordChangedAt: user.passwordChangedAt.getTime(),
         };
       },
     }),

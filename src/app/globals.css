@@ -536,6 +536,22 @@ input[type="checkbox"]:checked {
   100% { transform: translateX(-100%); }
 }
 
+/* ─── Secondary auth links ───────────────────────────────── */
+/* Codebook product-standards.md: these carry the brand colour rather than a
+   generic link blue, because they are the only links someone sees before
+   signing in. Underline stays visible at reduced opacity instead of
+   appearing on hover — a colour change alone reads as body text. */
+.auth-secondary-link {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms;
+}
+.auth-secondary-link:hover {
+  text-decoration-color: var(--primary);
+}
+
 /* ─── No auto-zoom on touch devices ──────────────────────── */
 /* iOS Safari zooms in when a field smaller than 16px gains focus, and never
    zooms back out. Fields here are 14px (.retro-field, .text-sm), so every

@@ -6,6 +6,17 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.9.0",
+    date: "21.09.2026",
+    changes: [
+      "Passwort vergessen: Auf der Anmeldeseite lässt sich jetzt ein Link per E-Mail anfordern, mit dem ein neues Passwort vergeben werden kann. Der Link gilt eine Stunde und funktioniert nur einmal. Erscheint nur, wenn ein Mailserver eingerichtet ist",
+      "Sicherheit: Nach dem Zurücksetzen werden alle offenen Sitzungen des Kontos beendet — wer noch angemeldet war, fliegt raus",
+      "Das Symbol für den Startbildschirm wird auf dem iPhone jetzt wirklich angezeigt. Bisher lag es zwar bereit, wurde aber nie ausgeliefert",
+      "Kein ungewolltes Heranzoomen mehr auf dem Handy: Beim Tippen in ein Eingabefeld bleibt die Ansicht, wo sie ist",
+      "Das Update-Banner in der Seitenleiste trägt jetzt die Markenfarbe statt eines Warntons, mit wanderndem Lichtstreifen und einer Schaltfläche über die volle Breite",
+    ],
+  },
+  {
     version: "0.8.2",
     date: "16.09.2026",
     changes: [

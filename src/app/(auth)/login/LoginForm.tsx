@@ -4,9 +4,16 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
-export default function LoginForm() {
+export default function LoginForm({
+  canResetPassword = false,
+  passwordWasReset = false,
+}: {
+  canResetPassword?: boolean;
+  passwordWasReset?: boolean;
+}) {
   const router = useRouter();
   const { t } = useStandaloneTranslations();
   const [username, setUsername] = useState("");
@@ -47,6 +54,12 @@ export default function LoginForm() {
           <p className="slogan-glow text-sm tracking-widest italic">{t.auth.slogan}</p>
         </div>
 
+        {passwordWasReset && (
+          <p className="text-xs text-primary text-center" role="status">
+            {t.auth.passwordWasReset}
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="username" className="text-xs text-muted-foreground uppercase tracking-wider">{t.auth.username}</label>
@@ -74,6 +87,14 @@ export default function LoginForm() {
           >
             {loading ? t.auth.signingIn : t.auth.signIn}
           </button>
+
+          {canResetPassword && (
+            <div className="text-center">
+              <Link href="/forgot-password" className="auth-secondary-link text-xs">
+                {t.auth.forgotPassword}
+              </Link>
+            </div>
+          )}
         </form>
       </div>
     </div>
