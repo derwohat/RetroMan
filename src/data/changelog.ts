@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.10.1",
+    date: "21.09.2026",
+    changes: [
+      "Behoben: v0.10.0 startete im Docker-Container nicht. Die App meldete zwar Bereit, stürzte im selben Moment ab und wurde endlos neu gestartet — Ursache war die neue Passwort-Verschlüsselung, deren Programmteil im fertigen Abbild fehlte",
+    ],
+  },
+  {
     version: "0.10.0",
     date: "21.09.2026",
     changes: [
