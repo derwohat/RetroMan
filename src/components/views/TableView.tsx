@@ -56,11 +56,14 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
     );
   }
 
+  // Codebook: the panel carries a 3px brand edge on the left, and
+  // overflow-x-auto sits on the panel so wide tables scroll inside it while
+  // the rounded corners clip along. Class order matters — border-l-primary
+  // has to win against border-border.
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[600px] text-sm">
-          <thead className="border-b border-border bg-muted/50">
+    <div className="table-cards overflow-x-auto rounded-xl border border-l-[3px] border-border border-l-primary bg-card shadow-sm">
+      <table className="w-full min-w-[600px] text-sm">
+        <thead className="border-b border-border bg-sidebar">
             <tr>
               <th className="w-10 px-3 py-2" />
               <Th label="Titel"      sortable sk="title" />
@@ -81,7 +84,7 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
                   className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}
                 >
                   {/* Thumbnail */}
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2" data-card-media>
                     <Link href={`/collection/${item.collectionId}/${item.id}`}>
                       <div className="w-8 h-10 rounded overflow-hidden bg-muted flex items-center justify-center shrink-0 hover:ring-1 hover:ring-primary transition">
                         {imageUrl ? (
@@ -95,7 +98,7 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
                   </td>
 
                   {/* Title */}
-                  <td className="px-3 py-2 max-w-[220px]">
+                  <td className="px-3 py-2 max-w-[220px]" data-card-title>
                     <Link href={`/collection/${item.collectionId}/${item.id}`} className="flex items-center gap-1.5 hover:text-primary transition">
                       {item.isFavorite && <span className="text-xs">❤️</span>}
                       <span className="font-medium text-foreground truncate">{item.title}</span>
@@ -103,12 +106,12 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
                   </td>
 
                   {/* Year */}
-                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap" data-label="Jahr">
                     {item.year ?? "—"}
                   </td>
 
                   {/* Condition */}
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2" data-label="Zustand">
                     {item.condition ? (
                       <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium uppercase ${CONDITION_COLORS[item.condition] ?? "border-border text-muted-foreground"}`}>
                         {CONDITION_LABELS[item.condition]}
@@ -117,13 +120,13 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
                   </td>
 
                   {/* Price */}
-                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap" data-label="Preis">
                     {formatPrice(item.purchasePrice)}
                   </td>
 
-                  {/* Custom fields */}
+                  {/* Custom fields — caption mirrors the column heading */}
                   {extraFields.map((f) => (
-                    <td key={f.fieldKey} className="px-3 py-2 text-muted-foreground">
+                    <td key={f.fieldKey} className="px-3 py-2 text-muted-foreground" data-label={f.name}>
                       {item.customFields.find((cf) => cf.field.fieldKey === f.fieldKey)?.value ?? "—"}
                     </td>
                   ))}
@@ -141,7 +144,6 @@ export function TableView({ items, categoryIcon, visibleTags, fields, chipGroups
             )}
           </tbody>
         </table>
-      </div>
     </div>
   );
 }

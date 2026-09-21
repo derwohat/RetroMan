@@ -116,7 +116,10 @@ export default function AdminSettingsPage() {
   const { t } = useTranslations();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [keys, setKeys] = useState<Record<string, string>>({});
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Codebook: a setup guide stays open while its service is not configured,
+  // so what still needs doing is visible without hunting. Manual clicks are
+  // kept per service here and win over that default.
+  const [expandOverrides, setExpandOverrides] = useState<Record<string, boolean>>({});
   const [requireMfa, setRequireMfa] = useState(false);
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
   const [interfaceLanguage, setInterfaceLanguage] = useState<"de" | "en" | "fr">("de");
@@ -314,14 +317,14 @@ export default function AdminSettingsPage() {
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-2">API-Key (teilweise optional)</p>
         {SERVICES.map((service) => {
           const isSet = settings?.[service.key] === true;
-          const isExpanded = expanded === service.key;
+          const isExpanded = expandOverrides[service.key] ?? !isSet;
           const currentValue = keys[service.key] ?? "";
           const isSaving = saving === service.key;
 
           return (
             <div key={service.key} className="rounded-lg border border-border bg-card overflow-hidden">
               <button
-                onClick={() => setExpanded(isExpanded ? null : service.key)}
+                onClick={() => setExpandOverrides((o) => ({ ...o, [service.key]: !isExpanded }))}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition"
               >
                 <span className="text-xl shrink-0">{service.icon}</span>

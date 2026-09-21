@@ -174,9 +174,9 @@ export default function AdminUsersPage() {
           <p className="text-sm text-muted-foreground">{t.adminUsers.empty}</p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto rounded-xl border border-l-[3px] border-border border-l-primary bg-card shadow-sm">
           <table className="w-full">
-            <thead className="bg-muted">
+            <thead className="bg-sidebar">
               <tr>
                 {[t.adminUsers.colName, t.adminUsers.colEmail, t.adminUsers.colRole, t.adminUsers.colStatus, t.adminUsers.colLastLogin, t.adminUsers.colActions].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground">

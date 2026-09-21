@@ -536,6 +536,70 @@ input[type="checkbox"]:checked {
   100% { transform: translateX(-100%); }
 }
 
+/* ─── Data tables as cards on phones ─────────────────────── */
+/* Codebook product-standards.md, "Mobile Ansicht: Schublade und Karten".
+   The table markup stays intact — sorting, desktop layout and tests are
+   untouched; only the presentation changes below the md breakpoint. Side
+   scrolling always hides part of a row and demands swiping, while cards show
+   everything and cost nothing but CSS. */
+@media (max-width: 767px) {
+  /* The panel dissolves so each row can be its own card. */
+  .table-cards {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .table-cards table {
+    display: block;
+    min-width: 0;
+  }
+  .table-cards thead { display: none; }
+  .table-cards tbody { display: block; }
+
+  .table-cards tbody tr {
+    display: block;
+    margin-bottom: 0.625rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: 0.75rem;
+    background: var(--card);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  }
+
+  .table-cards tbody td {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    /* Desktop truncation must not survive here — nothing may stay hidden. */
+    max-width: none;
+    white-space: normal;
+  }
+
+  /* The caption is a fixed first element, so a wrapping value stays under
+     itself rather than sliding under the label. */
+  .table-cards tbody td[data-label]::before {
+    content: attr(data-label);
+    width: 5rem;
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+  }
+
+  .table-cards tbody td[data-label] > * { min-width: 0; }
+  .table-cards tbody td .truncate { overflow: visible; text-overflow: clip; white-space: normal; }
+
+  /* Title and cover carry no caption — they identify the card. */
+  .table-cards tbody td[data-card-title] { font-weight: 600; padding-bottom: 0.5rem; }
+  .table-cards tbody td[data-card-media] { padding-bottom: 0.5rem; }
+}
+
 /* ─── Secondary auth links ───────────────────────────────── */
 /* Codebook product-standards.md: these carry the brand colour rather than a
    generic link blue, because they are the only links someone sees before
