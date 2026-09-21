@@ -23,7 +23,11 @@ services:
       retries: 5
 
   app:
-    image: ghcr.io/derwohat/retroman:latest
+    # Pin the version in .env next to this file: RETROMAN_VERSION=0.10.0
+    # With "latest" every restart may pull a different image and rolling back
+    # after a bad release is impossible — you cannot even name the version you
+    # were on. latest stays the fallback for a first start only.
+    image: ghcr.io/derwohat/retroman:${RETROMAN_VERSION:-latest}
     restart: unless-stopped
     ports:
       - "7007:7007"
