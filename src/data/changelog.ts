@@ -6,6 +6,24 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.10.0",
+    date: "21.09.2026",
+    changes: [
+      "Passwörter werden jetzt mit Argon2id geschützt statt mit bcrypt. Die Umstellung passiert beim nächsten Anmelden von selbst — niemand muss sein Passwort ändern",
+      "Neu: Nach fünf Fehlversuchen wird ein Konto vorübergehend gesperrt, bei wiederholten Versuchen jeweils länger. Ein richtiges Passwort setzt den Zähler sofort zurück",
+      "Behoben: Bisher konnte zehnmaliges richtiges Anmelden das eigene Konto aussperren, weil auch erfolgreiche Versuche mitgezählt wurden",
+      "Behoben: Die Meldung bei zu vielen Anmeldeversuchen erschien nie — stattdessen stand immer Falsches Passwort da. Gesperrte Konten sagen das jetzt auch",
+      "Behoben: Der Passwortwechsel im Profil funktionierte überhaupt nicht und meldete immer Passwort zu kurz",
+      "Sicherheit: Beim Passwortwechsel wird jetzt das aktuelle Passwort abgefragt. Wer an ein offenes Gerät kommt, kann den Besitzer nicht mehr aussperren",
+      "Sicherheit: Jeder Passwortwechsel beendet alle offenen Sitzungen des Kontos — danach ist eine Neuanmeldung nötig",
+      "Sicherheit: Ohne gesetzte Umgebungsvariable ist die App jetzt geschlossen statt offen. Bisher genügte eine fehlende Einstellung, damit Sammlung und Benutzerverwaltung ohne Anmeldung erreichbar waren",
+      "Das Startbildschirm-Symbol war bisher hinter der Anmeldung versteckt und erschien deshalb gar nicht. Jetzt gibt es Symbole für iPhone und Android, samt Installation als App",
+      "Tabellen auf dem Handy: statt seitlich zu scrollen wird jede Zeile zu einer Karte mit Beschriftungen",
+      "Beim Bearbeiten einzelner Felder zeigt ein farbiger Streifen jetzt an, ob gerade gespeichert wird, ob es geklappt hat oder fehlgeschlagen ist. Fehler blieben bisher unbemerkt",
+      "Die Anleitungen bei den API-Schlüsseln stehen offen, solange ein Dienst noch nicht eingerichtet ist",
+    ],
+  },
+  {
     version: "0.9.0",
     date: "21.09.2026",
     changes: [
