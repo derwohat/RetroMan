@@ -74,6 +74,57 @@ function toDateInput(val: string | null | undefined): string {
   try { return new Date(val).toISOString().split("T")[0]; } catch { return ""; }
 }
 
+// ── Save-state acknowledgement ───────────────────────────────────────────────
+// Codebook product-standards.md, "Feldänderung — visuelle Quittierung":
+// idle → saving → saved (auto-clears after 1500ms) → idle, or error, which
+// stays put until the next interaction. The frame itself is the receipt, so
+// no toast is needed.
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+function useSaveState() {
+  const [state, setState] = useState<SaveState>("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function cancelReset() {
+    if (resetTimer.current) {
+      clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+    }
+  }
+
+  // Without this an older pending reset would wipe the state of a newer save,
+  // and a timer could fire after the field is gone.
+  useEffect(() => cancelReset, []);
+
+  async function track(save: () => Promise<void>) {
+    cancelReset();
+    setState("saving");
+    try {
+      await save();
+      setState("saved");
+      resetTimer.current = setTimeout(() => setState("idle"), 1500);
+    } catch (error) {
+      console.error("[inline-save]", error);
+      setState("error");
+    }
+  }
+
+  function clear() {
+    cancelReset();
+    setState("idle");
+  }
+
+  return { state, track, clear };
+}
+
+function saveStateClass(state: SaveState, focused: boolean): string {
+  if (state === "saving") return "inline-field-saving";
+  if (focused) return "";
+  if (state === "saved") return "inline-field-saved";
+  if (state === "error") return "inline-field-error";
+  return "";
+}
+
 // ── InlineEditableField ──────────────────────────────────────────────────────
 function InlineEditableField({
   label, value, type = "text", options, placeholder, onSave,
@@ -86,22 +137,21 @@ function InlineEditableField({
   onSave: (value: string | null) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(value ?? "");
-  const [saved, setSaved] = useState(false);
   const [focused, setFocused] = useState(false);
+  const { state, track, clear } = useSaveState();
 
   useEffect(() => { if (!focused) setDraft(value ?? ""); }, [value, focused]);
 
-  const handleFocus = () => { setFocused(true); setSaved(false); };
+  const handleFocus = () => { setFocused(true); clear(); };
   const handleBlur = async () => {
     setFocused(false);
     const nv = draft.trim() || null;
     const ov = (value ?? "").trim() || null;
     if (nv === ov) return;
-    await onSave(nv);
-    setSaved(true);
+    await track(() => onSave(nv));
   };
 
-  const cls = ["inline-field-idle", saved && !focused ? "inline-field-saved" : ""].filter(Boolean).join(" ");
+  const cls = ["inline-field-idle", saveStateClass(state, focused)].filter(Boolean).join(" ");
   const labelEl = label ? (
     <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</dt>
   ) : null;
@@ -111,7 +161,7 @@ function InlineEditableField({
       <div className="space-y-1">
         {labelEl}
         <dd>
-          <select className={cls} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(false); }} onFocus={handleFocus} onBlur={handleBlur}>
+          <select className={cls} value={draft} onChange={(e) => { setDraft(e.target.value); clear(); }} onFocus={handleFocus} onBlur={handleBlur}>
             <option value="">—</option>
             {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -125,7 +175,7 @@ function InlineEditableField({
       <div className="space-y-1">
         {labelEl}
         <dd>
-          <textarea className={cls} value={draft} rows={3} placeholder={placeholder ?? ""} onChange={(e) => { setDraft(e.target.value); setSaved(false); }} onFocus={handleFocus} onBlur={handleBlur} />
+          <textarea className={cls} value={draft} rows={3} placeholder={placeholder ?? ""} onChange={(e) => { setDraft(e.target.value); clear(); }} onFocus={handleFocus} onBlur={handleBlur} />
         </dd>
       </div>
     );
@@ -135,7 +185,7 @@ function InlineEditableField({
     <div className="space-y-1">
       {labelEl}
       <dd>
-        <input type={type} className={cls} value={draft} placeholder={placeholder ?? ""} onChange={(e) => { setDraft(e.target.value); setSaved(false); }} onFocus={handleFocus} onBlur={handleBlur} />
+        <input type={type} className={cls} value={draft} placeholder={placeholder ?? ""} onChange={(e) => { setDraft(e.target.value); clear(); }} onFocus={handleFocus} onBlur={handleBlur} />
       </dd>
     </div>
   );
@@ -144,22 +194,21 @@ function InlineEditableField({
 // ── InlineYearField ──────────────────────────────────────────────────────────
 function InlineYearField({ value, onSave }: { value: number | null; onSave: (v: string | null) => Promise<void> }) {
   const [draft, setDraft] = useState(value?.toString() ?? "");
-  const [saved, setSaved] = useState(false);
   const [focused, setFocused] = useState(false);
+  const { state, track, clear } = useSaveState();
   useEffect(() => { if (!focused) setDraft(value?.toString() ?? ""); }, [value, focused]);
   async function handleBlur() {
     setFocused(false);
     const nv = draft.trim() || null;
     const ov = value?.toString() ?? null;
     if (nv === ov) return;
-    await onSave(nv);
-    setSaved(true);
+    await track(() => onSave(nv));
   }
   return (
     <input type="number" value={draft} placeholder="Jahr"
-      className={["text-sm text-muted-foreground bg-transparent inline-field-idle", saved && !focused ? "inline-field-saved" : ""].filter(Boolean).join(" ")}
-      onChange={(e) => { setDraft(e.target.value); setSaved(false); }}
-      onFocus={() => { setFocused(true); setSaved(false); }}
+      className={["text-sm text-muted-foreground bg-transparent inline-field-idle", saveStateClass(state, focused)].filter(Boolean).join(" ")}
+      onChange={(e) => { setDraft(e.target.value); clear(); }}
+      onFocus={() => { setFocused(true); clear(); }}
       onBlur={handleBlur}
     />
   );
@@ -168,18 +217,18 @@ function InlineYearField({ value, onSave }: { value: number | null; onSave: (v: 
 // ── InlineTitleField ─────────────────────────────────────────────────────────
 function InlineTitleField({ value, onSave }: { value: string; onSave: (v: string) => Promise<void> }) {
   const [draft, setDraft] = useState(value);
-  const [saved, setSaved] = useState(false);
   const [focused, setFocused] = useState(false);
+  const { state, track, clear } = useSaveState();
   useEffect(() => { if (!focused) setDraft(value); }, [value, focused]);
   async function handleBlur() {
     setFocused(false);
-    if (draft.trim() && draft.trim() !== value) { await onSave(draft.trim()); setSaved(true); }
+    if (draft.trim() && draft.trim() !== value) await track(() => onSave(draft.trim()));
   }
   return (
     <input type="text" value={draft}
-      className={["text-lg font-semibold bg-transparent w-full leading-tight inline-field-idle", saved && !focused ? "inline-field-saved" : ""].filter(Boolean).join(" ")}
-      onChange={(e) => { setDraft(e.target.value); setSaved(false); }}
-      onFocus={() => { setFocused(true); setSaved(false); }}
+      className={["text-lg font-semibold bg-transparent w-full leading-tight inline-field-idle", saveStateClass(state, focused)].filter(Boolean).join(" ")}
+      onChange={(e) => { setDraft(e.target.value); clear(); }}
+      onFocus={() => { setFocused(true); clear(); }}
       onBlur={handleBlur}
     />
   );
@@ -203,27 +252,26 @@ function deToISO(de: string): string | null {
 function InlineDateField({ label, value, onSave }: { label: string; value: string | null | undefined; onSave: (v: string | null) => Promise<void> }) {
   const dateRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(isoToDE(value ?? ""));
-  const [saved, setSaved] = useState(false);
   const [focused, setFocused] = useState(false);
+  const { state, track, clear } = useSaveState();
   useEffect(() => { if (!focused) setDraft(isoToDE(value ?? "")); }, [value, focused]);
-  const cls = ["inline-field-idle", saved && !focused ? "inline-field-saved" : ""].filter(Boolean).join(" ");
+  const cls = ["inline-field-idle", saveStateClass(state, focused)].filter(Boolean).join(" ");
   async function commitSave() {
     const nv = deToISO(draft);
     const ov = (value ?? "") || null;
     if (nv === ov) return;
-    await onSave(nv);
-    setSaved(true);
+    await track(() => onSave(nv));
   }
   return (
     <div className="space-y-1">
       <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</dt>
       <dd>
         <div className="relative"
-          onFocus={() => { setFocused(true); setSaved(false); }}
+          onFocus={() => { setFocused(true); clear(); }}
           onBlur={async (e) => { if (e.currentTarget.contains(e.relatedTarget as Node)) return; setFocused(false); await commitSave(); }}
         >
-          <input type="text" className={`${cls} pr-8`} value={draft} placeholder="TT.MM.JJJJ" onChange={(e) => { setDraft(e.target.value); setSaved(false); }} />
-          <input ref={dateRef} type="date" tabIndex={-1} value={deToISO(draft) ?? ""} onChange={(e) => { setDraft(isoToDE(e.target.value)); setSaved(false); }} className="sr-only" />
+          <input type="text" className={`${cls} pr-8`} value={draft} placeholder="TT.MM.JJJJ" onChange={(e) => { setDraft(e.target.value); clear(); }} />
+          <input ref={dateRef} type="date" tabIndex={-1} value={deToISO(draft) ?? ""} onChange={(e) => { setDraft(isoToDE(e.target.value)); clear(); }} className="sr-only" />
           <button type="button" tabIndex={-1} onClick={() => { try { dateRef.current?.showPicker(); } catch {} }} className="absolute right-2 inset-y-0 flex items-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Datum auswählen">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -238,10 +286,10 @@ function InlineDateField({ label, value, onSave }: { label: string; value: strin
 // ── TagGroupDropdown ──────────────────────────────────────────────────────────
 function TagGroupDropdown({ group, selectedValueId, onSelect, noValuesLabel }: { group: TagGroup; selectedValueId: string | undefined; onSelect: (groupId: string, tagValueId: string | null) => Promise<void>; noValuesLabel: string }) {
   const [localValue, setLocalValue] = useState(selectedValueId ?? "");
-  const [saved, setSaved] = useState(false);
   const [focused, setFocused] = useState(false);
+  const { state, track, clear } = useSaveState();
   useEffect(() => { if (!focused) setLocalValue(selectedValueId ?? ""); }, [selectedValueId, focused]);
-  const cls = ["inline-field-idle", saved && !focused ? "inline-field-saved" : ""].filter(Boolean).join(" ");
+  const cls = ["inline-field-idle", saveStateClass(state, focused)].filter(Boolean).join(" ");
   if (group.values.length === 0) {
     return (
       <div className="space-y-1">
@@ -254,9 +302,9 @@ function TagGroupDropdown({ group, selectedValueId, onSelect, noValuesLabel }: {
     <div className="space-y-1">
       <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{group.name}</dt>
       <dd>
-        <select className={cls} value={localValue} onFocus={() => { setFocused(true); setSaved(false); }}
-          onChange={(e) => { setLocalValue(e.target.value); setSaved(false); }}
-          onBlur={async () => { setFocused(false); const nv = localValue || null; const ov = selectedValueId ?? null; if (nv === ov) return; await onSelect(group.id, nv); setSaved(true); }}
+        <select className={cls} value={localValue} onFocus={() => { setFocused(true); clear(); }}
+          onChange={(e) => { setLocalValue(e.target.value); clear(); }}
+          onBlur={async () => { setFocused(false); const nv = localValue || null; const ov = selectedValueId ?? null; if (nv === ov) return; await track(() => onSelect(group.id, nv)); }}
         >
           <option value="">—</option>
           {group.values.map((v) => <option key={v.id} value={v.id}>{v.value}</option>)}
@@ -367,8 +415,16 @@ export default function ItemDetailPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Throws on failure so callers can show it. Previously the response was
+  // ignored entirely: a rejected save left the optimistic update on screen
+  // and the user believed the change had stuck.
   async function patch(body: Record<string, unknown>) {
-    await fetch(`/api/items/${itemId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const res = await fetch(`/api/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`Speichern fehlgeschlagen (${res.status})`);
   }
 
   function openGradingEdit() {

@@ -492,10 +492,26 @@ select.inline-field-idle {
   cursor: pointer;
 }
 
-/* Sustained green after auto-save */
+/* Save-state acknowledgement — Codebook product-standards.md.
+   The stripe is an inset shadow, not a border-left: a 3px transparent edge in
+   the resting state reads as a gap in the frame, which is the bug the
+   Codebook documents. This way the frame stays closed and only the stripe
+   appears. Colours cross-fade rather than snapping. */
+.inline-field-saving,
+.inline-field-saved,
+.inline-field-error {
+  transition: box-shadow 300ms ease, border-color 300ms ease;
+}
+.inline-field-saving {
+  box-shadow: inset 3px 0 0 0 var(--condition-fair) !important;
+}
 .inline-field-saved {
-  border-color: #22c55e !important;
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25) !important;
+  box-shadow: inset 3px 0 0 0 var(--condition-mint) !important;
+}
+/* Stays until the next interaction — a failed save must not quietly vanish. */
+.inline-field-error {
+  border-color: var(--destructive) !important;
+  box-shadow: inset 3px 0 0 0 var(--destructive) !important;
 }
 
 /* ─── Checkboxes ─────────────────────────────────────────── */
