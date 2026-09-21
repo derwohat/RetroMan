@@ -44,6 +44,23 @@ services:
       NODE_ENV: production
       # Required when accessed via reverse proxy or external domain (e.g. Synology QuickConnect)
       AUTH_TRUST_HOST: "true"
+      #
+      # ─── Optional: mail, for the "forgot password" link ──────────────────
+      # Leave these out entirely and the feature simply stays off: the link is
+      # not shown on the sign-in page and its pages return 404. Everything
+      # else works unchanged. Filling them in is all that is needed to switch
+      # it on — an admin can still issue a temporary password either way.
+      # SMTP_HOST: smtp.deine-domain.de
+      # SMTP_PORT: 587
+      # SMTP_USER: retroman@deine-domain.de
+      # SMTP_PASSWORD: CHANGE_ME
+      # Set to "false" only for a server that cannot do STARTTLS on port 587
+      # SMTP_USE_TLS: "true"
+      # Must be a real address, not just a display name — servers reject those
+      # SMTP_FROM: RetroMan <retroman@deine-domain.de>
+      # The address reset links point at. Without it they point at localhost
+      # and are useless in a mail someone receives.
+      # APP_BASE_URL: https://retroman.deine-domain.de
     volumes:
       - "./data/uploads:/app/uploads"
     depends_on:
