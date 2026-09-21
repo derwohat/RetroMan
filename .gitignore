@@ -35,8 +35,14 @@ yarn-error.log*
 .env.local
 .env.production
 
-# uploads
+# uploads — user-supplied cover images, never belong in the repository.
+# /uploads/ is the Docker volume mount; public/uploads/ is where the dev
+# server writes, and it was not covered before.
 /uploads/
+/public/uploads/
+
+# dev server output
+.dev-server*.log
 
 # vercel
 .vercel
