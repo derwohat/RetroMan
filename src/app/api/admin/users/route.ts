@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 import { randomBytes } from "crypto";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   const tempPassword = genPassword();
-  const passwordHash = await bcrypt.hash(tempPassword, 12);
+  const passwordHash = await hashPassword(tempPassword);
 
   const user = await prisma.user.create({
     data: {

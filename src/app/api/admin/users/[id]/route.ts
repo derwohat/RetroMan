@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 import { randomBytes } from "crypto";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 
@@ -32,7 +32,7 @@ export async function PATCH(
     const tempPassword = genPassword();
     await prisma.user.update({
       where: { id },
-      data: { passwordHash: await bcrypt.hash(tempPassword, 12), mustChangePassword: true },
+      data: { passwordHash: await hashPassword(tempPassword), mustChangePassword: true },
     });
     return NextResponse.json({ tempPassword });
   }

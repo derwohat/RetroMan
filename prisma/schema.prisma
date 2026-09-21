@@ -85,6 +85,11 @@ model User {
   // change. The jwt callback compares this against the value stamped into the
   // token and drops any token minted before the change.
   passwordChangedAt  DateTime  @default(now())
+  // Account lockout counts failed sign-ins only and resets on success. The
+  // IP limiter is a flood brake, not the protection — see Codebook
+  // docs/security.md on why conflating the two locks people out.
+  failedLoginAttempts Int      @default(0)
+  lockedUntil        DateTime?
   mustChangePassword Boolean   @default(true)
   mfaEnabled         Boolean   @default(false)
   mfaSecret          String?

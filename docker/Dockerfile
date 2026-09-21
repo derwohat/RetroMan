@@ -1,6 +1,8 @@
 # ─── Stage 1: Dependencies ────────────────────────────────────────────────────
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+# python3/make/g++ are needed to build argon2, which ships no prebuilt binary
+# for musl. They stay in this stage only — the runner image is unaffected.
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -54,7 +56,8 @@ COPY --from=builder  --chown=nextjs:nodejs /app/prisma/schema.prisma /migrate/sc
 COPY --chown=nextjs:nodejs docker/prisma.config.js /migrate/prisma.config.js
 
 # Generated Prisma client + seed
-# pg and bcryptjs are in serverExternalPackages → already in standalone's node_modules
+# pg, bcryptjs and argon2 are in serverExternalPackages → already in
+# standalone's node_modules, including argon2's compiled binary
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated   ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/seed.mjs ./prisma/seed.mjs
 

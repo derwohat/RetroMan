@@ -1,13 +1,35 @@
 import NextAuth from "next-auth";
 import { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
+import { hashPassword, needsRehash, verifyPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import "@/lib/auth/types";
 
 class RateLimitedError extends CredentialsSignin {
   code = "RateLimited";
+}
+
+class AccountLockedError extends CredentialsSignin {
+  code = "AccountLocked";
+}
+
+// Codebook docs/security.md: the account lockout is the actual protection
+// against password guessing — it counts failed attempts per account and
+// resets on success. The IP limiter below is only a flood brake and must sit
+// far enough out that normal use never reaches it; an IP limit counting every
+// request (successes included) means five correct sign-ins lock you out, and
+// everyone behind one address shares the budget.
+const LOCK_THRESHOLD = 5;
+const BASE_LOCK_MS = 15 * 60_000;
+const MAX_LOCK_MS = 24 * 60 * 60_000;
+const IP_FLOOD_LIMIT = 30;
+
+/** Doubles per further block, capped, so repeat offenders wait progressively longer. */
+function lockDurationMs(failedAttempts: number): number {
+  const blocks = Math.floor(failedAttempts / LOCK_THRESHOLD) - 1;
+  return Math.min(BASE_LOCK_MS * 2 ** Math.max(0, blocks), MAX_LOCK_MS);
 }
 
 // Set once when this module loads (= server/process start).
@@ -95,9 +117,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.username || !credentials?.password) return null;
 
         const username = (credentials.username as string).toLowerCase();
-        const key = `login:${username}`;
-        const { ok } = rateLimit(key);
-        if (!ok) {
+
+        // Flood brake only — deliberately wide. It used to sit at 10 per
+        // account and counted every attempt, so ten correct sign-ins locked
+        // the account; that is exactly the failure the Codebook warns about.
+        const forwardedFor = (await headers()).get("x-forwarded-for");
+        const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+        if (!rateLimit(`login:ip:${ip}`, IP_FLOOD_LIMIT).ok) {
           throw new RateLimitedError();
         }
 
@@ -107,11 +133,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) return null;
 
-        const passwordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        );
-        if (!passwordValid) return null;
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new AccountLockedError();
+        }
+
+        const plainPassword = credentials.password as string;
+        const passwordValid = await verifyPassword(user.passwordHash, plainPassword);
+
+        if (!passwordValid) {
+          const attempts = user.failedLoginAttempts + 1;
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginAttempts: attempts,
+              lockedUntil:
+                attempts >= LOCK_THRESHOLD
+                  ? new Date(Date.now() + lockDurationMs(attempts))
+                  : null,
+            },
+          });
+          return null;
+        }
+
+        // A successful sign-in clears the counter, so someone who mistypes a
+        // few times and then gets it right starts fresh.
+        if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: 0, lockedUntil: null },
+          });
+        }
+
+        // Lazy rehash: an account still on bcrypt is upgraded to Argon2id the
+        // first time its owner signs in, so no one has to reset anything.
+        // Awaited rather than fire-and-forget — a lost upgrade would silently
+        // keep the weaker hash around forever.
+        if (needsRehash(user.passwordHash)) {
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { passwordHash: await hashPassword(plainPassword) },
+            });
+          } catch (error) {
+            // Never block a valid sign-in over this; it retries next time.
+            console.error("[auth] rehash failed", error);
+          }
+        }
 
         // Track login timestamp (fire-and-forget, non-blocking)
         prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {});

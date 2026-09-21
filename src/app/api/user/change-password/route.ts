@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import bcrypt from "bcryptjs";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -32,12 +32,12 @@ export async function POST(req: NextRequest) {
   // forced first change is exempt: that user just signed in with the very
   // password being replaced.
   if (!user.mustChangePassword) {
-    if (typeof currentPassword !== "string" || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    if (typeof currentPassword !== "string" || !(await verifyPassword(user.passwordHash, currentPassword))) {
       return NextResponse.json({ error: "CurrentPasswordWrong" }, { status: 400 });
     }
   }
 
-  const passwordHash = await bcrypt.hash(newPassword, 12);
+  const passwordHash = await hashPassword(newPassword);
 
   await prisma.user.update({
     where: { id: session.user.id },

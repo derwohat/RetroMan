@@ -12,7 +12,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   env: { NEXT_PUBLIC_APP_VERSION: version },
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "bcryptjs"],
+  // argon2 is a native addon and must not be bundled — it has to stay a real
+  // require() so its platform binary is loaded at runtime.
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "bcryptjs", "argon2"],
   experimental: {
     turbopackFileSystemCacheForDev: false,
   },

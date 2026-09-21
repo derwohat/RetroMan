@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 
 export async function GET() {
   const count = await prisma.user.count();
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Das Passwort muss mindestens 8 Zeichen haben." }, { status: 400 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
     data: {
       username: normalizedUsername,

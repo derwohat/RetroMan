@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { consumeResetToken } from "@/lib/passwordReset";
@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   await prisma.user.update({
     where: { id: userId },
     data: {
-      passwordHash: await bcrypt.hash(password, 12),
+      passwordHash: await hashPassword(password),
       mustChangePassword: false,
       // Ends every session opened before this moment: the jwt callback
       // compares this stamp against the one inside each token. Without it the

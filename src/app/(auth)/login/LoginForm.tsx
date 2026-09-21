@@ -35,8 +35,15 @@ export default function LoginForm({
     setLoading(false);
 
     if (result?.error) {
-      const code = result.url ? new URL(result.url, window.location.origin).searchParams.get("code") : null;
-      setError(code === "RateLimited" ? t.auth.tooManyAttempts : t.auth.invalidCredentials);
+      // next-auth returns the CredentialsSignin subclass's code on the result
+      // itself. Reading it out of result.url — as this did until now — never
+      // worked: the callback answers 200 without a Location header, so every
+      // rejection showed the generic wrong-password text, including the
+      // rate-limit message added in v0.8.2.
+      const code = result.code;
+      if (code === "RateLimited") setError(t.auth.tooManyAttempts);
+      else if (code === "AccountLocked") setError(t.auth.accountLocked);
+      else setError(t.auth.invalidCredentials);
       return;
     }
 

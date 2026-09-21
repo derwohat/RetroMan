@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import bcrypt from "bcryptjs";
+import { verifyPassword } from "@/lib/auth/password";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) return NextResponse.json({ error: "Benutzer nicht gefunden." }, { status: 404 });
 
-  const valid = await bcrypt.compare(password as string, user.passwordHash);
+  const valid = await verifyPassword(user.passwordHash, password as string);
   if (!valid) return NextResponse.json({ error: "Falsches Passwort." }, { status: 400 });
 
   // Soft delete
