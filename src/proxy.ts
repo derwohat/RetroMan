@@ -35,5 +35,11 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|logo\\.png).*)"],
+  // Home-screen icons and the manifest must answer without a session: the
+  // phone fetches them as ordinary requests, and anything behind the login
+  // returns the sign-in page instead — which is exactly why an app added to
+  // the home screen ends up showing a screenshot of the login form.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|apple-icon\\.png|icon\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png).*)",
+  ],
 };
