@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { encrypt } from "@/lib/crypto/encryption";
+import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 const ENCRYPTED_FIELDS = [
   "tmdbApiKey", "igdbClientId", "igdbSecret",
@@ -10,7 +11,7 @@ const ENCRYPTED_FIELDS = [
 ];
 
 async function checkAdmin(): Promise<NextResponse | null> {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (authBypassEnabled()) return null;
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

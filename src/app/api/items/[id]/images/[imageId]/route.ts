@@ -4,6 +4,7 @@ import { join } from "path";
 import { existsSync } from "fs";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 const UPLOAD_DIR =
   process.env.NODE_ENV === "production"
@@ -19,7 +20,7 @@ async function deleteUploadFile(url: string) {
 }
 
 async function getUserId(): Promise<string | null> {
-  if (process.env.NODE_ENV !== "production") {
+  if (authBypassEnabled()) {
     const user = await prisma.user.findFirst({
       where: { deletedAt: null },
       orderBy: { createdAt: "asc" },

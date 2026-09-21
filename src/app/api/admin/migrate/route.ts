@@ -4,6 +4,7 @@ import { promisify } from "util";
 import { existsSync } from "fs";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 const execAsync = promisify(exec);
 
@@ -17,7 +18,7 @@ const SEED_CMD = existsSync("/app/prisma/seed.mjs")
   : "node prisma/seed.mjs";
 
 async function checkAdmin(): Promise<NextResponse | null> {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (authBypassEnabled()) return null;
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

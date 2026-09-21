@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth/config";
+import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 const PUBLIC_PATHS = ["/login", "/setup", "/api/auth", "/api/upload", "/api/setup"];
 const MFA_PATHS   = ["/verify-mfa", "/api/auth/mfa/verify"];
 
 export async function proxy(req: NextRequest) {
-  if (process.env.NODE_ENV !== "production") return NextResponse.next();
+  if (authBypassEnabled()) return NextResponse.next();
 
   const { nextUrl } = req;
   const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p));

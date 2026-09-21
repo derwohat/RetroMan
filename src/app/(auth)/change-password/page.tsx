@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import Image from "next/image";
 import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
 export default function ChangePasswordPage() {
-  const { update } = useSession();
   const { t } = useStandaloneTranslations();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -42,9 +41,12 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    // Refresh JWT so middleware no longer redirects to this page
-    await update({ mustChangePassword: false });
-    window.location.href = "/";
+    // The password change just invalidated every token for this account,
+    // including the one in this tab, so there is no session left to refresh.
+    // Sign out cleanly and land on the login page with an explanation rather
+    // than letting the next request fail on a dead token.
+    await signOut({ redirect: false });
+    window.location.href = "/login?pwchanged=1";
   }
 
   return (

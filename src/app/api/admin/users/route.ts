@@ -3,13 +3,14 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 function genPassword() {
   return randomBytes(8).toString("base64url").slice(0, 12);
 }
 
 async function checkAdmin(): Promise<NextResponse | null> {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (authBypassEnabled()) return null;
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

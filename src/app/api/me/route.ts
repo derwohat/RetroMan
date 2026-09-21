@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 async function getUser() {
-  if (process.env.NODE_ENV !== "production") {
+  if (authBypassEnabled()) {
     return prisma.user.findFirst({
       where: { deletedAt: null },
       orderBy: { createdAt: "asc" },
