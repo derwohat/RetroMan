@@ -44,6 +44,11 @@ yarn-error.log*
 # dev server output
 .dev-server*.log
 
+# Claude Code — settings.json is shared, the rest is per-machine:
+# settings.local.json holds absolute paths, worktrees are scratch checkouts.
+.claude/settings.local.json
+.claude/worktrees/
+
 # vercel
 .vercel
 
