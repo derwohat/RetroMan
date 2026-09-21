@@ -9,13 +9,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
 
-  const { password } = await req.json();
+  const body = await req.json();
+  // The forced first-change page posts `password`, the profile form posts
+  // `newPassword`. Both are accepted so neither caller silently breaks.
+  const newPassword: unknown = body.newPassword ?? body.password;
+  const currentPassword: unknown = body.currentPassword;
 
-  if (!password || password.length < 8) {
-    return NextResponse.json({ error: "Passwort zu kurz." }, { status: 400 });
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    return NextResponse.json({ error: "PasswordTooShort" }, { status: 400 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { passwordHash: true, mustChangePassword: true },
+  });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // A voluntary change must prove knowledge of the current password —
+  // otherwise anyone reaching an unlocked device can lock the owner out. The
+  // forced first change is exempt: that user just signed in with the very
+  // password being replaced.
+  if (!user.mustChangePassword) {
+    if (typeof currentPassword !== "string" || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      return NextResponse.json({ error: "CurrentPasswordWrong" }, { status: 400 });
+    }
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
 
   await prisma.user.update({
     where: { id: session.user.id },

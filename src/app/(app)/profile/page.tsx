@@ -119,13 +119,19 @@ export default function ProfilePage() {
     });
     setPwSaving(false);
     if (res.ok) {
-      setPwMsg(t.profile.passwordChanged);
       setPwCurrent(""); setPwNew(""); setPwConfirm("");
-      setTimeout(() => setPwMsg(""), 3000);
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setPwError((d as { error?: string }).error ?? t.profile.changeError);
+      // The change ended every session for this account, including this one.
+      // Sign out deliberately instead of leaving a dead token behind that
+      // would fail on the next click without explanation.
+      setPwMsg(t.profile.passwordChangedSignOut);
+      await signOut({ redirect: false });
+      window.location.href = "/login?pwchanged=1";
+      return;
     }
+    const d = (await res.json().catch(() => ({}))) as { error?: string };
+    if (d.error === "CurrentPasswordWrong") setPwError(t.profile.currentPasswordWrong);
+    else if (d.error === "PasswordTooShort") setPwError(t.profile.passwordTooShort);
+    else setPwError(t.profile.changeError);
   }
 
   async function startMfaSetup() {
