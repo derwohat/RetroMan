@@ -686,3 +686,22 @@ input[type="checkbox"]:checked {
   from { background-position: -140px 0; }
   to   { background-position: 200px 0; }
 }
+
+/* ─── Full-screen centred cards ──────────────────────────── */
+/* Codebook product-standards.md: on phones the browser bars come and go, so
+   100vh is taller than what is actually visible and a centred card sits too
+   low. dvh follows the visible area.
+
+   The @supports block is NOT redundant: writing both declarations in one
+   block looks equivalent, but minifiers drop the repeated property, leaving
+   browsers without dvh no minimum height at all — the card then clings to the
+   top edge. Across a @supports boundary no minifier merges them. Check the
+   BUILT css, not the source; the dev server does not minify and hides it. */
+.min-h-viewport {
+  min-height: 100vh;
+}
+@supports (min-height: 100dvh) {
+  .min-h-viewport {
+    min-height: 100dvh;
+  }
+}

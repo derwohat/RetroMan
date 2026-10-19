@@ -100,12 +100,35 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
     return () => window.removeEventListener("collections-updated", refreshCollections);
   }, []);
 
+  // Codebook: exactly one entry may be marked. Two glowing levels leave open
+  // where you are, none leaves it open too. Counting by hand per entry is
+  // what let the same bug recur elsewhere, so this counts after every route
+  // change and complains. Development only — stripped from the build.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const timer = setTimeout(() => {
+      const aside = document.querySelector("aside");
+      if (!aside) return;
+      const marked = Array.from(aside.querySelectorAll("a")).filter(
+        (a) => a.getAttribute("aria-current") === "page" || a.className.includes("border-primary"),
+      );
+      if (marked.length !== 1) {
+        console.warn(
+          `[nav] ${marked.length} markierte Einträge auf ${pathname} (erwartet: genau 1):`,
+          marked.map((a) => a.getAttribute("href")),
+        );
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [pathname, collections]);
+
   function navLink(href: string, icon: React.ReactNode, label: string, exact = false) {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
     return (
       <Link
         key={href}
         href={href}
+        aria-current={isActive ? "page" : undefined}
         className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
           isActive
             ? "bg-primary/10 text-primary border-r-2 border-primary"
@@ -146,12 +169,19 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
-        {/* Sammlungen header */}
+        {/* Collections header. It links to a real page of its own, so on that
+            page it has to carry the marking — otherwise the sidebar shows
+            nothing at all and leaves open where you are. */}
         {!collapsed && (
           <div className="px-3 pt-1 pb-1">
             <Link
               href="/dashboard"
-              className="font-heading text-[10px] text-primary neon-glow uppercase tracking-widest"
+              aria-current={pathname === "/dashboard" ? "page" : undefined}
+              className={`font-heading text-[10px] uppercase tracking-widest transition-colors ${
+                pathname === "/dashboard"
+                  ? "text-primary neon-glow"
+                  : "text-muted-foreground hover:text-primary"
+              }`}
             >
               {t.nav.collections}
             </Link>
@@ -172,6 +202,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
               key={col.id}
               href={href}
               title={collapsed ? col.name : undefined}
+              aria-current={isActive ? "page" : undefined}
               className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary border-r-2 border-primary"
@@ -200,7 +231,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
           const href = "/favorites";
           const isActive = pathname.startsWith(href);
           return (
-            <Link href={href} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <span className="shrink-0"><IconFavorites /></span>
               {!collapsed && <span className="flex-1 truncate text-sm">{t.nav.favorites}</span>}
               {!collapsed && counts.favorites > 0 && <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{counts.favorites}</span>}

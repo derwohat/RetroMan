@@ -52,7 +52,7 @@ export default function LoginForm({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background grid-bg px-4">
+    <div className="min-h-viewport flex items-center justify-center bg-background grid-bg px-4 py-6">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
           <div className="relative w-full h-48">
