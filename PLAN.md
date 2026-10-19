@@ -394,9 +394,9 @@ retro-man/
 │   └── migrations/
 ├── docker/
 │   ├── Dockerfile
-│   └── nginx.conf
-├── docker-compose.yml     (Produktion)
-├── compose.dev.yml (Entwicklung mit Hot Reload)
+│   ├── entrypoint.sh
+│   └── prisma.config.js
+├── docker-compose.yml     (die einzige Compose-Datei, zieht ein fertiges Abbild)
 └── README.md
 ```
 
