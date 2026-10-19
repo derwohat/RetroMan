@@ -148,6 +148,13 @@ model AppSettings {
   requireMfa       Boolean @default(false)
   fontSize          String  @default("medium")
   interfaceLanguage String  @default("de")
+  // Two session deadlines, the earlier one wins (Codebook docs/security.md).
+  // Idle alone never ends a session that is being used — a stolen cookie that
+  // someone keeps using stays valid forever. The absolute cap closes that.
+  // Kept here rather than in env vars so a change takes effect on sessions
+  // that are already open, which are exactly the ones it is meant for.
+  sessionIdleMinutes   Int   @default(60)
+  sessionAbsoluteHours Int   @default(12)
   updatedAt         DateTime @updatedAt
 }
 

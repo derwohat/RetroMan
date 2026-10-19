@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import { headers } from "next/headers";
 import { hashPassword, needsRehash, verifyPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/prisma";
+import { getSessionLimits } from "@/lib/auth/sessionLimits";
 import { rateLimit } from "@/lib/rateLimit";
 import "@/lib/auth/types";
 
@@ -42,8 +43,12 @@ const SERVER_BOOT_AT = process.env.NODE_ENV === "production"
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
-    maxAge: 30 * 60,   // token expires after 30 minutes
-    updateAge: 5 * 60, // refresh token when more than 5 minutes old (rolling window)
+    // The real deadlines live in the jwt callback, because both are
+    // configurable and a change has to reach sessions that are already open —
+    // a static maxAge is fixed when the process starts. This is only the
+    // outer bound, matching the largest absolute limit the settings allow.
+    maxAge: 168 * 3600,
+    updateAge: 5 * 60,
   },
   pages: {
     signIn: "/login",
@@ -60,11 +65,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // If MFA is enabled, mark as pending until TOTP is verified
         token.mfaPending = (user as { mfaEnabled?: boolean }).mfaEnabled === true;
         token.passwordChangedAt = (user as { passwordChangedAt?: number }).passwordChangedAt;
+        // Session start travels with the token. Without it the absolute cap
+        // would restart on every refresh and never bite.
+        token.sessionStart = Math.floor(Date.now() / 1000);
+        token.lastSeen = token.sessionStart;
         return token;
       }
       // Reject any token issued before this server started (forces re-login after restart)
       if (SERVER_BOOT_AT > 0 && typeof token.iat === "number" && token.iat < SERVER_BOOT_AT) {
         return null;
+      }
+
+      // Two deadlines, the earlier one wins (Codebook docs/security.md).
+      // Idle alone never ends a session in use: a stolen cookie that someone
+      // keeps using would stay valid indefinitely. The absolute cap closes
+      // that; the idle window handles the forgotten open tab.
+      {
+        const now = Math.floor(Date.now() / 1000);
+        const { idleSeconds, absoluteSeconds } = await getSessionLimits();
+
+        if (typeof token.sessionStart === "number" && now - token.sessionStart > absoluteSeconds) {
+          return null;
+        }
+        if (typeof token.lastSeen === "number" && now - token.lastSeen > idleSeconds) {
+          return null;
+        }
+        // Tokens minted before this field existed get a start time now rather
+        // than being treated as infinitely old.
+        if (typeof token.sessionStart !== "number") token.sessionStart = now;
+        token.lastSeen = now;
       }
       // Sessions are JWTs, so a password reset cannot delete them server-side.
       // Instead every request re-checks the account: a token whose stamp no

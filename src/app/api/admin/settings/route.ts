@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { encrypt } from "@/lib/crypto/encryption";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { validateSessionLimits } from "@/lib/auth/sessionLimits";
 
 const ENCRYPTED_FIELDS = [
   "tmdbApiKey", "igdbClientId", "igdbSecret",
@@ -44,6 +45,23 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
   const data: Record<string, unknown> = {};
+
+  // Session deadlines are rejected here rather than clamped — the form must
+  // say no to a bad value. Reading them back clamps instead, so a wrong row
+  // can never lock everyone out of the sign-in path.
+  if (body.sessionIdleMinutes !== undefined || body.sessionAbsoluteHours !== undefined) {
+    const current = await prisma.appSettings.findUnique({
+      where: { id: "singleton" },
+      select: { sessionIdleMinutes: true, sessionAbsoluteHours: true },
+    });
+    const check = validateSessionLimits(
+      body.sessionIdleMinutes ?? current?.sessionIdleMinutes ?? 60,
+      body.sessionAbsoluteHours ?? current?.sessionAbsoluteHours ?? 12,
+    );
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: 422 });
+    }
+  }
 
   for (const [key, value] of Object.entries(body)) {
     if (key === "id" || key === "updatedAt") continue;
