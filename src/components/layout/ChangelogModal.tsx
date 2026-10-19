@@ -21,12 +21,19 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
   const [allEntries, setAllEntries] = useState<ChangelogEntry[]>([]);
   const [visibleEntries, setVisibleEntries] = useState<ChangelogEntry[]>([]);
   const [currentVersion, setCurrentVersion] = useState("");
+  // Whether THIS opening was the automatic one. Marking as seen on every
+  // close means a curious look via the version button silently acknowledges
+  // entries that were never read — the next real update then shows nothing.
+  // The same bug was found in three other Man-Suite projects before this one.
+  const [openedAutomatically, setOpenedAutomatically] = useState(false);
 
   const dismiss = useCallback(async () => {
     setOpen(false);
     onClose?.();
+    if (!openedAutomatically) return;
+    setOpenedAutomatically(false);
     await fetch("/api/changelog/seen", { method: "POST" });
-  }, [onClose]);
+  }, [onClose, openedAutomatically]);
 
   useEffect(() => {
     fetch("/api/changelog")
@@ -50,16 +57,20 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
             : all;
           setVisibleEntries(unseen.length > 0 ? unseen : all);
           setOpen(true);
+          setOpenedAutomatically(true);
         }
       })
       .catch(() => {});
   }, [forceOpen]);
 
-  // When forceOpen toggles to true after initial load, show all entries
+  // When forceOpen toggles to true after initial load, show all entries.
+  // A manual reopen clears the flag, so closing it afterwards acknowledges
+  // nothing.
   useEffect(() => {
     if (forceOpen && allEntries.length > 0) {
       setVisibleEntries(allEntries);
       setOpen(true);
+      setOpenedAutomatically(false);
     }
   }, [forceOpen, allEntries]);
 

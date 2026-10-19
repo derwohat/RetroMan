@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
@@ -11,6 +12,24 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [changelogForceOpen, setChangelogForceOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Tapping a destination navigates but leaves the drawer covering it, so it
+  // closes on every route change.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Escape is what people try when an overlay is in the way, and without it
+  // the only way out is hitting the backdrop precisely.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSidebarOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sidebarOpen]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -29,7 +48,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen flex-col bg-background grid-bg">
-      <AppHeader onMenuToggle={() => setSidebarOpen((v) => !v)} />
+      <AppHeader
+        onMenuToggle={() => setSidebarOpen((v) => !v)}
+        sidebarOpen={sidebarOpen}
+      />
       <div className="flex flex-1 overflow-hidden">
         <AppSidebar
           isOpen={sidebarOpen}

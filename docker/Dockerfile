@@ -42,6 +42,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Ties the GHCR package to this repository on every successful push, so the
+# link does not depend on someone having set it once by hand in the UI.
+LABEL org.opencontainers.image.source=https://github.com/derwohat/RetroMan
+
 RUN groupadd --system --gid 1001 nodejs
 RUN useradd --system --uid 1001 --gid nodejs nextjs
 

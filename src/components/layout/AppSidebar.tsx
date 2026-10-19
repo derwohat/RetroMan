@@ -142,7 +142,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
   }
 
   return (
-    <aside className={`
+    <aside id="app-sidebar" className={`
       flex flex-col border-r border-border bg-sidebar transition-all duration-200 shrink-0
       fixed inset-y-0 left-0 z-40 ${isOpen ? "translate-x-0" : "-translate-x-full"}
       md:relative md:translate-x-0 md:z-auto

@@ -18,7 +18,13 @@ type SearchItem = {
   images: Array<{ url: string | null; isPrimary: boolean }>;
 };
 
-export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
+export function AppHeader({
+  onMenuToggle,
+  sidebarOpen = false,
+}: {
+  onMenuToggle?: () => void;
+  sidebarOpen?: boolean;
+}) {
   const router = useRouter();
   const { t } = useTranslations();
   const [query, setQuery]           = useState("");
@@ -88,6 +94,8 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
         onClick={onMenuToggle}
         className="md:hidden flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-primary transition shrink-0"
         aria-label={t.header.menu}
+        aria-expanded={sidebarOpen}
+        aria-controls="app-sidebar"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
