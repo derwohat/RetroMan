@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.2",
+    date: "20.10.2026",
+    changes: [
+      "Behoben: Beim Start meldete die Datenbankschicht jedes Mal, sie könne die OpenSSL-Version nicht erkennen, und arbeitete mit einer geratenen weiter. Das Abbild bringt OpenSSL jetzt mit",
+    ],
+  },
+  {
     version: "1.0.1",
     date: "20.10.2026",
     changes: [

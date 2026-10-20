@@ -20,13 +20,6 @@ RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Prisma reads the libssl version to pick its query engine; node:20-slim ships
-# without openssl, so every start logged a warning that it may not work as
-# expected and fell back to a guess. Migrations ran anyway, but a documented
-# guess is not something to ship.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl \
-  && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 
 RUN npm run build
@@ -49,6 +42,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Prisma reads the libssl version to pick its query engine; node:20-slim ships
+# without openssl, so every start logged a warning that it may not work as
+# expected and fell back to a guess. Migrations ran anyway, but a documented
+# guess is not something to ship.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Ties the GHCR package to this repository on every successful push, so the
 # link does not depend on someone having set it once by hand in the UI.
