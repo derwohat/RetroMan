@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.1",
+    date: "20.10.2026",
+    changes: [
+      "Behoben: Eine frische Installation startete gar nicht. Beim ersten Hochfahren legt RetroMan Standard-Sammlungen an — die brauchen seit Juli einen Besitzer, bekamen aber keinen, und der Container brach mit einem Datenbankfehler ab. Bestehende Installationen waren nicht betroffen, weil ihre Sammlungen älter sind als diese Änderung",
+      "Die Standard-Sammlungen gehören jetzt dem ersten Konto und werden beim Einrichten angelegt",
+    ],
+  },
+  {
     version: "1.0.0",
     date: "20.10.2026",
     changes: [

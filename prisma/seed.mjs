@@ -1,23 +1,15 @@
 // Production seed — uses pg directly (no TypeScript/Prisma client needed at runtime).
 import pg from "pg";
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const DEFAULT_COLLECTIONS = [
-  { name: "Konsolenspiele", icon: "gamepad",  mediaType: "GAME",    order: 0 },
-  { name: "Schallplatten",  icon: "vinyl",    mediaType: "MUSIC",   order: 1 },
-  { name: "CDs",            icon: "cd",       mediaType: "MUSIC",   order: 2 },
-  { name: "Kassetten",      icon: "cassette", mediaType: "MUSIC",   order: 3 },
-  { name: "VHS",            icon: "vhs",      mediaType: "FILM",    order: 4 },
-  { name: "DVD",            icon: "dvd",      mediaType: "FILM",    order: 5 },
-  { name: "Blu-ray",        icon: "bluray",   mediaType: "FILM",    order: 6 },
-  { name: "Bücher",         icon: "book",     mediaType: "BOOK",    order: 7 },
-  { name: "Comics",         icon: "comic",    mediaType: "COMIC",   order: 8 },
-  { name: "Konsolen",       icon: "console",  mediaType: "CONSOLE", order: 9 },
-  { name: "PC-Spiele",      icon: "computer", mediaType: "GAME",    order: 10 },
-];
+// Shared with src/app/api/setup/route.ts — one list, two readers.
+const DEFAULT_COLLECTIONS = JSON.parse(
+  readFileSync(new URL("./default-collections.json", import.meta.url), "utf8"),
+);
 
 const DEFAULT_TAG_GROUPS = [
   {
@@ -50,23 +42,41 @@ function cuid() {
 async function main() {
   const client = await pool.connect();
   try {
-    // ── Upsert Collections ────────────────────────────────────────────────────
+    // ── Default collections ───────────────────────────────────────────────
+    // They need an owner: Collection.userId is NOT NULL. Inserting without
+    // one made every fresh installation die here with a 23502.
+    const firstAdmin = await client.query(
+      `SELECT id FROM "User" WHERE role='ADMIN' AND "deletedAt" IS NULL ORDER BY "createdAt" ASC LIMIT 1`,
+    );
+    const ownerId = firstAdmin.rows[0]?.id ?? null;
+
+    let created = 0;
+    let updated = 0;
     for (const col of DEFAULT_COLLECTIONS) {
       const existing = await client.query(`SELECT id FROM "Collection" WHERE name=$1 LIMIT 1`, [col.name]);
       if (existing.rows.length > 0) {
         await client.query(
           `UPDATE "Collection" SET icon=$1, "mediaType"=$2::\"MediaType\", "order"=$3 WHERE id=$4`,
-          [col.icon, col.mediaType, col.order, existing.rows[0].id]
+          [col.icon, col.mediaType, col.order, existing.rows[0].id],
         );
-      } else {
+        updated++;
+      } else if (ownerId) {
         await client.query(
-          `INSERT INTO "Collection" (id, name, icon, "mediaType", "order", "gradingEnabled", "createdAt")
-           VALUES ($1,$2,$3,$4::\"MediaType\",$5,false,NOW())`,
-          [cuid(), col.name, col.icon, col.mediaType, col.order]
+          `INSERT INTO "Collection" (id, name, icon, "mediaType", "order", "gradingEnabled", "userId", "createdAt")
+           VALUES ($1,$2,$3,$4::\"MediaType\",$5,false,$6,NOW())`,
+          [cuid(), col.name, col.icon, col.mediaType, col.order, ownerId],
         );
+        created++;
       }
     }
-    console.log(`✓ ${DEFAULT_COLLECTIONS.length} collections synced`);
+
+    if (ownerId) {
+      console.log(`✓ collections: ${created} created, ${updated} updated`);
+    } else {
+      // First boot: nobody exists yet, so the setup page creates them for
+      // the first admin instead.
+      console.log(`✓ collections: ${updated} updated, rest left to first-run setup`);
+    }
 
     // ── Upsert Tag Groups ─────────────────────────────────────────────────────
     for (const groupDef of DEFAULT_TAG_GROUPS) {

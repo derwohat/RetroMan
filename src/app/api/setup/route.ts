@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
+import type { MediaType } from "@/generated/prisma/client";
+import defaultCollections from "../../../../prisma/default-collections.json";
 
 export async function GET() {
   const count = await prisma.user.count();
@@ -43,6 +45,27 @@ export async function POST(req: Request) {
     },
     select: { id: true, username: true, email: true, name: true, role: true },
   });
+
+  // The default collections belong to this account. The seed cannot create
+  // them on a fresh database because nobody exists yet to own them, and
+  // Collection.userId is NOT NULL — that is what made every new installation
+  // crash on first boot.
+  try {
+    await prisma.collection.createMany({
+      data: defaultCollections.map((col) => ({
+        name: col.name,
+        icon: col.icon,
+        mediaType: col.mediaType as MediaType,
+        order: col.order,
+        userId: user.id,
+      })),
+      skipDuplicates: true,
+    });
+  } catch (error) {
+    // A missing starter collection is a nuisance; a failed setup is not
+    // recoverable without database access, so the account still counts.
+    console.error("[setup] default collections could not be created", error);
+  }
 
   return NextResponse.json(user, { status: 201 });
 }

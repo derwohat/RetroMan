@@ -19,6 +19,14 @@ COPY . .
 RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Prisma reads the libssl version to pick its query engine; node:20-slim ships
+# without openssl, so every start logged a warning that it may not work as
+# expected and fell back to a guess. Migrations ran anyway, but a documented
+# guess is not something to ship.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 
 RUN npm run build
@@ -73,6 +81,8 @@ COPY --chown=nextjs:nodejs docker/prisma.config.js /migrate/prisma.config.js
 # standalone's node_modules, including argon2's compiled binary
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated   ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/seed.mjs ./prisma/seed.mjs
+# The seed reads its collection list from here; without it the first boot fails.
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/default-collections.json ./prisma/default-collections.json
 
 RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
 

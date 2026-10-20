@@ -1,0 +1,13 @@
+[
+  { "name": "Konsolenspiele", "icon": "gamepad",  "mediaType": "GAME",    "order": 0 },
+  { "name": "Schallplatten",  "icon": "vinyl",    "mediaType": "MUSIC",   "order": 1 },
+  { "name": "CDs",            "icon": "cd",       "mediaType": "MUSIC",   "order": 2 },
+  { "name": "Kassetten",      "icon": "cassette", "mediaType": "MUSIC",   "order": 3 },
+  { "name": "VHS",            "icon": "vhs",      "mediaType": "FILM",    "order": 4 },
+  { "name": "DVD",            "icon": "dvd",      "mediaType": "FILM",    "order": 5 },
+  { "name": "Blu-ray",        "icon": "bluray",   "mediaType": "FILM",    "order": 6 },
+  { "name": "Bücher",         "icon": "book",     "mediaType": "BOOK",    "order": 7 },
+  { "name": "Comics",         "icon": "comic",    "mediaType": "COMIC",   "order": 8 },
+  { "name": "Konsolen",       "icon": "console",  "mediaType": "CONSOLE", "order": 9 },
+  { "name": "PC-Spiele",      "icon": "computer", "mediaType": "GAME",    "order": 10 }
+]
