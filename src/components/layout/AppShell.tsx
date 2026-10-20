@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col bg-background grid-bg">
+    <div className="flex h-viewport flex-col bg-background grid-bg">
       <AppHeader
         onMenuToggle={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Mobile backdrop */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 bg-black/50 md:hidden"
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "@/components/LanguageProvider";
+import { MailProbe } from "@/components/admin/MailProbe";
+import { SaveButton, useSaveState } from "@/components/ui/SaveButton";
+import { errorText } from "@/lib/api/errorText";
 
 const DONATION_URL = "https://paypal.me/RetroManFree";
 
@@ -15,6 +18,8 @@ type Settings = {
   requireMfa: boolean;
   fontSize: string;
   interfaceLanguage: string;
+  sessionIdleMinutes: number;
+  sessionAbsoluteHours: number;
 };
 
 const FREE_SOURCES = [
@@ -123,8 +128,15 @@ export default function AdminSettingsPage() {
   const [requireMfa, setRequireMfa] = useState(false);
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
   const [interfaceLanguage, setInterfaceLanguage] = useState<"de" | "en" | "fr">("de");
-  const [saving, setSaving] = useState<string | null>(null);
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [idleMinutes, setIdleMinutes] = useState(60);
+  const [absoluteHours, setAbsoluteHours] = useState(12);
+  const [limitError, setLimitError] = useState(false);
+  const [limitState, setLimitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  // One hook per component rather than one per row: a hook cannot be
+  // called from inside a map, and the rows are a list.
+  const keySave = useSaveState();
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [keyError, setKeyError] = useState("");
   const [migrateStatus, setMigrateStatus] = useState<MigrateStatus | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [migrateOutput, setMigrateOutput] = useState<string[] | null>(null);
@@ -151,39 +163,51 @@ export default function AdminSettingsPage() {
         setRequireMfa(data.requireMfa);
         setFontSize((data.fontSize as "small" | "medium" | "large") ?? "medium");
         setInterfaceLanguage((data.interfaceLanguage as "de" | "en" | "fr") ?? "de");
+        setIdleMinutes(data.sessionIdleMinutes ?? 60);
+        setAbsoluteHours(data.sessionAbsoluteHours ?? 12);
       });
   }, []);
-
-  function showSaved(msg: string) {
-    setSavedMsg(msg);
-    setTimeout(() => setSavedMsg(null), 2500);
-  }
 
   async function saveKey(serviceKey: string) {
     const value = keys[serviceKey];
     if (!value) return;
-    setSaving(serviceKey);
-    await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [serviceKey]: value }),
-    });
-    setSaving(null);
-    setSettings((s) => s ? { ...s, [serviceKey]: true } : s);
-    setKeys((k) => { const n = { ...k }; delete n[serviceKey]; return n; });
-    showSaved(t.settings.keySaved);
+    setKeyError("");
+    setSavingKey(serviceKey);
+    try {
+      await keySave.run(async () => {
+        const res = await fetch("/api/admin/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [serviceKey]: value }),
+        });
+        if (!res.ok) throw new Error(await errorText(res, t.common.error));
+        setSettings((prev) => (prev ? { ...prev, [serviceKey]: true } : prev));
+        setKeys((prev) => {
+          const next = { ...prev };
+          delete next[serviceKey];
+          return next;
+        });
+      });
+    } catch (error) {
+      setKeyError(error instanceof Error ? error.message : String(error));
+    }
+    setSavingKey(null);
   }
 
   async function clearKey(serviceKey: string) {
-    setSaving(serviceKey);
-    await fetch("/api/admin/settings", {
+    setKeyError("");
+    setSavingKey(serviceKey);
+    const res = await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [serviceKey]: null }),
     });
-    setSaving(null);
-    setSettings((s) => s ? { ...s, [serviceKey]: false } : s);
-    showSaved(t.settings.keyDeleted);
+    setSavingKey(null);
+    if (!res.ok) {
+      setKeyError(await errorText(res, t.common.error));
+      return;
+    }
+    setSettings((prev) => (prev ? { ...prev, [serviceKey]: false } : prev));
   }
 
   async function saveSetting(patch: Record<string, unknown>) {
@@ -192,8 +216,41 @@ export default function AdminSettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-    showSaved(t.common.saved);
   }
+
+  async function saveSessionLimits(idle: number, absolute: number) {
+    setLimitError(false);
+    setLimitState("saving");
+    const res = await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionIdleMinutes: idle, sessionAbsoluteHours: absolute }),
+    });
+    if (!res.ok) {
+      // Put the stored values back on screen; leaving the rejected number
+      // there would read as saved. The error stripe stays until the next
+      // interaction.
+      setLimitError(true);
+      setLimitState("error");
+      setIdleMinutes(settings?.sessionIdleMinutes ?? 60);
+      setAbsoluteHours(settings?.sessionAbsoluteHours ?? 12);
+      return;
+    }
+    setSettings((prev) =>
+      prev ? { ...prev, sessionIdleMinutes: idle, sessionAbsoluteHours: absolute } : prev,
+    );
+    setLimitState("saved");
+    window.setTimeout(() => setLimitState("idle"), 1500);
+  }
+
+  const limitStripe =
+    limitState === "saving"
+      ? " inline-field-saving"
+      : limitState === "saved"
+        ? " inline-field-saved"
+        : limitState === "error"
+          ? " inline-field-error"
+          : "";
 
   async function runMigration() {
     setMigrating(true);
@@ -215,13 +272,6 @@ export default function AdminSettingsPage() {
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">{t.settings.subtitle}</p>
       </div>
-
-      {/* Toast */}
-      {savedMsg && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-md border border-green-500/40 bg-green-500/10 px-4 py-2 text-sm text-green-500">
-          ✓ {savedMsg}
-        </div>
-      )}
 
       {/* Datenbank-Migration */}
       <section className="space-y-3">
@@ -285,6 +335,8 @@ export default function AdminSettingsPage() {
         </div>
       </section>
 
+      <MailProbe />
+
       {/* Quellen */}
       <section className="space-y-3">
         <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
@@ -319,12 +371,12 @@ export default function AdminSettingsPage() {
           const isSet = settings?.[service.key] === true;
           const isExpanded = expandOverrides[service.key] ?? !isSet;
           const currentValue = keys[service.key] ?? "";
-          const isSaving = saving === service.key;
 
           return (
             <div key={service.key} className="rounded-lg border border-border bg-card overflow-hidden">
               <button
                 onClick={() => setExpandOverrides((o) => ({ ...o, [service.key]: !isExpanded }))}
+                aria-expanded={isExpanded}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition"
               >
                 <span className="text-xl shrink-0">{service.icon}</span>
@@ -350,7 +402,16 @@ export default function AdminSettingsPage() {
                   </div>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{service.description}</p>
                 </div>
-                <span className="text-muted-foreground shrink-0 text-xs">{isExpanded ? "▲" : "▼"}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
               </button>
 
               {isExpanded && (
@@ -363,7 +424,7 @@ export default function AdminSettingsPage() {
                       {service.steps.map((step, i) => (
                         <li key={i} className="flex gap-2 text-xs text-muted-foreground">
                           <span className="text-primary font-mono shrink-0 w-4">{i + 1}.</span>
-                          <span>{step}</span>
+                          <span className="min-w-0 break-words">{step}</span>
                         </li>
                       ))}
                     </ol>
@@ -371,37 +432,43 @@ export default function AdminSettingsPage() {
                       href={service.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-2"
+                      className="inline-flex max-w-full items-center gap-1 break-all text-xs text-accent hover:underline mt-2"
                     >
                       → {service.url.replace("https://", "").split("/")[0]} {t.settings.open}
                     </a>
                   </div>
 
-                  <div className="flex gap-2">
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); void saveKey(service.key); }}
+                    className="flex flex-wrap gap-2"
+                  >
                     <input
                       type="password"
                       value={currentValue}
                       onChange={(e) => setKeys((k) => ({ ...k, [service.key]: e.target.value }))}
                       placeholder={isSet ? t.settings.newKeyPlaceholder : t.settings.enterKeyPlaceholder}
-                      className="retro-field flex-1 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                      className="retro-field min-w-0 flex-1 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                      required
                     />
-                    <button
-                      onClick={() => saveKey(service.key)}
-                      disabled={!currentValue || isSaving}
-                      className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition whitespace-nowrap"
-                    >
-                      {isSaving ? "…" : t.common.save}
-                    </button>
+                    <SaveButton
+                      state={savingKey === service.key ? keySave.state : "idle"}
+                      disabled={!currentValue}
+                      className="whitespace-nowrap"
+                    />
                     {isSet && (
                       <button
-                        onClick={() => clearKey(service.key)}
-                        disabled={isSaving}
+                        type="button"
+                        onClick={() => void clearKey(service.key)}
+                        disabled={savingKey === service.key}
                         className="rounded-md border border-destructive/50 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 transition"
                       >
                         {t.common.delete}
                       </button>
                     )}
-                  </div>
+                  </form>
+                  {keyError && savingKey === null && (
+                    <p className="mt-2 text-xs text-destructive">{keyError}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -483,6 +550,46 @@ export default function AdminSettingsPage() {
 
           <div className="border-t border-border" />
 
+          {/* Two deadlines, the earlier one wins. Out-of-range values are
+              refused by the endpoint rather than quietly clamped. */}
+          <div>
+            <p className="text-sm font-medium text-foreground mb-1">{t.settings.sessionLimits}</p>
+            <p className="text-xs text-muted-foreground mb-3">{t.settings.sessionLimitsHint}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-xs text-muted-foreground">{t.settings.sessionIdle}</span>
+                <input
+                  type="number"
+                  min={5}
+                  max={480}
+                  value={idleMinutes}
+                  onChange={(e) => setIdleMinutes(Number(e.target.value))}
+                  onBlur={() => { if (idleMinutes !== settings?.sessionIdleMinutes) void saveSessionLimits(idleMinutes, absoluteHours); }}
+                  className={`mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none${limitStripe}`}
+                />
+                <span className="text-[11px] text-muted-foreground">{t.settings.sessionIdleUnit}</span>
+              </label>
+              <label className="block">
+                <span className="text-xs text-muted-foreground">{t.settings.sessionAbsolute}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={168}
+                  value={absoluteHours}
+                  onChange={(e) => setAbsoluteHours(Number(e.target.value))}
+                  onBlur={() => { if (absoluteHours !== settings?.sessionAbsoluteHours) void saveSessionLimits(idleMinutes, absoluteHours); }}
+                  className={`mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none${limitStripe}`}
+                />
+                <span className="text-[11px] text-muted-foreground">{t.settings.sessionAbsoluteUnit}</span>
+              </label>
+            </div>
+            {limitError && (
+              <p className="mt-2 text-xs text-destructive">{t.settings.sessionLimitsRejected}</p>
+            )}
+          </div>
+
+          <div className="border-t border-border" />
+
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground">{t.settings.donation}</p>
             <div className="flex items-center gap-4">
@@ -490,13 +597,13 @@ export default function AdminSettingsPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={donationQr} alt="PayPal QR Code" className="w-20 h-20 rounded-lg shrink-0" />
               )}
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <p className="text-xs text-muted-foreground">{t.settings.donationHint}</p>
                 <a
                   href={DONATION_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline transition-colors"
+                  className="break-all text-sm text-primary hover:underline transition-colors"
                 >
                   {DONATION_URL.replace("https://", "")}
                 </a>
@@ -514,7 +621,7 @@ export default function AdminSettingsPage() {
               href="https://github.com/derwohat/RetroMan"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              className="break-all text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               github.com/derwohat/RetroMan
             </a>

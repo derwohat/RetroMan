@@ -18,6 +18,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { CategoryIcon, ICON_NAMES, ICON_LABELS } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
+import { DangerZone } from "@/components/ui/DangerZone";
+import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
+import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
 
 type Field = {
@@ -133,6 +136,20 @@ function DragHandle(props: React.HTMLAttributes<SVGElement>) {
 }
 
 // ── Sortable collection row ────────────────────────────────────────────────────
+function IconExpand({ open }: { open: boolean }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  );
+}
 function SortableCollection({
   col,
   expanded,
@@ -217,8 +234,18 @@ function SortableCollection({
     setFieldForm({ name: "", fieldKey: "", fieldType: "TEXT", options: "", required: false });
   }
 
-  async function handleDeleteField(fieldId: string) {
-    await fetch(`/api/admin/collections/${col.id}/fields/${fieldId}`, { method: "DELETE" });
+  // Deleting a field took the stored values of every entry with it, on a
+  // single click and without a word. Now it asks, and names how many.
+  const [deleteFieldTarget, setDeleteFieldTarget] = useState<{ id: string; name: string } | null>(null);
+  const fieldImpact = useDeleteImpact(
+    deleteFieldTarget ? { type: "admin:field", id: col.id, subId: deleteFieldTarget.id } : null,
+  );
+
+  async function handleDeleteField() {
+    if (!deleteFieldTarget) return;
+    const res = await fetch(`/api/admin/collections/${col.id}/fields/${deleteFieldTarget.id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(await errorText(res, t.common.error));
+    setDeleteFieldTarget(null);
     onReload();
   }
 
@@ -227,10 +254,30 @@ function SortableCollection({
 
   return (
     <div ref={setNodeRef} style={style} className="rounded-lg border border-border bg-card overflow-hidden">
+      <DangerZone
+        open={deleteFieldTarget !== null}
+        subject={deleteFieldTarget?.name ?? ""}
+        description={t.danger.field}
+        impact={fieldImpact}
+        confirmLabel={t.danger.deleteField}
+        onConfirm={handleDeleteField}
+        onCancel={() => setDeleteFieldTarget(null)}
+      />
       {/* Header */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         className="flex items-center gap-2 px-3 py-3 cursor-pointer hover:bg-muted/20 transition-colors select-none"
         onClick={() => !editingName && onExpand()}
+        onKeyDown={(e) => {
+          if (editingName) return;
+          if (e.key === "Enter" || e.key === " ") {
+            // Space scrolls the page while it opens unless this is here.
+            e.preventDefault();
+            onExpand();
+          }
+        }}
       >
         <DragHandle
           {...attributes} {...listeners}
@@ -265,10 +312,13 @@ function SortableCollection({
           )}
         </div>
 
+        <IconExpand open={expanded} />
+
         {/* Rename button */}
         <button
           onClick={startEditName}
-          className="text-[10px] text-muted-foreground hover:text-foreground transition px-1.5 py-0.5 rounded shrink-0"
+          onKeyDown={(e) => e.stopPropagation()}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded text-[10px] text-muted-foreground hover:text-foreground transition"
           title={t.collections.rename}
         >
           ✎
@@ -277,7 +327,8 @@ function SortableCollection({
         {/* Delete button */}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="text-[10px] text-destructive/50 hover:text-destructive transition px-1.5 py-0.5 rounded shrink-0"
+          onKeyDown={(e) => e.stopPropagation()}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded text-[10px] text-destructive/50 hover:text-destructive transition"
           title={t.collections.delete}
         >
           ✕
@@ -305,7 +356,7 @@ function SortableCollection({
                       {field.required && <span className="ml-1 text-[10px] text-orange-400">{t.collections.required}</span>}
                     </div>
                     <button
-                      onClick={() => handleDeleteField(field.id)}
+                      onClick={() => setDeleteFieldTarget({ id: field.id, name: field.name })}
                       className="text-[10px] text-destructive/60 hover:text-destructive transition"
                     >
                       ✕
@@ -462,7 +513,12 @@ export default function AdminCollectionsPage() {
   const [colError,    setColError]    = useState("");
   const [submitting,  setSubmitting]  = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
-  const [deleting,    setDeleting]    = useState(false);
+
+  const deleteImpact = useDeleteImpact(
+
+    deleteTarget ? { type: "admin:collection", id: deleteTarget.id } : null,
+
+  );
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -530,11 +586,12 @@ export default function AdminCollectionsPage() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
-    await fetch(`/api/admin/collections/${deleteTarget.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/collections/${deleteTarget.id}`, { method: "DELETE" });
+    // Checked before the row goes: a refused deletion used to remove the
+    // collection from the screen anyway, and it reappeared on reload.
+    if (!res.ok) throw new Error(await errorText(res, t.common.error));
     setCollections((prev) => prev.filter((c) => c.id !== deleteTarget.id));
     setDeleteTarget(null);
-    setDeleting(false);
   }
 
   async function handleAssignTagGroup(colId: string, groupId: string) {
@@ -605,7 +662,7 @@ export default function AdminCollectionsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">{t.collections.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{collections.length} {t.collections.title} · {t.collections.countSuffix}</p>
@@ -724,40 +781,14 @@ export default function AdminCollectionsPage() {
       )}
 
       {/* Delete Confirm */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive text-sm">⚠</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t.collections.deletePrompt} <span className="font-medium text-foreground">„{deleteTarget.name}"</span> {t.collections.deletePromptSuffix}{" "}
-              {deleteTarget._count.items > 0 && (
-                <span className="text-destructive">
-                  {t.collections.deleteWarningPrefix} {deleteTarget._count.items}{" "}
-                  {deleteTarget._count.items === 1 ? t.collections.deleteWarningOne : t.collections.deleteWarningMany}
-                </span>
-              )}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
-              >
-                {t.common.cancel}
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
-              >
-                {deleting ? t.collections.deleting : t.common.permDelete}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DangerZone
+        open={deleteTarget !== null}
+        subject={deleteTarget?.name ?? ""}
+        description={t.danger.collection}
+        impact={deleteImpact}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

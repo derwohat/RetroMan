@@ -8,12 +8,13 @@ const MAX_HITS   = 10;              // max attempts per window
 export function rateLimit(
   key: string,
   maxHits: number = MAX_HITS,
+  windowMs: number = WINDOW_MS,
 ): { ok: boolean; retryAfterSecs: number } {
   const now = Date.now();
   const entry = store.get(key);
 
   if (!entry || entry.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    store.set(key, { count: 1, resetAt: now + windowMs });
     return { ok: true, retryAfterSecs: 0 };
   }
 

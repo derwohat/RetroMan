@@ -127,6 +127,25 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+// Codebook docs/operations.md: a mail that silently never arrives looks from
+// the inside exactly like one that did. The history answers the question that
+// actually matters while searching — did it ever work, and since when not?
+model MailAttempt {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  recipient String
+  /// "test" | "passwordReset"
+  trigger   String
+  /// "sent" | "failed" | "notConfigured"
+  status    String
+  /// The server's own reply on failure, kept verbatim.
+  error     String?
+  /// Who triggered it, where a person did; kept if that account goes away.
+  userId    String?
+
+  @@index([createdAt])
+}
+
 // ─── App-wide settings (singleton row) ───────────────────────────────────────
 
 model AppSettings {
@@ -202,7 +221,7 @@ model Collection {
   userId               String
   createdAt            DateTime  @default(now())
 
-  user               User              @relation(fields: [userId], references: [id])
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   items              Item[]
   fields             CollectionField[]
   tagGroups          CollectionTagGroup[]
@@ -269,7 +288,7 @@ model Item {
   updatedAt        DateTime         @updatedAt
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  collection   Collection        @relation(fields: [collectionId], references: [id])
+  collection   Collection        @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   images       ItemImage[]
   tags         ItemTag[]
   grading      GradingInfo?

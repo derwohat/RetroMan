@@ -49,6 +49,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     to: user.email,
     subject: t.resetMailSubject,
     text: t.resetMailBody.replace("{name}", user.name).replace("{link}", link),
+    trigger: "passwordReset",
+    userId: user.id,
   });
 
   return done;

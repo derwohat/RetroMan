@@ -10,6 +10,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useTranslations } from "@/components/LanguageProvider";
+import { DangerZone } from "@/components/ui/DangerZone";
+import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
+import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
 
 type TagValue = { id: string; value: string; order: number };
@@ -153,6 +156,13 @@ export function TagsTab() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ type: "group"; group: TagGroup } | { type: "value"; group: TagGroup; value: TagValue } | null>(null);
+  const deleteImpact = useDeleteImpact(
+    deleteTarget === null
+      ? null
+      : deleteTarget.type === "group"
+        ? { type: "tagGroup", id: deleteTarget.group.id }
+        : { type: "tagValue", id: deleteTarget.group.id, subId: deleteTarget.value.id },
+  );
   const outerSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const colorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -217,11 +227,22 @@ export function TagsTab() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     if (deleteTarget.type === "group") {
-      await fetch(`/api/tags/${deleteTarget.group.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/tags/${deleteTarget.group.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(await errorText(res, t.common.error));
       setGroups((prev) => prev.filter((g) => g.id !== deleteTarget.group.id));
     } else {
-      await fetch(`/api/tags/${deleteTarget.group.id}/values/${deleteTarget.value.id}`, { method: "DELETE" });
-      setGroups((prev) => prev.map((g) => g.id === deleteTarget.group.id ? { ...g, values: g.values.filter((v) => v.id !== deleteTarget.value.id) } : g));
+      const res = await fetch(
+        `/api/tags/${deleteTarget.group.id}/values/${deleteTarget.value.id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error(await errorText(res, t.common.error));
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === deleteTarget.group.id
+            ? { ...g, values: g.values.filter((val) => val.id !== deleteTarget.value.id) }
+            : g,
+        ),
+      );
     }
     setDeleteTarget(null);
   }
@@ -279,31 +300,20 @@ export function TagsTab() {
         </div>
       )}
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive text-sm">⚠</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
-            </div>
-            {deleteTarget.type === "group" ? (
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">„{deleteTarget.group.name}"</span> {t.adminTags.deleteGroupText}{" "}
-                <span className="font-medium text-foreground">{deleteTarget.group.values.length} {t.adminTags.values}</span> {t.adminTags.deleteGroupValues}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">„{deleteTarget.value.value}"</span> {t.adminTags.deleteValueRemoved}{" "}
-                <span className="font-medium text-foreground">„{deleteTarget.group.name}"</span> {t.adminTags.deleteValueRemovedSuffix}
-              </p>
-            )}
-            <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
-              <button onClick={confirmDelete} className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 transition">{t.common.delete}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DangerZone
+        open={deleteTarget !== null}
+        subject={
+          deleteTarget === null
+            ? ""
+            : deleteTarget.type === "group"
+              ? deleteTarget.group.name
+              : deleteTarget.value.value
+        }
+        description={deleteTarget?.type === "group" ? t.danger.tagGroup : t.danger.tagValue}
+        impact={deleteImpact}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

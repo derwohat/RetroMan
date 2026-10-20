@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "@/components/LanguageProvider";
+import { DangerZone } from "@/components/ui/DangerZone";
+import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
 
 type User = {
   id: string;
@@ -30,8 +32,9 @@ export default function AdminUsersPage() {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [deleting, setDeleting] = useState(false);
+  // Counted on the server and fetched when the dialog opens, so a long
+  // user list does not fire one request per row.
+  const deleteImpact = useDeleteImpact(deleteTarget ? { type: "admin:user", id: deleteTarget.id } : null);
 
   const loadUsers = useCallback(async () => {
     const res = await fetch("/api/admin/users");
@@ -103,19 +106,17 @@ export default function AdminUsersPage() {
   }
 
   async function handleDelete() {
-    if (!deleteTarget || deleteConfirm !== deleteTarget.email) return;
-    setDeleting(true);
+    if (!deleteTarget) return;
     const res = await fetch(`/api/admin/users/${deleteTarget.id}`, { method: "DELETE" });
-    setDeleting(false);
     if (!res.ok) {
-      const data = await res.json();
-      alert(data.error ?? t.common.error);
-      setDeleteTarget(null);
-      setDeleteConfirm("");
-      return;
+      // Thrown so the danger zone shows it and stays open. A 500 can have
+      // an empty body, which is why this does not assume JSON.
+      const text = await res.text();
+      let message = text;
+      try { message = JSON.parse(text).error ?? text; } catch { /* not json */ }
+      throw new Error(message || `${t.common.error} (${res.status})`);
     }
     setDeleteTarget(null);
-    setDeleteConfirm("");
     loadUsers();
   }
 
@@ -141,7 +142,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="font-heading text-xs text-primary neon-glow uppercase tracking-widest">
             {t.adminUsers.title}
@@ -174,7 +175,7 @@ export default function AdminUsersPage() {
           <p className="text-sm text-muted-foreground">{t.adminUsers.empty}</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-l-[3px] border-border border-l-primary bg-card shadow-sm">
+        <div className="table-cards overflow-x-auto rounded-xl border border-l-[3px] border-border border-l-primary bg-card shadow-sm">
           <table className="w-full">
             <thead className="bg-sidebar">
               <tr>
@@ -191,14 +192,18 @@ export default function AdminUsersPage() {
                   key={user.id}
                   className={`bg-card transition-colors hover:bg-muted/40 ${user.deletedAt ? "opacity-50" : ""}`}
                 >
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-foreground">{user.name}</p>
+                  <td className="px-4 py-3" data-card-title>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{user.name}</p>
                     {user.mustChangePassword && (
                       <p className="text-[10px] text-orange-400">{t.adminUsers.passwordPending}</p>
                     )}
+                  </div>
+                </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground" data-label={t.adminUsers.colEmail}>
+                    <span className="break-all">{user.email}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label={t.adminUsers.colRole}>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase ${
                       user.role === "ADMIN"
                         ? "border-primary/50 bg-primary/10 text-primary"
@@ -207,7 +212,7 @@ export default function AdminUsersPage() {
                       {user.role === "ADMIN" ? t.adminUsers.roleAdmin : t.adminUsers.roleUser}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label={t.adminUsers.colStatus}>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
                       user.deletedAt
                         ? "border-destructive/40 bg-destructive/10 text-destructive"
@@ -216,11 +221,11 @@ export default function AdminUsersPage() {
                       {user.deletedAt ? t.adminUsers.statusDeactivated : t.adminUsers.statusActive}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label={t.adminUsers.colLastLogin}>
                     {loginStatus(user)}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-4 py-3" data-card-actions>
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => handleResetPassword(user.id, user.name)}
                         className="rounded border border-border px-2 py-1 text-[10px] text-muted-foreground hover:border-primary hover:text-primary transition"
@@ -249,7 +254,7 @@ export default function AdminUsersPage() {
                             {user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
                           </button>
                           <button
-                            onClick={() => { setDeleteTarget(user); setDeleteConfirm(""); }}
+                            onClick={() => setDeleteTarget(user)}
                             className="rounded border border-destructive/40 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 transition"
                             title={t.adminUsers.deleteForever}
                           >
@@ -332,48 +337,15 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Delete User DangerZone Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-destructive/50 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="text-destructive text-lg">⚠️</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t.adminUsers.userLabel} <span className="font-medium text-foreground">{deleteTarget.name}</span> {t.adminUsers.deleteUserText}
-            </p>
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {t.adminUsers.confirmEmail}
-              </label>
-              <input
-                type="email"
-                value={deleteConfirm}
-                onChange={(e) => setDeleteConfirm(e.target.value)}
-                placeholder={deleteTarget.email}
-                className="retro-field w-full"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setDeleteTarget(null); setDeleteConfirm(""); }}
-                className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
-              >
-                {t.common.cancel}
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting || deleteConfirm !== deleteTarget.email}
-                className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-40 transition"
-              >
-                {deleting ? t.common.deleting : t.adminUsers.deleteForever}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DangerZone
+        open={deleteTarget !== null}
+        subject={deleteTarget?.name ?? ""}
+        description={t.adminUsers.deleteUserText}
+        impact={deleteImpact}
+        confirmLabel={t.adminUsers.deleteForever}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Temp Password Modal */}
       {tempPw && (

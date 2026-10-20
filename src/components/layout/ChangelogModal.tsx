@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { ChangelogEntry } from "@/data/changelog";
+import { useTranslations } from "@/components/LanguageProvider";
 
 type Props = {
   forceOpen?: boolean;
@@ -17,6 +18,7 @@ function semverGt(a: string, b: string): boolean {
 }
 
 export function ChangelogModal({ forceOpen = false, onClose }: Props) {
+  const { t } = useTranslations();
   const [open, setOpen] = useState(false);
   const [allEntries, setAllEntries] = useState<ChangelogEntry[]>([]);
   const [visibleEntries, setVisibleEntries] = useState<ChangelogEntry[]>([]);
@@ -35,6 +37,17 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
     await fetch("/api/changelog/seen", { method: "POST" });
   }, [onClose, openedAutomatically]);
 
+  // Escape closes it, like every other overlay in the app. Without this the
+  // only way out is the ✕, which is the one thing a keyboard user cannot
+  // reach quickly.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") void dismiss();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, dismiss]);
   useEffect(() => {
     fetch("/api/changelog")
       .then((r) => (r.ok ? r.json() : null))
@@ -55,7 +68,12 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
           const unseen = lastSeen
             ? all.filter((e) => semverGt(e.version, lastSeen))
             : all;
-          setVisibleEntries(unseen.length > 0 ? unseen : all);
+          // Nothing newer means nothing to announce. The old fallback showed
+          // the WHOLE history instead, which happens for real whenever the
+          // app version moves without a changelog entry: `seen` compares
+          // exact strings, so it says no, while `unseen` is empty.
+          if (unseen.length === 0) return;
+          setVisibleEntries(unseen);
           setOpen(true);
           setOpenedAutomatically(true);
         }
@@ -80,25 +98,28 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-md rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+      {/* Three parts, not one: a header that does not scroll, the entries
+          below it, and nothing else. min-h-0 is what keeps the child from
+          growing past its parent and scrolling the whole dialog again. */}
+      <div className="relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+        <div className="flex flex-none items-center justify-between gap-4 border-b border-border px-5 py-4">
           <div>
             <p className="font-heading text-[10px] text-primary neon-glow uppercase tracking-widest">
-              {isFullHistory ? "Changelog" : "Was ist neu?"}
+              {isFullHistory ? t.header.changelogHistory : t.header.changelogWhatsNew}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">RetroMan v{currentVersion}</p>
           </div>
+          {/* Exactly one action, and its label follows the reason the dialog
+              is open: nothing is acknowledged when someone looked it up. */}
           <button
             onClick={dismiss}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition text-lg leading-none"
+            className="min-h-11 shrink-0 rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 transition"
           >
-            ✕
+            {openedAutomatically ? t.header.changelogAck : t.header.changelogClose}
           </button>
         </div>
 
-        {/* Entries */}
-        <div className="max-h-[60vh] overflow-y-auto px-5 py-4 space-y-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-5">
           {visibleEntries.map((entry) => (
             <div key={entry.version}>
               <div className="flex items-baseline gap-3 mb-2">
@@ -115,16 +136,6 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
               </ul>
             </div>
           ))}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-border px-5 py-3 flex justify-end">
-          <button
-            onClick={dismiss}
-            className="rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 transition"
-          >
-            Verstanden
-          </button>
         </div>
       </div>
     </div>

@@ -11,11 +11,14 @@ function getImageUrl(item: ViewProps["items"][number]) {
 
 // 6,5,4,3,2 cols at 1100–1200px; size 1 = former middle
 const MIN_WIDTHS = [170, 205, 260, 310, 420];
+// Per size level, the share of the viewport a tile may demand at most.
+const MAX_SHARE_VW = [30, 36, 42, 60, 92];
 
 export function CdWallView({ items, categoryIcon, visibleTags, chipGroups, size = 3 }: ViewProps) {
   const minW = MIN_WIDTHS[(size - 1) % 5];
+  const maxShare = MAX_SHARE_VW[(size - 1) % 5];
   return (
-    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minW}px, 1fr))` }}>
+    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${minW}px, ${maxShare}vw), 1fr))` }}>
       {items.map((item) => {
         const imageUrl = getImageUrl(item);
         const fieldChips = visibleTags

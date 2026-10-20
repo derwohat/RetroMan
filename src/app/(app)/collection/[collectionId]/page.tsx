@@ -138,12 +138,13 @@ export default function CollectionPage() {
           </p>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center gap-2">
+        {/* Toolbar — wraps rather than running past the right edge; five
+            controls do not fit on one phone line. */}
+        <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
           {/* Size slider — only for grid views */}
           {SLIDER_VIEWS.includes(activeView) && (
-            <div className="h-9 flex items-center gap-1.5 rounded-md border border-border bg-muted px-2">
-              <button onClick={() => handleSizeChange(Math.max(1, sizeLevel - 1))} className="shrink-0 text-muted-foreground hover:text-foreground transition" title="Kleiner">
+            <div className="flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-muted px-2">
+              <button onClick={() => handleSizeChange(Math.max(1, sizeLevel - 1))} className="grid h-9 w-9 shrink-0 place-items-center text-muted-foreground hover:text-foreground transition" title="Kleiner">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
                 </svg>
@@ -157,7 +158,7 @@ export default function CollectionPage() {
                 onChange={(e) => handleSizeChange(Number(e.target.value))}
                 className="w-16 h-1 accent-primary cursor-pointer"
               />
-              <button onClick={() => handleSizeChange(Math.min(5, sizeLevel + 1))} className="shrink-0 text-muted-foreground hover:text-foreground transition" title="Größer">
+              <button onClick={() => handleSizeChange(Math.min(5, sizeLevel + 1))} className="grid h-9 w-9 shrink-0 place-items-center text-muted-foreground hover:text-foreground transition" title="Größer">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/>
                 </svg>
@@ -166,13 +167,13 @@ export default function CollectionPage() {
           )}
 
           {/* View switcher */}
-          <div className="h-9 flex items-center gap-0.5 rounded-md border border-border bg-muted px-1">
+          <div className="flex min-h-9 items-center gap-0.5 rounded-md border border-border bg-muted px-1">
             {availableViews.map((view) => (
               <button
                 key={view}
                 title={t.views[view]}
                 onClick={() => handleViewChange(view)}
-                className={`flex items-center justify-center w-8 h-7 rounded text-sm transition ${
+                className={`tap-target flex items-center justify-center w-8 h-7 rounded text-sm transition ${
                   activeView === view ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >

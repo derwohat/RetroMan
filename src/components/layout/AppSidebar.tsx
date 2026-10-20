@@ -12,6 +12,14 @@ import { VersionBanner } from "./VersionBanner";
 type Profile = { name: string; email: string; role: string };
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
+function IconLogout() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M18.75 15l3-3m0 0l-3-3m3 3H9" />
+    </svg>
+  );
+}
+
 function IconProfile() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -129,7 +137,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
         key={href}
         href={href}
         aria-current={isActive ? "page" : undefined}
-        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+        className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
           isActive
             ? "bg-primary/10 text-primary border-r-2 border-primary"
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -144,7 +152,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
   return (
     <aside id="app-sidebar" className={`
       flex flex-col border-r border-border bg-sidebar transition-all duration-200 shrink-0
-      fixed inset-y-0 left-0 z-40 ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      fixed inset-y-0 left-0 z-50 ${isOpen ? "translate-x-0" : "-translate-x-full"}
       md:relative md:translate-x-0 md:z-auto
       ${collapsed ? "w-12" : "w-52"}
     `}>
@@ -203,7 +211,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
               href={href}
               title={collapsed ? col.name : undefined}
               aria-current={isActive ? "page" : undefined}
-              className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+              className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary border-r-2 border-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -231,7 +239,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
           const href = "/favorites";
           const isActive = pathname.startsWith(href);
           return (
-            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <span className="shrink-0"><IconFavorites /></span>
               {!collapsed && <span className="flex-1 truncate text-sm">{t.nav.favorites}</span>}
               {!collapsed && counts.favorites > 0 && <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{counts.favorites}</span>}
@@ -244,41 +252,49 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
         {profile?.role === "ADMIN" && navLink("/admin", <IconAdmin />, t.header.adminArea)}
       </nav>
 
-      {/* Footer: Versions-Chip + Theme-Toggle, darunter Nutzer-Block (Avatar/Name/Rolle/Logout) —
-          Man-Suite Designsprache §11, IPMan-Referenz. Ersetzt das frühere Profil-Dropdown im Header. */}
+      {/* Footer — Codebook docs/product-standards.md, Sidebar-Profil:
+          row 1 the person, row 2 the view. Signing out sits beside the name,
+          where what it acts on is. */}
       {!collapsed && (
         <div className="border-t border-border p-3 shrink-0">
           <VersionBanner />
-          <div className="mb-3 flex items-center gap-1.5">
-            <button
-              onClick={onOpenChangelog}
-              title="Changelog anzeigen"
-              className="flex h-7 flex-1 items-center justify-end rounded-md bg-muted px-2.5 font-mono text-[10px] font-semibold tracking-wide text-muted-foreground hover:text-primary transition-colors"
-            >
-              RetroMan v{process.env.NEXT_PUBLIC_APP_VERSION}
-            </button>
-            <ThemeToggle compact />
-          </div>
 
           {profile && (
             <div className="overflow-hidden rounded-md bg-muted">
-              <Link href="/profile" className="flex items-center gap-2.5 p-2.5 hover:bg-border/50 transition-colors">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary font-heading text-xs font-bold text-primary-foreground">
-                  {initials(profile.name)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">{profile.name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {profile.role === "ADMIN" ? t.adminUsers.roleAdmin : t.adminUsers.roleUser}
-                  </p>
-                </div>
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="w-full border-t border-border py-2 pl-[46px] pr-2.5 text-left text-xs font-medium text-muted-foreground hover:bg-border/50 hover:text-destructive transition-colors"
-              >
-                {t.header.logout}
-              </button>
+              <div className="flex items-center gap-1 p-2.5">
+                <Link href="/profile" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md hover:opacity-80 transition-opacity">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary font-heading text-xs font-bold text-primary-foreground">
+                    {initials(profile.name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-foreground">{profile.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {profile.role === "ADMIN" ? t.adminUsers.roleAdmin : t.adminUsers.roleUser}
+                    </p>
+                  </div>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  title={t.header.logout}
+                  aria-label={t.header.logout}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-border/50 hover:text-destructive transition-colors"
+                >
+                  <IconLogout />
+                </button>
+              </div>
+
+              {/* Row 2, set off by a line: both are settings of the view,
+                  not of the person. The toggle keeps the avatar's edge. */}
+              <div className="flex items-center gap-1.5 border-t border-border px-2.5 py-2">
+                <ThemeToggle compact />
+                <button
+                  onClick={onOpenChangelog}
+                  title={t.header.changelog}
+                  className="flex h-7 flex-1 items-center justify-end rounded-md px-2.5 font-mono text-[10px] font-semibold tracking-wide text-muted-foreground hover:text-primary transition-colors"
+                >
+                  RetroMan v{process.env.NEXT_PUBLIC_APP_VERSION}
+                </button>
+              </div>
             </div>
           )}
         </div>

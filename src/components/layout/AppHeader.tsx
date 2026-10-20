@@ -21,9 +21,13 @@ type SearchItem = {
 export function AppHeader({
   onMenuToggle,
   sidebarOpen = false,
+  // The app and the admin area each have their own drawer; the burger has to
+  // point at the one that is on the page.
+  sidebarId = "app-sidebar",
 }: {
   onMenuToggle?: () => void;
   sidebarOpen?: boolean;
+  sidebarId?: string;
 }) {
   const router = useRouter();
   const { t } = useTranslations();
@@ -78,10 +82,10 @@ export function AppHeader({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
       {/* Mobile text logo row */}
       <div className="md:hidden flex items-center justify-center py-2.5 border-b border-border/50">
-        <Link href="/dashboard" className="font-heading text-base uppercase tracking-widest">
+        <Link href="/dashboard" className="flex min-h-11 items-center font-heading text-base uppercase tracking-widest">
           <span style={{ color: "#00b4d8" }}>RETRO</span>
           <span className="text-primary">MAN</span>
         </Link>
@@ -92,10 +96,10 @@ export function AppHeader({
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuToggle}
-        className="md:hidden flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-primary transition shrink-0"
+        className="md:hidden grid h-11 w-11 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:text-primary transition"
         aria-label={t.header.menu}
         aria-expanded={sidebarOpen}
-        aria-controls="app-sidebar"
+        aria-controls={sidebarId}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -112,7 +116,8 @@ export function AppHeader({
       {/* Search */}
       <div ref={searchRef} className="relative flex-1">
         <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-md border border-border bg-muted px-4 py-2.5">
-          <button type="submit" className="shrink-0 text-muted-foreground hover:text-primary transition">
+          <button type="submit" className="-my-1 -ml-1 grid h-11 w-11 shrink-0 place-items-center text-muted-foreground hover:text-primary transition"
+            aria-label={t.common.search}>
             {searching ? (
               <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : (

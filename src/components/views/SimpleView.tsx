@@ -12,13 +12,16 @@ function getImageUrl(item: ViewProps["items"][number]) {
 
 // 3,2,2,1,1 cols at 1100px; thumbnail grows to differentiate same-col steps
 const MIN_WIDTHS = [350, 415, 490, 565, 640];
+// Per size level, the share of the viewport a tile may demand at most.
+const MAX_SHARE_VW = [30, 36, 42, 60, 92];
 const THUMB_SIZES: Array<[number, number]> = [[56,72],[72,92],[88,112],[108,136],[132,168]]; // [w, h] px
 
 export function SimpleView({ items, categoryIcon, chipGroups, size = 3 }: ViewProps) {
   const minW = MIN_WIDTHS[(size - 1) % 5];
+  const maxShare = MAX_SHARE_VW[(size - 1) % 5];
   const [thumbW, thumbH] = THUMB_SIZES[(size - 1) % 5];
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minW}px, 1fr))` }}>
+    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${minW}px, ${maxShare}vw), 1fr))` }}>
       {items.map((item) => {
         const imageUrl = getImageUrl(item);
         const chips = chipGroups.flatMap(({ groupId, color, linkedField }) => {

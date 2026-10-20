@@ -514,6 +514,40 @@ select.inline-field-idle {
   box-shadow: inset 3px 0 0 0 var(--destructive) !important;
 }
 
+/* Save-state acknowledgement at the BUTTON — Brandbook §8.3. Deliberately a
+   different class from .inline-field-* above: that one is the stripe at a
+   field, this one the fill running through a button. IPMan hit the same
+   collision and resolved it the same way.
+
+   No measurement moves — only transform and opacity are animated, so nothing
+   beside the button shifts and there is no layout pass per frame. */
+.quittung { position: relative; overflow: hidden; }
+.quittung > * { position: relative; z-index: 1; }
+.quittung::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--condition-mint);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .quittung--fertig::after { animation: quittung 1.5s ease forwards; }
+}
+/* A visible substitute, not just the absence of movement: projects that cut
+   every animation to 0.01ms would leave nothing of the sweep, and then
+   nothing would be acknowledged at all. */
+@media (prefers-reduced-motion: reduce) {
+  .quittung--fertig::after { transform: scaleX(1); }
+}
+@keyframes quittung {
+  0%   { transform: scaleX(0); opacity: 1; }
+  30%  { transform: scaleX(1); opacity: 1; }
+  75%  { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
 /* ─── Checkboxes ─────────────────────────────────────────── */
 input[type="checkbox"] {
   appearance: none;
@@ -614,6 +648,14 @@ input[type="checkbox"]:checked {
   /* Title and cover carry no caption — they identify the card. */
   .table-cards tbody td[data-card-title] { font-weight: 600; padding-bottom: 0.5rem; }
   .table-cards tbody td[data-card-media] { padding-bottom: 0.5rem; }
+
+  /* The actions gather at the end of the card and wrap rather than forcing
+     the card wider than the screen. */
+  .table-cards tbody td[data-card-actions] {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+  }
 }
 
 /* ─── Secondary auth links ───────────────────────────────── */
@@ -697,6 +739,39 @@ input[type="checkbox"]:checked {
    browsers without dvh no minimum height at all — the card then clings to the
    top edge. Across a @supports boundary no minifier merges them. Check the
    BUILT css, not the source; the dev server does not minify and hides it. */
+/* Thumb-sized controls on touch devices. The same reasoning as the 16px
+   minimum for fields one standard up: the desktop stays dense because a
+   mouse hits a 30px button every time, while a thumb covers about 10mm and
+   needs the target to be at least that. Height only — forcing a width would
+   stretch every text button across the screen; the few icon-only controls
+   that were too narrow carry .tap-target instead.
+
+   pointer: coarse rather than a breakpoint, for the reason the field rule
+   gives: a narrow desktop window has a mouse, a landscape tablet does not. */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  summary {
+    min-height: 44px;
+  }
+  .tap-target {
+    min-width: 44px;
+  }
+}
+
+/* The full-height variant, for the app shell. Same two-declaration trick and
+   the same reason: with 100vh the phone counts the browser bars as absent,
+   so the bottom of the shell — the sidebar footer, the page padding — sits
+   underneath them. */
+.h-viewport {
+  height: 100vh;
+}
+@supports (height: 100dvh) {
+  .h-viewport {
+    height: 100dvh;
+  }
+}
+
 .min-h-viewport {
   min-height: 100vh;
 }

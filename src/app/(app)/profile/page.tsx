@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "@/components/LanguageProvider";
+import { SaveButton, useSaveState } from "@/components/ui/SaveButton";
+import { errorText } from "@/lib/api/errorText";
 import { CollectionsTab } from "./_components/CollectionsTab";
 import { TagsTab } from "./_components/TagsTab";
 
@@ -40,8 +42,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState("");
   const [lang, setLang] = useState("de");
-  const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState("");
+  const profileSave = useSaveState();
+  const [saveError, setSaveError] = useState("");
 
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
@@ -91,18 +93,21 @@ export default function ProfilePage() {
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    setSaving(true); setSavedMsg("");
-    const res = await fetch("/api/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, preferredLanguage: lang }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      const updated: Profile = await res.json();
-      setProfile(updated);
-      setSavedMsg(t.profile.saved);
-      setTimeout(() => setSavedMsg(""), 2500);
+    setSaveError("");
+    try {
+      await profileSave.run(async () => {
+        const res = await fetch("/api/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, preferredLanguage: lang }),
+        });
+        if (!res.ok) throw new Error(await errorText(res, t.common.error));
+        setProfile((await res.json()) as Profile);
+      });
+    } catch (error) {
+      // The failure case is not animated and does not vanish; it stays
+      // until something changes.
+      setSaveError(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -283,10 +288,8 @@ export default function ProfilePage() {
                 </select>
               </Field>
               <div className="flex items-center gap-3">
-                <button type="submit" disabled={saving} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-                  {saving ? t.profile.saving : t.profile.save}
-                </button>
-                {savedMsg && <span className="text-xs text-green-500">{savedMsg}</span>}
+                <SaveButton state={profileSave.state} label={t.profile.save} />
+                {saveError && <span className="text-xs text-destructive">{saveError}</span>}
               </div>
             </form>
           </Section>
@@ -296,8 +299,8 @@ export default function ProfilePage() {
               <div>
                 <p className="text-xs text-muted-foreground mb-3">{t.profile.exportHint}</p>
                 <div className="flex flex-wrap gap-2">
-                  <a href="/api/export?format=json" download className="rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportJson}</a>
-                  <a href="/api/export?format=csv" download className="rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportCsv}</a>
+                  <a href="/api/export?format=json" download className="inline-flex min-h-11 items-center rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportJson}</a>
+                  <a href="/api/export?format=csv" download className="inline-flex min-h-11 items-center rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportCsv}</a>
                 </div>
               </div>
               <div className="border-t border-border pt-4">
@@ -318,7 +321,7 @@ export default function ProfilePage() {
 
           <Section title={t.profile.gdprTitle}>
             <p className="text-xs text-muted-foreground">{t.profile.gdprHint}</p>
-            <a href="/api/export?format=gdpr" download className="inline-block rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">
+            <a href="/api/export?format=gdpr" download className="inline-flex min-h-11 items-center rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">
               {t.profile.gdprDownload}
             </a>
           </Section>

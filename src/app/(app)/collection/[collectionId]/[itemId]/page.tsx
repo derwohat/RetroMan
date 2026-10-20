@@ -7,6 +7,9 @@ import { formatDate } from "@/lib/format";
 import { CONDITION_COLORS } from "@/components/views/types";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
+import { DangerZone } from "@/components/ui/DangerZone";
+import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
+import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -272,7 +275,7 @@ function InlineDateField({ label, value, onSave }: { label: string; value: strin
         >
           <input type="text" className={`${cls} pr-8`} value={draft} placeholder="TT.MM.JJJJ" onChange={(e) => { setDraft(e.target.value); clear(); }} />
           <input ref={dateRef} type="date" tabIndex={-1} value={deToISO(draft) ?? ""} onChange={(e) => { setDraft(isoToDE(e.target.value)); clear(); }} className="sr-only" />
-          <button type="button" tabIndex={-1} onClick={() => { try { dateRef.current?.showPicker(); } catch {} }} className="absolute right-2 inset-y-0 flex items-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Datum auswählen">
+          <button type="button" tabIndex={-1} onClick={() => { try { dateRef.current?.showPicker(); } catch {} }} className="tap-target absolute right-0 inset-y-0 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Datum auswählen">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -373,6 +376,11 @@ export default function ItemDetailPage() {
   const [loading, setLoading]       = useState(true);
   const [deleting, setDeleting]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+
+  const [deleteImageId, setDeleteImageId] = useState<string | null>(null);
+  const [confirmGradingDel, setConfirmGradingDel] = useState(false);
+
+  const itemImpact = useDeleteImpact(confirmDel ? { type: "item", id: itemId } : null);
   const [gradingEdit, setGradingEdit] = useState(false);
   const [gradingForm, setGradingForm] = useState({ service: "", score: "", gradedAt: "" });
   const [gradingSaving, setGradingSaving] = useState(false);
@@ -454,9 +462,11 @@ export default function ItemDetailPage() {
   }
 
   async function deleteGrading() {
-    await fetch(`/api/items/${itemId}/grading`, { method: "DELETE" });
-    setItem((p) => p ? { ...p, grading: null } : p);
+    const res = await fetch(`/api/items/${itemId}/grading`, { method: "DELETE" });
+    if (!res.ok) throw new Error(await errorText(res, t.common.error));
+    setItem((prev) => (prev ? { ...prev, grading: null } : prev));
     setGradingEdit(false);
+    setConfirmGradingDel(false);
   }
 
   async function handleRefetch() {
@@ -521,9 +531,16 @@ export default function ItemDetailPage() {
     }
   }
 
-  async function removeExtraImage(imageId: string) {
-    setItem((p) => p ? { ...p, images: p.images.filter((i) => i.id !== imageId) } : p);
-    await fetch(`/api/items/${itemId}/images/${imageId}`, { method: "DELETE" });
+  // An image deletion takes the file from disk, so it is as irreversible
+  // as any other and gets the same dialog.
+  async function removeExtraImage() {
+    if (!deleteImageId) return;
+    const res = await fetch(`/api/items/${itemId}/images/${deleteImageId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(await errorText(res, t.common.error));
+    setItem((prev) =>
+      prev ? { ...prev, images: prev.images.filter((img) => img.id !== deleteImageId) } : prev,
+    );
+    setDeleteImageId(null);
   }
 
   async function handleExtraImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -600,8 +617,10 @@ export default function ItemDetailPage() {
   }
 
   async function handleDelete() {
-    setDeleting(true);
-    await fetch(`/api/items/${itemId}`, { method: "DELETE" });
+    const res = await fetch(`/api/items/${itemId}`, { method: "DELETE" });
+    // Checked before leaving: the page used to navigate away whatever the
+    // server answered, so a refused deletion looked like a successful one.
+    if (!res.ok) throw new Error(await errorText(res, t.common.error));
     router.push(`/collection/${collectionId}`);
   }
 
@@ -662,7 +681,7 @@ export default function ItemDetailPage() {
                   {t.conditions[item.condition as keyof typeof t.conditions] ?? item.condition}
                 </span>
               )}
-              <button onClick={toggleFavorite} className={`absolute top-2 right-2 text-lg transition ${item.isFavorite ? "opacity-100" : "opacity-30 hover:opacity-60"}`} title={item.isFavorite ? t.item.removeFromFavorites : t.item.addToFavorites}>
+              <button onClick={toggleFavorite} className={`tap-target absolute top-1 right-1 grid place-items-center text-lg transition ${item.isFavorite ? "opacity-100" : "opacity-30 hover:opacity-60"}`} title={item.isFavorite ? t.item.removeFromFavorites : t.item.addToFavorites}>
                 ❤️
               </button>
             </div>
@@ -683,7 +702,7 @@ export default function ItemDetailPage() {
                   <div key={img.id} className="relative group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={src} alt="" className="h-14 w-auto object-cover rounded border border-border cursor-zoom-in hover:opacity-90 transition" style={{ maxWidth: 44 }} onClick={() => setLightboxUrl(src)} />
-                    <button onClick={() => removeExtraImage(img.id)} className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive/90 text-[9px] text-white opacity-0 group-hover:opacity-100 transition">✕</button>
+                    <button onClick={() => setDeleteImageId(img.id)} className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive/90 text-[9px] text-white opacity-0 group-hover:opacity-100 transition">✕</button>
                   </div>
                 );
               })}
@@ -980,7 +999,7 @@ export default function ItemDetailPage() {
                 </button>
                 <button onClick={() => setGradingEdit(false)} className="text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
                 {item.grading && (
-                  <button onClick={deleteGrading} className="ml-auto text-xs text-destructive hover:underline">{t.common.remove}</button>
+                  <button onClick={() => setConfirmGradingDel(true)} className="ml-auto text-xs text-destructive hover:underline">{t.common.remove}</button>
                 )}
               </div>
             </div>
@@ -1018,25 +1037,32 @@ export default function ItemDetailPage() {
         </button>
       </div>
 
-      {confirmDel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-destructive/40 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive text-sm">⚠</span>
-              <h3 className="font-heading text-[10px] text-destructive uppercase tracking-widest">{t.common.dangerZone}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">„{item.title}"</span> {t.item.deleteConfirm}
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setConfirmDel(false)} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
-              <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-                {deleting ? t.common.deleting : t.common.permDelete}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DangerZone
+        open={confirmDel}
+        subject={item.title}
+        description={t.danger.item}
+        impact={itemImpact}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDel(false)}
+      />
+
+      <DangerZone
+        open={deleteImageId !== null}
+        subject={item.title}
+        description={t.danger.image}
+        confirmLabel={t.danger.deleteImage}
+        onConfirm={removeExtraImage}
+        onCancel={() => setDeleteImageId(null)}
+      />
+
+      <DangerZone
+        open={confirmGradingDel}
+        subject={item.title}
+        description={t.danger.grading}
+        confirmLabel={t.danger.deleteGrading}
+        onConfirm={deleteGrading}
+        onCancel={() => setConfirmGradingDel(false)}
+      />
 
       {/* Lightbox */}
       {lightboxUrl && (
