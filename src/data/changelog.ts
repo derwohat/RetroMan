@@ -6,6 +6,30 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.0",
+    date: "20.10.2026",
+    changes: [
+      "Erstes stabiles Release",
+      "Neu: Der Mailversand lässt sich prüfen. Unter Einstellungen steht, mit welchem Server die App es versucht, ein Testversand geht an eine beliebige Adresse, und ein Verlauf zeigt die letzten Versuche samt der Antwort des Servers im Wortlaut. Ohne eingerichteten Mailserver steht dort kein Knopf, sondern was fehlt",
+      "Behoben: Eine Sammlung mit Einträgen ließ sich gar nicht löschen — der Dialog versprach, die Einträge mitzulöschen, der Vorgang brach aber kommentarlos ab. Dasselbe beim Löschen eines Benutzers, der eine Sammlung angelegt hatte",
+      "Jede Löschung fragt jetzt nach und nennt vorher die Folgen mit Zahlen: wie viele Einträge, Bilder, Felder oder Tag-Zuordnungen mitgehen. Bestätigt wird durch Tippen von del",
+      "Behoben: Ein Klick auf das Kreuz neben einem Feld löschte es samt aller gespeicherten Werte, ohne zu fragen. Dasselbe galt für Bilder und für die Bewertung eines Eintrags",
+      "Behoben: An fünf Stellen verschwand eine Zeile aus der Liste, obwohl der Server die Löschung abgelehnt hatte — beim nächsten Laden war sie wieder da",
+      "Fehlermeldungen des Servers stehen jetzt im Dialog, der dabei offen bleibt, statt in einem Hinweisfenster dahinter",
+      "Der Admin-Bereich ist auf dem Handy bedienbar: Die Seitenleiste wird zur Schublade, die Benutzerliste zu Karten. Bisher nahm die feste Seitenleiste über die Hälfte des Bildschirms ein und die Tabelle ließ sich nur durch seitliches Wischen lesen",
+      "Die Sammlung zeigt auf dem Handy zwei Kacheln pro Reihe statt einer",
+      "Knöpfe und Symbole sind auf Berührungsgeräten groß genug zum Treffen",
+      "Behoben: Das Menü auf dem Handy öffnete sich unter der Kopfzeile, sein Schließen-Kreuz war verdeckt",
+      "Behoben: Der Changelog klappte manchmal ungefragt vollständig auf, obwohl es nichts Neues gab",
+      "Der Changelog hat nur noch einen Knopf, oben in der Kopfzeile. Wer absichtlich nachschlägt, liest dort Schließen statt Verstanden — und stellt damit nichts still, was er nie gelesen hat",
+      "Speichern quittiert jetzt am Knopf selbst statt mit einer Meldung daneben",
+      "Behoben: Im Profil wurde ein fehlgeschlagenes Speichern verschluckt — es sah genauso aus wie ein erfolgreiches",
+      "Die Sitzungsdauer lässt sich einstellen: eine Grenze für Untätigkeit und eine absolute, die früher erreichte gewinnt",
+      "Unten in der Seitenleiste stehen jetzt Person und Ansicht getrennt: Name und Abmelden in einer Zeile, Hell/Dunkel und Version darunter",
+      "Aufklappbare Karten lassen sich mit der Tastatur bedienen und sagen Vorlesegeräten, ob sie offen sind",
+    ],
+  },
+  {
     version: "0.10.1",
     date: "21.09.2026",
     changes: [
