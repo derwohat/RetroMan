@@ -6,6 +6,7 @@ import { signOut } from "next-auth/react";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
 import { ChangelogModal } from "./ChangelogModal";
+import { SessionExpiryGuard } from "@/components/SessionExpiryGuard";
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -48,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-viewport flex-col bg-background grid-bg">
+      <SessionExpiryGuard />
       <AppHeader
         onMenuToggle={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}

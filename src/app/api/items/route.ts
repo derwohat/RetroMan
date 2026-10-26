@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { parseItemFields } from "@/lib/api/itemFields";
 
 async function getUserId(): Promise<string | null> {
   if (authBypassEnabled()) {
@@ -75,20 +76,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sammlung und Titel erforderlich." }, { status: 400 });
   }
 
-  const itemData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(rest)) {
-    if (v !== null && v !== undefined && v !== "") itemData[k] = v;
+  const parsed = parseItemFields(rest);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.message, field: parsed.field }, { status: 422 });
   }
+  const itemData = parsed.data;
 
   const tagLinks: Array<{ tagValueId: string; groupId: string }> = Array.isArray(tags) ? tags : [];
 
   try {
     const item = await prisma.item.create({
       data: {
+        ...itemData,
+        // After the spread on purpose: before it, a body carrying its own
+        // userId won and filed the entry under someone else's account.
         userId,
         collectionId,
         title: title.trim(),
-        ...itemData,
         ...(imageUrl ? { images: { create: [{ url: imageUrl, order: 0, isPrimary: true }] } } : {}),
         ...(tagLinks.length > 0
           ? { tags: { create: tagLinks.map(({ tagValueId, groupId }) => ({ tagValueId, groupId })) } }

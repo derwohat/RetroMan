@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AppHeader } from "./AppHeader";
 import { AdminSidebar } from "./AdminSidebar";
+import { SessionExpiryGuard } from "@/components/SessionExpiryGuard";
 
 // Codebook docs/product-standards.md, "Mobile Ansicht: Schublade und Karten".
 // The app side had this; the admin side did not, so its 208px sidebar sat
@@ -31,6 +32,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     // 100dvh rather than 100vh: on a phone the browser bars come and go, and
     // 100vh counts them as absent, so the bottom of the shell sits under them.
     <div className="flex h-viewport flex-col bg-background">
+      <SessionExpiryGuard />
       <AppHeader
         onMenuToggle={() => setSidebarOpen((open) => !open)}
         sidebarOpen={sidebarOpen}

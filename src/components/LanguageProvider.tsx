@@ -14,7 +14,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>("de");
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/app-settings")
       .then((r) => (r.ok ? r.json() : {}))
       .then((data: { interfaceLanguage?: string }) => {
         const lang = data.interfaceLanguage;

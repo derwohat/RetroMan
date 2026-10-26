@@ -5,6 +5,7 @@ import { existsSync } from "fs";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { parseItemFields } from "@/lib/api/itemFields";
 
 const UPLOAD_DIR =
   process.env.NODE_ENV === "production"
@@ -74,10 +75,11 @@ export async function PATCH(
   const body = await req.json();
   const { imageUrl, tags, customFields: customFieldsInput, collectionId: _colId, userId: _uid, ...rest } = body;
 
-  const data: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(rest)) {
-    if (v !== undefined) data[k] = v === "" ? null : v;
+  const parsed = parseItemFields(rest);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.message, field: parsed.field }, { status: 422 });
   }
+  const data = parsed.data;
 
   // tags as array of { tagValueId, groupId }
   let tagsUpdate = {};

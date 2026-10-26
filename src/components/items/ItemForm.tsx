@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { isoToDE, deToISO } from "@/lib/format";
+import { DateField } from "@/components/ui/DateField";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { useTranslations } from "@/components/LanguageProvider";
@@ -65,55 +65,6 @@ const STANDARD_GROUP_NAMES = ["Shops", "Lagerort"];
 
 const VIDEO_FORMATS = ["VHS", "DVD", "Blu-ray", "Ultra HD 4K", "LaserDisc", "HD DVD"];
 
-// ── German date input (TT.MM.JJJJ) with calendar picker ──────────────────────
-function GermanDateInput({ value, onChange }: { value: string; onChange: (iso: string) => void }) {
-  const dateRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState(isoToDE(value));
-
-  useEffect(() => { setDraft(isoToDE(value)); }, [value]);
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        className="retro-field w-full pr-8"
-        value={draft}
-        placeholder="TT.MM.JJJJ"
-        onChange={(e) => {
-          setDraft(e.target.value);
-          const iso = deToISO(e.target.value);
-          if (iso) onChange(iso);
-          else if (!e.target.value.trim()) onChange("");
-        }}
-      />
-      <input
-        ref={dateRef}
-        type="date"
-        tabIndex={-1}
-        value={deToISO(draft) ?? ""}
-        onChange={(e) => {
-          setDraft(isoToDE(e.target.value));
-          onChange(e.target.value);
-        }}
-        className="sr-only"
-      />
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={() => { try { dateRef.current?.showPicker(); } catch {} }}
-        className="tap-target absolute right-0 inset-y-0 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-        aria-label="Datum auswählen"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      </button>
-    </div>
-  );
-}
-
-
-// ── Main form ─────────────────────────────────────────────────────────────────
 export function ItemForm({ collection, collectionId, item, onClose, onSaved }: Props) {
   const { t } = useTranslations();
   const CONDITIONS = CONDITION_KEYS.map((value) => ({ value, label: t.conditions[value] }));
@@ -149,6 +100,10 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
   const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [showScanner, setShowScanner]     = useState(false);
   const [barcodeLoading, setBarcodeLoading] = useState(false);
+  const [barcodeMessage, setBarcodeMessage] = useState("");
+  // Remembers the number already looked up, so the automatic trigger does
+  // not fire again on every keystroke after it.
+  const lastLookup = useRef("");
   const [metaResults, setMetaResults]     = useState<MetadataResult[]>([]);
   const [metaLoading, setMetaLoading]     = useState(false);
   const [metaError, setMetaError]         = useState<string | null>(null);
@@ -260,26 +215,59 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
     }
   }
 
+  // A complete number searches by itself after a short pause. Without the
+  // pause it would fire on every keystroke of a 13-digit code; without the
+  // lastLookup guard it would fire again on each re-render.
+  useEffect(() => {
+    const clean = form.barcode.trim();
+    if (!/^\d{8,14}$/.test(clean) || clean === lastLookup.current) return;
+    const timer = setTimeout(() => { void lookupBarcode(clean); }, 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.barcode]);
+
   async function handleBarcodeDetected(ean: string) {
     setShowScanner(false);
     set("barcode", ean);
+    await lookupBarcode(ean);
+  }
+
+  /**
+   * Looks a number up and fills what is still empty. Nothing already typed
+   * is overwritten — someone who corrected the title should keep it.
+   */
+  async function lookupBarcode(ean: string) {
+    const clean = ean.trim();
+    if (!/^\d{8,14}$/.test(clean)) {
+      setBarcodeMessage(t.forms.barcodeInvalid);
+      return;
+    }
+    lastLookup.current = clean;
+    setBarcodeMessage("");
     setBarcodeLoading(true);
     try {
-      const p = new URLSearchParams({ ean });
-      if (collection.mediaType) p.set("mediaType", collection.mediaType);
-      const res = await fetch(`/api/barcode?${p}`);
-      if (res.ok) {
-        const data = await res.json();
-        const title = data.title as string | undefined;
-        if (title && !form.title.trim()) {
-          set("title", title);
-          if (collection.mediaType && collection.mediaType !== "CUSTOM") {
-            searchMetadata(title);
-          }
-        }
-        if (data.year && !form.year) set("year", data.year);
-        if (data.imageUrl && !form.imageUrl) set("imageUrl", data.imageUrl);
+      const query = new URLSearchParams({ ean: clean });
+      if (collection.mediaType) query.set("mediaType", collection.mediaType);
+      const res = await fetch(`/api/barcode?${query}`);
+      if (!res.ok) {
+        // A number nobody knows is the normal case, not a fault — say so
+        // instead of leaving the field looking ignored.
+        setBarcodeMessage(res.status === 404 ? t.forms.barcodeNotFound : t.forms.barcodeFailed);
+        return;
       }
+      const data = await res.json();
+      const title = data.title as string | undefined;
+      if (title && !form.title.trim()) {
+        set("title", title);
+        if (collection.mediaType && collection.mediaType !== "CUSTOM") {
+          searchMetadata(title);
+        }
+      }
+      if (data.year && !form.year) set("year", data.year);
+      if (data.imageUrl && !form.imageUrl) set("imageUrl", data.imageUrl);
+      setBarcodeMessage(title ? t.forms.barcodeFound.replace("{source}", data.source ?? "") : t.forms.barcodeNotFound);
+    } catch {
+      setBarcodeMessage(t.forms.barcodeFailed);
     } finally {
       setBarcodeLoading(false);
     }
@@ -303,6 +291,32 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
       set("imageUrl", url);
     }
   }
+
+  // Compared against the state when the dialog opened, not against the
+  // record: someone who changes a value and puts it back has nothing to
+  // lose and should not be asked.
+  const opened = useRef<string>(JSON.stringify(form));
+  const [askDiscard, setAskDiscard] = useState(false);
+
+  const hasUnsaved = () => JSON.stringify(form) !== opened.current;
+
+  /** All three ways out go through here, so all three ask. */
+  function requestClose() {
+    if (hasUnsaved()) { setAskDiscard(true); return; }
+    onClose();
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (showScanner) return;
+      e.preventDefault();
+      requestClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, showScanner]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -360,14 +374,17 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
         onClose={() => setShowScanner(false)}
       />
     )}
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 md:p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) requestClose(); }}
+    >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-xl rounded-xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]"
+        className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl max-h-[92vh] md:max-h-[85vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
-          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest flex items-center gap-1.5">
+        <div className="flex flex-none items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest flex min-w-0 items-center gap-1.5">
             {item ? t.forms.editItem : (
               <>
                 {t.forms.newItem}
@@ -376,7 +393,15 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
               </>
             )}
           </h3>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground transition text-xl leading-none">✕</button>
+          {/* No ✕ beside it: Abbrechen does the same and writes it out.
+              Up here the button cannot scroll out of a long form. */}
+          <button
+            type="submit"
+            disabled={saving}
+            className="min-h-11 shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+          >
+            {saving ? t.common.saving : item ? t.forms.update : t.forms.add}
+          </button>
         </div>
 
         {/* Scrollable fields */}
@@ -603,25 +628,52 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
             <Field label={t.forms.barcode}>
               <div className="flex gap-1.5">
-                <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
-                  className="retro-field flex-1 font-mono"
+                <input
+                  value={form.barcode}
+                  inputMode="numeric"
+                  onChange={(e) => { set("barcode", e.target.value); setBarcodeMessage(""); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      // Enter in a field inside a form submits it otherwise,
+                      // which would save a half-filled entry.
+                      e.preventDefault();
+                      void lookupBarcode(form.barcode);
+                    }
+                  }}
+                  className="retro-field min-w-0 flex-1 font-mono"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowScanner(true)}
-                  disabled={barcodeLoading}
-                  title={t.forms.scanBarcode}
-                  className="rounded border border-border px-2 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
+                  onClick={() => void lookupBarcode(form.barcode)}
+                  disabled={barcodeLoading || form.barcode.trim().length === 0}
+                  title={t.forms.searchBarcode}
+                  aria-label={t.forms.searchBarcode}
+                  className="tap-target grid shrink-0 place-items-center rounded border border-border px-2 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
                 >
                   {barcodeLoading ? (
                     <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12v.01M12 4h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  disabled={barcodeLoading}
+                  title={t.forms.scanBarcode}
+                  aria-label={t.forms.scanBarcode}
+                  className="tap-target grid shrink-0 place-items-center rounded border border-border px-2 text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12v.01M12 4h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z" />
+                  </svg>
+                </button>
               </div>
+              {barcodeMessage && (
+                <p className="mt-1 text-xs text-muted-foreground">{barcodeMessage}</p>
+              )}
             </Field>
 
             <Field label={t.forms.location}>
@@ -640,13 +692,29 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label={t.forms.purchasePrice}>
-                <input type="number" min="0" step="0.01"
-                  value={form.purchasePrice} onChange={(e) => set("purchasePrice", e.target.value)}
-                  className="retro-field w-full"
-                />
+                {/* The currency sits in the field rather than in the label:
+                    a bare 24,55 is a number, not a price. */}
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={form.purchasePrice}
+                    onChange={(e) => set("purchasePrice", e.target.value)}
+                    className="retro-field w-full pr-8"
+                  />
+                  <span className="currency-mark pointer-events-none absolute right-3 inset-y-0 grid place-items-center text-sm text-muted-foreground">
+                    €
+                  </span>
+                </div>
               </Field>
               <Field label={t.forms.purchaseDate}>
-                <GermanDateInput value={form.purchaseDate} onChange={(iso) => set("purchaseDate", iso)} />
+                <DateField
+                  value={form.purchaseDate}
+                  onChange={(iso) => set("purchaseDate", iso)}
+                  pickerLabel={t.forms.pickDate}
+                />
               </Field>
             </div>
 
@@ -726,13 +794,35 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
         {/* Footer */}
         <div className="flex gap-2 border-t border-border px-5 py-4 shrink-0">
-          <button type="button" onClick={onClose} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
+          <button type="button" onClick={requestClose} className="min-h-11 flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
             {t.common.cancel}
           </button>
-          <button type="submit" disabled={saving} className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
-            {saving ? t.common.saving : item ? t.forms.update : t.forms.add}
-          </button>
         </div>
+        {/* Inside the dialog, not a second modal: the named buttons say
+            what happens, so the question above need not be re-read. */}
+        {askDiscard && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/70 p-4">
+            <div className="w-full max-w-xs rounded-lg border border-border bg-card p-4 space-y-3">
+              <p className="text-sm text-foreground">{t.forms.discardQuestion}</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setAskDiscard(false)}
+                  className="min-h-11 flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
+                >
+                  {t.forms.discardBack}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAskDiscard(false); onClose(); }}
+                  className="min-h-11 flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 transition"
+                >
+                  {t.forms.discardConfirm}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     </div>
     </>

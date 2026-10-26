@@ -30,8 +30,15 @@ function looksLikeAddress(value: string): boolean {
 
 export async function POST(request: Request): Promise<NextResponse> {
   const session = await auth();
-  if (!authBypassEnabled() && (!session?.user || session.user.role !== "ADMIN")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!authBypassEnabled()) {
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Signed in but not permitted is 403, never 401 — a 401 reads as an
+    // expired session and sends the browser to the sign-in page.
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
   // Per admin, so one person cannot spend everyone else's budget.
   const adminId = session?.user?.id ?? "dev-bypass";

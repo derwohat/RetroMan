@@ -315,6 +315,36 @@ export default function ProfilePage() {
                   {importError && <span className="text-xs text-destructive">{importError}</span>}
                 </div>
                 <p className="mt-2 text-[10px] text-muted-foreground">{t.profile.importNote}</p>
+
+                {/* Codebook: the format belongs next to the button, with an
+                    example — a list of field names leaves open what the file
+                    around them looks like. */}
+                <div className="mt-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 space-y-2">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {t.profile.importFormatTitle}
+                  </p>
+                  <p className="text-[11px] leading-5 text-foreground">{t.profile.importFormatRequired}</p>
+                  <p className="text-[11px] leading-5 text-muted-foreground break-words">{t.profile.importFormatOptional}</p>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {t.profile.importFormatExample}
+                    </p>
+                    <pre className="overflow-x-auto rounded bg-black/30 p-2 font-mono text-[10px] leading-4 text-muted-foreground">
+{`{
+  "items": [
+    {
+      "title": "Zelda: Ocarina of Time",
+      "collection": "Konsolenspiele",
+      "year": 1998,
+      "condition": "VERY_GOOD",
+      "purchasePrice": 24.55,
+      "purchaseDate": "2026-10-19"
+    }
+  ]
+}`}
+                    </pre>
+                  </div>
+                </div>
               </div>
             </div>
           </Section>

@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { formatDate } from "@/lib/format";
+import { formatDate, isoToDE, deToISO } from "@/lib/format";
 import { CONDITION_COLORS } from "@/components/views/types";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 import { DangerZone } from "@/components/ui/DangerZone";
+import { DateField } from "@/components/ui/DateField";
 import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
 import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
@@ -238,22 +239,8 @@ function InlineTitleField({ value, onSave }: { value: string; onSave: (v: string
 }
 
 // ── InlineDateField ───────────────────────────────────────────────────────────
-function isoToDE(iso: string): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return d && m && y ? `${d}.${m}.${y}` : iso;
-}
-function deToISO(de: string): string | null {
-  if (!de.trim()) return null;
-  const parts = de.trim().split(".");
-  if (parts.length !== 3) return null;
-  const [d, m, y] = parts;
-  if (!d || !m || !y) return null;
-  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-}
-
 function InlineDateField({ label, value, onSave }: { label: string; value: string | null | undefined; onSave: (v: string | null) => Promise<void> }) {
-  const dateRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslations();
   const [draft, setDraft] = useState(isoToDE(value ?? ""));
   const [focused, setFocused] = useState(false);
   const { state, track, clear } = useSaveState();
@@ -273,13 +260,12 @@ function InlineDateField({ label, value, onSave }: { label: string; value: strin
           onFocus={() => { setFocused(true); clear(); }}
           onBlur={async (e) => { if (e.currentTarget.contains(e.relatedTarget as Node)) return; setFocused(false); await commitSave(); }}
         >
-          <input type="text" className={`${cls} pr-8`} value={draft} placeholder="TT.MM.JJJJ" onChange={(e) => { setDraft(e.target.value); clear(); }} />
-          <input ref={dateRef} type="date" tabIndex={-1} value={deToISO(draft) ?? ""} onChange={(e) => { setDraft(isoToDE(e.target.value)); clear(); }} className="sr-only" />
-          <button type="button" tabIndex={-1} onClick={() => { try { dateRef.current?.showPicker(); } catch {} }} className="tap-target absolute right-0 inset-y-0 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Datum auswählen">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
+          <DateField
+            value={deToISO(draft) ?? ""}
+            onChange={(iso) => { setDraft(isoToDE(iso)); clear(); }}
+            className={cls}
+            pickerLabel={t.item.pickDate}
+          />
         </div>
       </dd>
     </div>

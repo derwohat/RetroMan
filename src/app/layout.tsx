@@ -32,7 +32,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
-      { url: "/icon.png",    sizes: "64x64",  type: "image/png" },
+      // public/icon.png is the 2167px logo artwork, not a tab icon — the
+      // old entry pointed here and declared it 64x64, which is why Firefox
+      // showed nothing usable.
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },

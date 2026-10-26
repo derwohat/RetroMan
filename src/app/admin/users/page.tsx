@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "@/components/LanguageProvider";
 import { DangerZone } from "@/components/ui/DangerZone";
 import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
+import { IconKey, IconPower, IconShieldOff, IconTrash } from "@/components/ui/RowIcons";
 
 type User = {
   id: string;
@@ -225,44 +226,52 @@ export default function AdminUsersPage() {
                     {loginStatus(user)}
                   </td>
                   <td className="px-4 py-3" data-card-actions>
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* One bordered group, dividers between the icons,
+                        the destructive action last and in the warning tone. */}
+                    <div className="inline-flex overflow-hidden rounded-md border border-border">
                       <button
                         onClick={() => handleResetPassword(user.id, user.name)}
-                        className="rounded border border-border px-2 py-1 text-[10px] text-muted-foreground hover:border-primary hover:text-primary transition"
+                        title={t.adminUsers.resetPassword}
+                        aria-label={t.adminUsers.resetPassword}
+                        className="tap-target grid place-items-center border-r border-border px-2 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
                       >
-                        {t.adminUsers.resetPassword}
+                        <IconKey />
                       </button>
                       {user.mfaEnabled && (
                         <button
                           onClick={() => handleDisableMfa(user.id)}
-                          className="rounded border border-amber-500/40 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-500/10 transition"
                           title={t.adminUsers.disableMfaTitle}
+                          aria-label={t.adminUsers.disableMfa}
+                          className="tap-target grid place-items-center border-r border-border px-2 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
                         >
-                          {t.adminUsers.disableMfa}
+                          <IconShieldOff />
                         </button>
                       )}
                       {user.role !== "ADMIN" ? (
                         <>
                           <button
                             onClick={() => handleToggleActive(user.id)}
-                            className={`rounded border px-2 py-1 text-[10px] transition ${
+                            title={user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
+                            aria-label={user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
+                            className={`tap-target grid place-items-center border-r border-border px-2 py-1.5 transition ${
                               user.deletedAt
-                                ? "border-green-500/40 text-green-500 hover:bg-green-500/10"
-                                : "border-destructive/40 text-destructive hover:bg-destructive/10"
+                                ? "text-green-500 hover:bg-green-500/10"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             }`}
                           >
-                            {user.deletedAt ? t.adminUsers.activate : t.adminUsers.deactivate}
+                            <IconPower />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(user)}
-                            className="rounded border border-destructive/40 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 transition"
                             title={t.adminUsers.deleteForever}
+                            aria-label={t.adminUsers.deleteForever}
+                            className="tap-target grid place-items-center px-2 py-1.5 text-destructive hover:bg-destructive/10 transition"
                           >
-                            🗑
+                            <IconTrash />
                           </button>
                         </>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground/50 italic" title={t.adminUsers.adminProtected}>
+                        <span className="grid place-items-center px-2 py-1.5 text-[10px] text-muted-foreground/50 italic" title={t.adminUsers.adminProtected}>
                           —
                         </span>
                       )}

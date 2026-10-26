@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 export function FontSizeProvider() {
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/app-settings")
       .then((r) => (r.ok ? r.json() : { fontSize: "medium" }))
       .then((data: { fontSize?: string }) => {
         const size = data.fontSize || "medium";

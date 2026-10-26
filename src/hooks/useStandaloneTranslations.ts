@@ -17,7 +17,7 @@ export function useStandaloneTranslations(): { t: Translations; locale: Locale }
       return;
     }
     // Fallback: fetch from API
-    fetch("/api/admin/settings")
+    fetch("/api/app-settings")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
         if (d?.interfaceLanguage && (d.interfaceLanguage === "de" || d.interfaceLanguage === "en" || d.interfaceLanguage === "fr")) {

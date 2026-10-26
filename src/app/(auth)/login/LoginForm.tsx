@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { safeReturnTarget } from "@/components/SessionExpiryGuard";
 import Image from "next/image";
 import Link from "next/link";
 import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
@@ -15,7 +16,11 @@ export default function LoginForm({
   passwordWasReset?: boolean;
 }) {
   const router = useRouter();
+  const params = useSearchParams();
   const { t } = useStandaloneTranslations();
+  // Only on a real expiry, never on the first visit to a bookmark.
+  const sessionExpired = params.get("abgelaufen") === "1";
+  const returnTo = safeReturnTarget(params.get("redirect"));
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -47,7 +52,7 @@ export default function LoginForm({
       return;
     }
 
-    router.push("/");
+    router.push(returnTo);
     router.refresh();
   }
 
@@ -64,6 +69,14 @@ export default function LoginForm({
         {passwordWasReset && (
           <p className="text-xs text-primary text-center" role="status">
             {t.auth.passwordWasReset}
+          </p>
+        )}
+
+        {/* A neutral sentence, not an error: nothing went wrong, the session
+            simply ran out. */}
+        {sessionExpired && (
+          <p className="text-xs text-amber-400 text-center" role="status">
+            {t.auth.sessionExpired}
           </p>
         )}
 

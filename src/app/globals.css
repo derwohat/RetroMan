@@ -374,6 +374,46 @@
   color: var(--foreground);
   transition: border-color 150ms, box-shadow 150ms;
 }
+/* Safari draws a select, a date and a number field as system controls and
+   ignores the colours above — on an iPhone those came out light grey inside
+   an otherwise dark form. Turning the native appearance off is what makes
+   the declarations apply; the arrow a select loses with it is drawn back in
+   underneath. */
+.retro-field {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* appearance: none does not reach the stepper; Safari keeps drawing it as a
+   light box, which sat under the euro sign and looked like a broken glyph. */
+input[type="number"].retro-field::-webkit-outer-spin-button,
+input[type="number"].retro-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].retro-field {
+  -moz-appearance: textfield;
+}
+
+select.retro-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239e97ad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 1rem 1rem;
+  padding-right: 2.25rem;
+}
+
+/* Without this the value sits centred in Safari and left everywhere else. */
+input[type="date"].retro-field::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* The app font has no euro sign, and WebKits fallback draws it inside a box.
+   A plain system stack renders it as the character it is. */
+.currency-mark {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
 .retro-field::placeholder {
   color: var(--muted-foreground);
 }

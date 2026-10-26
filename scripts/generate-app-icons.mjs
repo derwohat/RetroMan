@@ -9,7 +9,7 @@
 //    launchers crop to a circle, squircle or teardrop and only a circle of
 //    80% diameter is guaranteed to survive.
 import sharp from "sharp";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -77,9 +77,37 @@ const targets = [
   { file: join(root, "public/icon-512.png"), size: 512, ratio: 0.845, grooves: GROOVES },
   // Android, maskable — disc at 80% so it survives every launcher crop.
   { file: join(root, "public/icon-maskable-512.png"), size: 512, ratio: 0.80, grooves: GROOVES },
+  // Browser tab. Two grooves instead of three: below 64px the third one
+  // closes up into a smudge and the disc stops reading as a disc.
+  { file: join(root, "src/app/icon.png"), size: 64, ratio: 0.92, grooves: 2 },
+  { file: join(root, "public/icon-32.png"), size: 32, ratio: 0.92, grooves: 1 },
 ];
 
 await mkdir(join(root, "public"), { recursive: true });
 for (const t of targets) {
   await writePng(discSvg(t.size, t.ratio, t.grooves), t.size, t.file);
+}
+
+// favicon.ico, built by hand rather than with another dependency: an ICO
+// may carry a PNG verbatim, so the container is a 6-byte header plus one
+// 16-byte directory entry. Firefox asks for /favicon.ico before it reads
+// any link tag, and an .ico from July is what it kept showing.
+{
+  const png = await readFile(join(root, "public/icon-32.png"));
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // 1 = icon
+  header.writeUInt16LE(1, 4); // one image
+  const entry = Buffer.alloc(16);
+  entry[0] = 32;              // width
+  entry[1] = 32;              // height
+  entry[2] = 0;               // palette colours: 0 = truecolour
+  entry[3] = 0;               // reserved
+  entry.writeUInt16LE(1, 4);  // colour planes
+  entry.writeUInt16LE(32, 6); // bits per pixel
+  entry.writeUInt32LE(png.length, 8);
+  entry.writeUInt32LE(header.length + entry.length, 12);
+  const out = join(root, "public/favicon.ico");
+  await writeFile(out, Buffer.concat([header, entry, png]));
+  console.log(`${out.replace(root, ".")}  32x32  ${png.length} Bytes PNG im ICO-Container`);
 }

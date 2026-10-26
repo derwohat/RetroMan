@@ -9,8 +9,13 @@ const HISTORY_LIMIT = 20;
 async function requireAdmin(): Promise<NextResponse | null> {
   if (authBypassEnabled()) return null;
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  // Signed in but not permitted is 403, never 401 — a 401 reads as an
+  // expired session and sends the browser to the sign-in page.
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
 }
