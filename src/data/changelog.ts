@@ -6,6 +6,26 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.0",
+    date: "26.10.2026",
+    changes: [
+      "Behoben: Ein Eintrag mit Kaufdatum ließ sich überhaupt nicht speichern — es kam nur „Datenbankfehler beim Erstellen des Eintrags“. Deshalb trägt bisher kein einziger Eintrag ein Kaufdatum",
+      "Das Kaufdatum lässt sich ohne Punkte eintippen: aus 19102026 wird 19.10.2026",
+      "Der Datumswähler funktioniert jetzt auch auf iPhone und iPad. Bisher passierte beim Tippen auf das Kalendersymbol dort nichts",
+      "Der Kaufpreis zeigt das €-Zeichen",
+      "Neu: Ein eingetippter Barcode löst die Suche jetzt selbst aus — bisher ging das nur über die Kamera. Und wenn zu einem Barcode nichts hinterlegt ist, steht das jetzt da, statt dass scheinbar nichts passiert",
+      "Neu: Läuft die Sitzung ab, führt die App sofort zur Anmeldung und danach zurück auf die Seite, auf der man war. Bisher wirkte die Seite einfach kaputt",
+      "Neu: Wer den Eintrags-Dialog mit ungespeicherten Eingaben schließt, wird gefragt. Bisher war mit Escape alles weg",
+      "Der Speichern-Knopf sitzt jetzt oben im Dialog und wandert bei langen Formularen nicht mehr aus dem Bild",
+      "Behoben: Das Symbol im Browser-Tab zeigte noch das alte Zeichen vom Juli oder gar keines",
+      "Behoben: Auf dem iPhone waren die Auswahlfelder im dunklen Formular weiß",
+      "Behoben: Schriftgröße und Sprache aus den Einstellungen galten nur für Administratoren — alle anderen bekamen immer die Vorgabewerte, und auf der Anmeldeseite griffen sie nie",
+      "Sicherheit: Beim Anlegen und Ändern eines Eintrags wird jetzt geprüft, was geschickt wird. Bisher wurde der Inhalt der Anfrage ungefiltert an die Datenbank gereicht — darüber ließ sich ein Eintrag unter fremdem Konto anlegen",
+      "Die Aktionen in der Benutzerliste sind Symbole statt Textknöpfe und brechen auf dem Handy nicht mehr um",
+      "Der Import nennt jetzt sein Dateiformat und zeigt ein Beispiel",
+    ],
+  },
+  {
     version: "1.0.2",
     date: "20.10.2026",
     changes: [
