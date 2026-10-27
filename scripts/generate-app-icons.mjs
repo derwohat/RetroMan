@@ -57,14 +57,35 @@ ${marks}
 </svg>`;
 }
 
+/**
+ * The mark as it appears in a browser tab, where it is 16px wide.
+ * At that size three nested grooves share about five pixels and smear into
+ * one surface, so the tile version reads as a dark blob. This one carries no
+ * background square and gets by on three shapes: disc, one groove, hole.
+ * @param size canvas edge length
+ */
+function tabMarkSvg(size) {
+  const c = size / 2;
+  const disc = size * 0.469;   // nearly the full canvas, no tile around it
+  const groove = size * 0.328; // the single groove that survives 16px
+  const hub = size * 0.172;    // centre hole, large enough to stay a hole
+  const stroke = size * 0.041;
+  return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+<circle cx="${c}" cy="${c}" r="${disc.toFixed(2)}" fill="${BRAND}"/>
+<circle cx="${c}" cy="${c}" r="${groove.toFixed(2)}" fill="none" stroke="${DISC_FACE}" stroke-width="${stroke.toFixed(2)}"/>
+<circle cx="${c}" cy="${c}" r="${hub.toFixed(2)}" fill="${DISC_FACE}"/>
+</svg>`;
+}
+
 // flatten() drops the alpha channel: iOS composites transparency onto black,
 // and the Codebook requires colour type 2 (RGB without alpha).
-async function writePng(svg, size, outPath) {
-  await sharp(Buffer.from(svg))
-    .resize(size, size)
-    .flatten({ background: BRAND })
-    .png({ compressionLevel: 9 })
-    .toFile(outPath);
+async function writePng(svg, size, outPath, { transparent = false } = {}) {
+  let pipeline = sharp(Buffer.from(svg)).resize(size, size);
+  // Home-screen icons stay opaque: iOS composites transparency onto black and
+  // the Codebook requires colour type 2. The browser tab is the exception —
+  // there the mark floats and the browser paints the ground behind it.
+  if (!transparent) pipeline = pipeline.flatten({ background: BRAND });
+  await pipeline.png({ compressionLevel: 9 }).toFile(outPath);
   const meta = await sharp(outPath).metadata();
   console.log(`${outPath.replace(root, ".")}  ${meta.width}x${meta.height}  Kanäle=${meta.channels}  Alpha=${meta.hasAlpha}`);
 }
@@ -77,15 +98,15 @@ const targets = [
   { file: join(root, "public/icon-512.png"), size: 512, ratio: 0.845, grooves: GROOVES },
   // Android, maskable — disc at 80% so it survives every launcher crop.
   { file: join(root, "public/icon-maskable-512.png"), size: 512, ratio: 0.80, grooves: GROOVES },
-  // Browser tab. Two grooves instead of three: below 64px the third one
-  // closes up into a smudge and the disc stops reading as a disc.
-  { file: join(root, "src/app/icon.png"), size: 64, ratio: 0.92, grooves: 2 },
-  { file: join(root, "public/icon-32.png"), size: 32, ratio: 0.92, grooves: 1 },
+  // Browser tab: its own geometry, not a shrunk disc. See tabMarkSvg.
+  { file: join(root, "src/app/icon.png"), size: 64, mark: tabMarkSvg, transparent: true },
+  { file: join(root, "public/icon-32.png"), size: 32, mark: tabMarkSvg, transparent: true },
 ];
 
 await mkdir(join(root, "public"), { recursive: true });
 for (const t of targets) {
-  await writePng(discSvg(t.size, t.ratio, t.grooves), t.size, t.file);
+  const svg = t.mark ? t.mark(t.size) : discSvg(t.size, t.ratio, t.grooves);
+  await writePng(svg, t.size, t.file, { transparent: t.transparent === true });
 }
 
 // favicon.ico, built by hand rather than with another dependency: an ICO

@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.2",
+    date: "27.10.2026",
+    changes: [
+      "Das Symbol im Browser-Tab war ein dunkler Klecks. Bei 16 Pixeln — so breit ist ein Tab-Symbol — teilten sich drei Rillen fünf Pixel und verschmolzen zu einer Fläche",
+      "Neu im Tab: eine freigestellte Scheibe mit einer Rille und sichtbarem Mittelloch, ohne Hintergrundquadrat. Drei Formen statt fünf, und der Browser liefert den Grund",
+      "Die Symbole auf dem Startbildschirm von iPhone und Android bleiben unverändert — dort ist Platz genug für die volle Platte",
+    ],
+  },
+  {
     version: "1.2.1",
     date: "27.10.2026",
     changes: [
