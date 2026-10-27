@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
+import { isSecureConnection } from "@/lib/auth/cookieBinding";
 
 // Lightweight config for Edge Middleware — no Prisma imports
 const config: NextAuthConfig = {
@@ -33,4 +34,14 @@ const config: NextAuthConfig = {
   providers: [], // Providers live in the full config (Node.js only)
 };
 
-export const { auth } = NextAuth(config);
+// Same binding as the full config — the middleware has to look for the
+// cookie under the name the handlers set it under, or every request over
+// the plain port looks signed out.
+export const { auth } = NextAuth((req) => ({
+  ...config,
+  useSecureCookies: isSecureConnection(
+    req?.headers.get("x-forwarded-proto") ?? null,
+    req?.headers.get("x-forwarded-host") ?? null,
+    req?.headers.get("host") ?? null,
+  ),
+}));

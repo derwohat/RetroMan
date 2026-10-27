@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.0",
+    date: "27.10.2026",
+    changes: [
+      "Behoben: Wer RetroMan über die interne Adresse mit Port aufrief statt über die verschlüsselte Adresse, kam nicht herein — richtige Zugangsdaten, keine Fehlermeldung, und trotzdem wieder die Anmeldemaske. Ursache war, dass die Sitzung an die eingetragene Adresse gebunden war statt an die tatsächlich benutzte Verbindung",
+      "Beide Zugangswege funktionieren jetzt gleichzeitig, jeder mit dem Schutz, den seine Verbindung hergibt. Angemeldet bleibt, wer angemeldet war",
+      "Neu: Eine Installationsanleitung. Bisher lag im Projekt nur die unveränderte Vorlage von Next.js — ohne ein Wort zu Installation, Einstellungen, Reverse Proxy, Sicherung oder Update",
+      "Drei Angaben in den Beispiel-Einstellungen waren falsch oder tot und sind berichtigt",
+    ],
+  },
+  {
     version: "1.1.0",
     date: "26.10.2026",
     changes: [

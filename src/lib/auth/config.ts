@@ -1,8 +1,10 @@
 import NextAuth from "next-auth";
 import { CredentialsSignin } from "next-auth";
+import type { NextRequest } from "next/server";
 import Credentials from "next-auth/providers/credentials";
 import { headers } from "next/headers";
 import { hashPassword, needsRehash, verifyPassword } from "@/lib/auth/password";
+import { isSecureConnection } from "@/lib/auth/cookieBinding";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionLimits } from "@/lib/auth/sessionLimits";
 import { rateLimit } from "@/lib/rateLimit";
@@ -40,7 +42,37 @@ const SERVER_BOOT_AT = process.env.NODE_ENV === "production"
   ? Math.floor(Date.now() / 1000)
   : 0;
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+/**
+ * next-auth hands the real request to the HTTP handlers — the place where
+ * the cookie is actually set — and `undefined` to server-side
+ * `signIn`/`signOut` and to React Server Components (its lib/index.js calls
+ * `config(undefined)` there). Those still run inside a request, so the
+ * headers are available to read directly.
+ */
+async function secureCookies(req: NextRequest | undefined): Promise<boolean> {
+  if (req) {
+    return isSecureConnection(
+      req.headers.get("x-forwarded-proto"),
+      req.headers.get("x-forwarded-host"),
+      req.headers.get("host"),
+    );
+  }
+  try {
+    const incoming = await headers();
+    return isSecureConnection(
+      incoming.get("x-forwarded-proto"),
+      incoming.get("x-forwarded-host"),
+      incoming.get("host"),
+    );
+  } catch {
+    // Outside a request there is nothing to judge by; fall back to the
+    // configured address, which is what Auth.js would have used anyway.
+    return isSecureConnection(null, null, null);
+  }
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
+  useSecureCookies: await secureCookies(req),
   session: {
     strategy: "jwt",
     // The real deadlines live in the jwt callback, because both are
@@ -225,4 +257,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-});
+}));

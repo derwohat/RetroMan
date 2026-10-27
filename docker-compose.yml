@@ -36,7 +36,7 @@ services:
       retries: 5
 
   app:
-    # Pin the version in .env next to this file: RETROMAN_VERSION=0.10.1
+    # Pin the version in .env next to this file: RETROMAN_VERSION=1.2.0
     # With "latest" every restart may pull a different image and rolling back
     # after a bad release is impossible — you cannot even name the version you
     # were on. latest stays the fallback for a first start only.
@@ -69,6 +69,12 @@ services:
       # Required when accessed via reverse proxy or external domain (e.g. Synology QuickConnect)
       AUTH_TRUST_HOST: "true"
       #
+      # The plain port below stays reachable beside the proxy. That is safe:
+      # the session cookie is bound to the connection a request actually
+      # arrives on, not to the address configured above. Who does not need
+      # that way in closes it — "127.0.0.1:7007:7007" above — rather than
+      # relying on the binding; see README, section on the reverse proxy.
+      #
       # ─── Optional: mail, for the "forgot password" link ──────────────────
       # Leave these out entirely and the feature simply stays off: the link is
       # not shown on the sign-in page and its pages return 404. Everything
@@ -82,8 +88,8 @@ services:
       # SMTP_USE_TLS: "true"
       # Must be a real address, not just a display name — servers reject those
       # SMTP_FROM: RetroMan <retroman@deine-domain.de>
-      # The address reset links point at. Without it they point at localhost
-      # and are useless in a mail someone receives.
+      # The address reset links point at. Without it NEXTAUTH_URL is used,
+      # which is normally the same — set this only where the two differ.
       # APP_BASE_URL: https://retroman.deine-domain.de
     volumes:
       - "./data/uploads:/app/uploads"
