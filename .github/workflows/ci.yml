@@ -42,7 +42,11 @@ jobs:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: check
-    if: github.event_name == 'push'
+    # Only a version tag publishes an image. A release pushes main and then
+    # the tag, and both used to run this job: two builds of the same commit,
+    # two different digests, and :latest pointing at the one the version tag
+    # did not. Pushing main now runs the checks above and nothing more.
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
       packages: write
@@ -61,10 +65,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
+          # latest used to follow the newest commit on main, so an untagged
+          # work-in-progress could become :latest without anyone choosing it.
+          # It now follows the newest release, and a pre-release tag such as
+          # v1.3.0-rc1 leaves it alone.
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
