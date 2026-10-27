@@ -141,10 +141,20 @@ export default function ProfilePage() {
 
   async function startMfaSetup() {
     setMfaLoading(true); setMfaError(""); setMfaMsg("");
-    const res = await fetch("/api/auth/mfa/setup");
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/mfa/setup");
+    } catch {
+      setMfaLoading(false);
+      setMfaError(t.profile.mfaSetupError);
+      return;
+    }
     setMfaLoading(false);
     if (res.ok) { const { qrDataUrl } = await res.json(); setMfaQr(qrDataUrl); setMfaToken(""); }
-    else setMfaError(t.profile.mfaSetupError);
+    else {
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      setMfaError(d.error ?? t.profile.mfaSetupError);
+    }
   }
 
   async function verifyMfa(e: FormEvent) {

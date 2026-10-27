@@ -8,14 +8,14 @@ async function getUser() {
     return prisma.user.findFirst({
       where: { deletedAt: null },
       orderBy: { createdAt: "asc" },
-      select: { id: true, name: true, email: true, role: true, preferredLanguage: true },
+      select: { id: true, name: true, email: true, role: true, preferredLanguage: true, mfaEnabled: true },
     });
   }
   const session = await auth();
   if (!session?.user?.id) return null;
   return prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, role: true, preferredLanguage: true },
+    select: { id: true, name: true, email: true, role: true, preferredLanguage: true, mfaEnabled: true },
   });
 }
 
@@ -38,7 +38,7 @@ export async function PATCH(req: Request) {
       ...(name?.trim() ? { name: name.trim() } : {}),
       ...(preferredLanguage ? { preferredLanguage } : {}),
     },
-    select: { id: true, name: true, email: true, role: true, preferredLanguage: true },
+    select: { id: true, name: true, email: true, role: true, preferredLanguage: true, mfaEnabled: true },
   });
 
   return NextResponse.json(updated);

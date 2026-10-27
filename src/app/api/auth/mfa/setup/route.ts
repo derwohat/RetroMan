@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { generateSecret, generateURI, verifySync } from "otplib";
 import QRCode from "qrcode";
-import { encrypt, decrypt } from "@/lib/crypto/encryption";
+import { encrypt, tryDecrypt } from "@/lib/crypto/encryption";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 async function getUserId(): Promise<string | null> {
@@ -22,6 +22,17 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, mfaEnabled: true } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Writing a fresh secret below replaces the one the user's authenticator
+  // already holds, and it happens before anything is verified. For an account
+  // that has MFA on, that is a lockout: the old codes stop working, the new
+  // ones were never scanned, and the next sign-in has no way through.
+  if (user.mfaEnabled) {
+    return NextResponse.json(
+      { error: "Die Zwei-Faktor-Anmeldung ist bereits aktiv. Schalte sie erst aus, bevor du sie neu einrichtest." },
+      { status: 409 },
+    );
+  }
 
   const secret = generateSecret();
   const otpauth = generateURI({ issuer: "RetroMan", label: user.email, secret });
@@ -43,7 +54,17 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { mfaSecret: true } });
   if (!user?.mfaSecret) return NextResponse.json({ error: "Kein Secret vorhanden. Bitte Setup neu starten." }, { status: 400 });
 
-  const secret = decrypt(user.mfaSecret);
+  const secret = tryDecrypt(user.mfaSecret);
+  if (!secret) {
+    return NextResponse.json(
+      {
+        error:
+          "Das hinterlegte Geheimnis lässt sich nicht entschlüsseln. Der ENCRYPTION_KEY passt nicht zu den gespeicherten Daten — ein Administrator muss die Zwei-Faktor-Anmeldung für dieses Konto zurücksetzen.",
+      },
+      { status: 500 },
+    );
+  }
+
   const result = verifySync({ token, secret, epochTolerance: 30 });
   if (!result.valid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
 

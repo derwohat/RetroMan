@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.3",
+    date: "27.10.2026",
+    changes: [
+      "Behoben: Die Zwei-Faktor-Anmeldung ließ sich nicht ausschalten. Der Knopf dafür war nie zu sehen, weil die Profilseite nie erfuhr, dass sie aktiv ist — sie bot stattdessen immer das Einrichten an",
+      "Behoben: Ein Klick auf ‚MFA einrichten‘ ersetzte bei einem Konto mit aktiver Zwei-Faktor-Anmeldung sofort das hinterlegte Geheimnis, noch bevor irgendetwas geprüft war. Die Codes der Authenticator-App waren damit wertlos, und weil der Ausschalten-Knopf fehlte, kam man nicht mehr hinein. Das Einrichten verweigert sich jetzt, solange die Zwei-Faktor-Anmeldung aktiv ist",
+      "Behoben: Ließ sich das hinterlegte Geheimnis nicht entschlüsseln, stand auf der Anmeldeseite trotzdem ‚Ungültiger Code‘. Jetzt steht dort, dass der Schlüssel nicht zu den gespeicherten Daten passt und ein Administrator die Zwei-Faktor-Anmeldung zurücksetzen muss",
+      "Bricht die Verbindung während der Prüfung ab, hängt der Knopf nicht mehr auf ‚wird geprüft‘",
+    ],
+  },
+  {
     version: "1.2.2",
     date: "27.10.2026",
     changes: [

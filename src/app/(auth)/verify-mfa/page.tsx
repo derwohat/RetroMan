@@ -19,11 +19,18 @@ export default function VerifyMfaPage() {
     setError("");
     setLoading(true);
 
-    const res = await fetch("/api/auth/mfa/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/mfa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+    } catch {
+      setError(t.auth.invalidCode);
+      setLoading(false);
+      return;
+    }
 
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));

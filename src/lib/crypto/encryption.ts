@@ -19,6 +19,25 @@ export function encrypt(text: string): string {
   return [iv.toString("hex"), encrypted.toString("hex"), tag.toString("hex")].join(":");
 }
 
+/**
+ * Decrypt without throwing. A failure here means one thing in practice: the
+ * ENCRYPTION_KEY no longer matches the data it was written with. Left to
+ * throw, it surfaces as a 500 in whatever route happened to call it, and the
+ * user is told their code was wrong. Callers turn the null into a message
+ * that names the real cause.
+ */
+export function tryDecrypt(encryptedText: string): string | null {
+  try {
+    return decrypt(encryptedText);
+  } catch (err) {
+    console.error(
+      "[crypto] decrypt failed — ENCRYPTION_KEY does not match the stored data:",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+}
+
 export function decrypt(encryptedText: string): string {
   const key = getKey();
   const [ivHex, encHex, tagHex] = encryptedText.split(":");

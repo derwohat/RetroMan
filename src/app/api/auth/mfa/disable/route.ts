@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { verifySync } from "otplib";
-import { decrypt } from "@/lib/crypto/encryption";
+import { tryDecrypt } from "@/lib/crypto/encryption";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 async function getUserId(): Promise<string | null> {
@@ -26,7 +26,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "MFA ist nicht aktiv." }, { status: 400 });
   }
 
-  const secret = decrypt(user.mfaSecret);
+  const secret = tryDecrypt(user.mfaSecret);
+  if (!secret) {
+    return NextResponse.json(
+      {
+        error:
+          "Das hinterlegte Geheimnis lässt sich nicht entschlüsseln. Der ENCRYPTION_KEY passt nicht zu den gespeicherten Daten — ein Administrator muss die Zwei-Faktor-Anmeldung für dieses Konto zurücksetzen.",
+      },
+      { status: 500 },
+    );
+  }
+
   const result = verifySync({ token, secret, epochTolerance: 30 });
   if (!result.valid) return NextResponse.json({ error: "Ungültiger Code." }, { status: 400 });
 
