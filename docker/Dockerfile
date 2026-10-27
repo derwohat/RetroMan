@@ -29,6 +29,17 @@ RUN npm run build
 FROM node:20-slim AS migrator
 WORKDIR /migrate
 
+# npm install is where Prisma picks which schema engine to keep, and it picks
+# it by looking at the libssl version of THIS stage. Without openssl here it
+# chose debian-openssl-1.1.x while the runner below has libssl 3 — so the
+# engine in the image was the wrong one and every fresh container downloaded
+# the right one from binaries.prisma.sh at startup. An installation without
+# internet, or a CDN outage, therefore could not start at all, with an error
+# naming Prisma rather than RetroMan. Measured on a network without internet.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY package.json ./orig-package.json
 RUN node -e "\
   const p = require('./orig-package.json'); \

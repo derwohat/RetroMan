@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.1",
+    date: "27.10.2026",
+    changes: [
+      "Behoben: Eine frische Installation ohne Internetzugang konnte überhaupt nicht starten. Das Abbild brachte den falschen Datenbank-Treiber mit und lud sich den passenden beim ersten Start aus dem Netz nach — war keins da, blieb RetroMan stehen, mit einer Meldung, die nach einem fremden Programm klang",
+      "Der richtige Treiber steckt jetzt im Abbild. Es ist dadurch sogar kleiner, weil der unbrauchbare zweite nicht mehr mitfährt",
+    ],
+  },
+  {
     version: "1.2.0",
     date: "27.10.2026",
     changes: [
