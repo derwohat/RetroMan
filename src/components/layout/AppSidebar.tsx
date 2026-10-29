@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
+import { SearchBox } from "./SearchBox";
 import { ThemeToggle } from "./ThemeToggle";
 import { VersionBanner } from "./VersionBanner";
 
@@ -137,7 +138,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
         key={href}
         href={href}
         aria-current={isActive ? "page" : undefined}
-        className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+        className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${
           isActive
             ? "bg-primary/10 text-primary border-r-2 border-primary"
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -154,7 +155,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
       flex flex-col border-r border-border bg-sidebar transition-all duration-200 shrink-0
       fixed inset-y-0 left-0 z-50 ${isOpen ? "translate-x-0" : "-translate-x-full"}
       md:relative md:translate-x-0 md:z-auto
-      ${collapsed ? "w-12" : "w-52"}
+      ${collapsed ? "w-12" : "w-[248px]"}
     `}>
       {/* Collapse toggle — desktop only */}
       <div className="hidden md:flex h-10 items-center justify-end px-2 border-b border-border shrink-0">
@@ -175,13 +176,22 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
         </button>
       </div>
 
+      {/* The search used to be in the header. The header is the brand band
+          now and has no room for a field — and the sidebar is where you
+          already are when you go looking for something. */}
+      {!collapsed && (
+        <div className="px-5 pt-3 pb-1 shrink-0">
+          <SearchBox />
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
         {/* Collections header. It links to a real page of its own, so on that
             page it has to carry the marking — otherwise the sidebar shows
             nothing at all and leaves open where you are. */}
         {!collapsed && (
-          <div className="px-3 pt-1 pb-1">
+          <div className="px-5 pt-1 pb-1">
             <Link
               href="/dashboard"
               aria-current={pathname === "/dashboard" ? "page" : undefined}
@@ -211,7 +221,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
               href={href}
               title={collapsed ? col.name : undefined}
               aria-current={isActive ? "page" : undefined}
-              className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+              className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary border-r-2 border-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -239,7 +249,7 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
           const href = "/favorites";
           const isActive = pathname.startsWith(href);
           return (
-            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
               <span className="shrink-0"><IconFavorites /></span>
               {!collapsed && <span className="flex-1 truncate text-sm">{t.nav.favorites}</span>}
               {!collapsed && counts.favorites > 0 && <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{counts.favorites}</span>}

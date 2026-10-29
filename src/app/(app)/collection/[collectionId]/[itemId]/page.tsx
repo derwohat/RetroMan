@@ -131,13 +131,15 @@ function saveStateClass(state: SaveState, focused: boolean): string {
 
 // ── InlineEditableField ──────────────────────────────────────────────────────
 function InlineEditableField({
-  label, value, type = "text", options, placeholder, onSave,
+  label, value, type = "text", options, placeholder, suffix, onSave,
 }: {
   label: string;
   value: string | null | undefined;
   type?: "text" | "number" | "date" | "select" | "textarea";
   options?: Array<{ value: string; label: string }>;
   placeholder?: string;
+  /** Unit shown inside the field, right-aligned. A bare 24,55 is a number, not a price. */
+  suffix?: string;
   onSave: (value: string | null) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(value ?? "");
@@ -185,11 +187,30 @@ function InlineEditableField({
     );
   }
 
+  const inputEl = (
+    <input
+      type={type}
+      className={suffix ? `${cls} pr-8` : cls}
+      value={draft}
+      placeholder={placeholder ?? ""}
+      onChange={(e) => { setDraft(e.target.value); clear(); }}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    />
+  );
+
   return (
     <div className="space-y-1">
       {labelEl}
       <dd>
-        <input type={type} className={cls} value={draft} placeholder={placeholder ?? ""} onChange={(e) => { setDraft(e.target.value); clear(); }} onFocus={handleFocus} onBlur={handleBlur} />
+        {suffix ? (
+          <div className="relative">
+            {inputEl}
+            <span className="currency-mark pointer-events-none absolute right-3 inset-y-0 grid place-items-center text-sm text-muted-foreground">
+              {suffix}
+            </span>
+          </div>
+        ) : inputEl}
       </dd>
     </div>
   );
@@ -880,7 +901,7 @@ export default function ItemDetailPage() {
           <div className="rounded-xl border border-border bg-card p-5 space-y-4">
             <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">{t.item.purchase}</h3>
             <dl className="space-y-3">
-              <InlineEditableField label={t.item.purchasePrice} value={item.purchasePrice != null ? item.purchasePrice.toString().replace(".", ",") : ""} type="text" placeholder="0,00" onSave={(v) => saveField("purchasePrice", v ? v.replace(",", ".") : null)} />
+              <InlineEditableField label={t.item.purchasePrice} value={item.purchasePrice != null ? item.purchasePrice.toString().replace(".", ",") : ""} type="text" placeholder="0,00" suffix="€" onSave={(v) => saveField("purchasePrice", v ? v.replace(",", ".") : null)} />
               <InlineDateField label={t.item.purchaseDate} value={toDateInput(item.purchaseDate)} onSave={(v) => saveField("purchaseDate", v)} />
               <InlineEditableField label={t.item.purchasedAt} value={item.store ?? ""} type="select" options={shopsGroup?.values.map((v) => ({ value: v.value, label: v.value })) ?? []} onSave={(v) => saveField("store", v)} />
             </dl>

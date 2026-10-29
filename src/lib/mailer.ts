@@ -41,20 +41,31 @@ export interface MailOutcome {
 /** Keeps the attempt history from growing without bound. */
 const KEEP_ATTEMPTS = 50;
 
+/**
+ * An environment variable that is set but empty, which is what a compose
+ * default like ${SMTP_PORT:-} produces. `??` treats it as a value: the port
+ * became Number("") === 0 and the sender address became the empty string.
+ * Here an empty or blank value counts as not configured.
+ */
+function env(name: string): string | undefined {
+  const raw = process.env[name];
+  return raw && raw.trim() ? raw : undefined;
+}
+
 let transporter: nodemailer.Transporter | null = null;
 
 function getTransporter(): nodemailer.Transporter | null {
-  const host = process.env.SMTP_HOST;
+  const host = env("SMTP_HOST");
   if (!host) return null;
 
   if (!transporter) {
     transporter = nodemailer.createTransport({
       host,
-      port: Number(process.env.SMTP_PORT ?? 587),
+      port: Number(env("SMTP_PORT") ?? 587),
       secure: false,
-      requireTLS: process.env.SMTP_USE_TLS !== "false",
-      auth: process.env.SMTP_USER
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
+      requireTLS: env("SMTP_USE_TLS") !== "false",
+      auth: env("SMTP_USER")
+        ? { user: env("SMTP_USER"), pass: env("SMTP_PASSWORD") }
         : undefined,
       // Without explicit timeouts a black-holed port leaves the request
       // hanging on nodemailer's default, which is minutes rather than seconds.
@@ -67,7 +78,7 @@ function getTransporter(): nodemailer.Transporter | null {
 }
 
 export function mailIsConfigured(): boolean {
-  return Boolean(process.env.SMTP_HOST);
+  return Boolean(env("SMTP_HOST"));
 }
 
 export interface MailState {
@@ -87,26 +98,26 @@ export interface MailState {
  * start with a climb into the `.env`.
  */
 export function mailState(): MailState {
-  const host = process.env.SMTP_HOST ?? null;
+  const host = env("SMTP_HOST") ?? null;
   return {
     configured: Boolean(host),
     host,
-    port: Number(process.env.SMTP_PORT ?? 587),
+    port: Number(env("SMTP_PORT") ?? 587),
     from: senderAddress(),
-    requireTls: process.env.SMTP_USE_TLS !== "false",
-    authConfigured: Boolean(process.env.SMTP_USER && process.env.SMTP_PASSWORD),
-    authUserPresent: Boolean(process.env.SMTP_USER),
-    authPasswordPresent: Boolean(process.env.SMTP_PASSWORD),
+    requireTls: env("SMTP_USE_TLS") !== "false",
+    authConfigured: Boolean(env("SMTP_USER") && env("SMTP_PASSWORD")),
+    authUserPresent: Boolean(env("SMTP_USER")),
+    authPasswordPresent: Boolean(env("SMTP_PASSWORD")),
   };
 }
 
 function senderAddress(): string {
-  return process.env.SMTP_FROM ?? "RetroMan <no-reply@retroman.localhost>";
+  return env("SMTP_FROM") ?? "RetroMan <no-reply@retroman.localhost>";
 }
 
 /** Base URL for links inside mails — falls back to the dev server. */
 export function appBaseUrl(): string {
-  return process.env.APP_BASE_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:7002";
+  return env("APP_BASE_URL") ?? env("NEXTAUTH_URL") ?? "http://localhost:7002";
 }
 
 /**

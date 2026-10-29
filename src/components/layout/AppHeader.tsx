@@ -1,22 +1,45 @@
 "use client";
 
-import { useState, useEffect, useRef, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "@/components/LanguageProvider";
 
-type SearchItem = {
-  id: string;
-  title: string;
-  year: number | null;
-  collection: {
-    id: string;
-    name: string;
-    icon: string | null;
-  };
-  images: Array<{ url: string | null; isPrimary: boolean }>;
-};
+/** Pink of the record, cyan of the cassette — the pulse travels between them. */
+const RING_FROM = [0xff, 0x2d, 0x95] as const;
+const RING_TO = [0x00, 0xf5, 0xd4] as const;
+
+/**
+ * The band is 150px tall and the mark is cropped to the part that has to stay
+ * readable: the cassette and the wordmark sit between 28% and 72% of the
+ * image. Everything outside that is groove and may run off the edge.
+ */
+const BAND_H = 150;
+const VISIBLE = 0.44;
+const VISIBLE_FROM = 0.28;
+const LOGO_H = Math.round(BAND_H / VISIBLE);
+const LOGO_OFFSET = -Math.round(VISIBLE_FROM * LOGO_H);
+
+/**
+ * Where the mark's outermost groove sits, in pixels from the centre. The
+ * animated rings start exactly there, so the pulse looks like it leaves the
+ * record rather than appearing beside it.
+ */
+const FIRST_RING_R = Math.round(LOGO_H / 2);
+const RING_COUNT = 16;
+const RING_STEP = 44;
+const RING_STAGGER = 0.26;
+const RING_CYCLE = 7;
+
+function ringColor(i: number): string {
+  const t = Math.min(1, i / (RING_COUNT - 3));
+  const c = RING_FROM.map((from, k) => Math.round(from + (RING_TO[k] - from) * t));
+  return `rgb(${c.join(",")})`;
+}
+
+/** Brighter near the record, almost gone at the edge. */
+function ringPeak(i: number): number {
+  return 0.6 * Math.pow(1 - i / RING_COUNT, 1.3) + 0.05;
+}
 
 export function AppHeader({
   onMenuToggle,
@@ -29,157 +52,59 @@ export function AppHeader({
   sidebarOpen?: boolean;
   sidebarId?: string;
 }) {
-  const router = useRouter();
   const { t } = useTranslations();
-  const [query, setQuery]           = useState("");
-  const [suggestions, setSuggestions] = useState<SearchItem[]>([]);
-  const [showDrop, setShowDrop]     = useState(false);
-  const [searching, setSearching]   = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDrop(false);
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (value.trim().length >= 3) {
-      timerRef.current = setTimeout(async () => {
-        setSearching(true);
-        try {
-          const res = await fetch(`/api/items?search=${encodeURIComponent(value.trim())}`);
-          if (res.ok) {
-            const items: SearchItem[] = await res.json();
-            setSuggestions(items.slice(0, 8));
-            setShowDrop(true);
-          }
-        } finally {
-          setSearching(false);
-        }
-      }, 300);
-    } else {
-      setSuggestions([]);
-      setShowDrop(false);
-    }
-  }
-
-  function handleSearch(e: FormEvent) {
-    e.preventDefault();
-    const q = query.trim();
-    if (q) { setShowDrop(false); router.push(`/search?q=${encodeURIComponent(q)}`); }
-  }
-
-  function pickSuggestion(item: SearchItem) {
-    setShowDrop(false);
-    setQuery("");
-    router.push(`/collection/${item.collection.id}`);
-  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-      {/* Mobile text logo row */}
-      <div className="md:hidden flex items-center justify-center py-2.5 border-b border-border/50">
-        <Link href="/dashboard" className="flex min-h-11 items-center font-heading text-base uppercase tracking-widest">
+      {/* Mobile row: a 150px band would eat the screen, so the phone keeps the
+          wordmark and the burger. The search lives in the drawer either way. */}
+      <div className="md:hidden flex h-14 items-center gap-3 px-3">
+        <button
+          onClick={onMenuToggle}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:text-primary transition"
+          aria-label={t.header.menu}
+          aria-expanded={sidebarOpen}
+          aria-controls={sidebarId}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <Link href="/dashboard" className="flex min-h-11 flex-1 items-center justify-center font-heading text-base uppercase tracking-widest">
           <span style={{ color: "#00b4d8" }}>RETRO</span>
           <span className="text-primary">MAN</span>
         </Link>
+        {/* Balances the burger so the wordmark sits in the middle. */}
+        <span className="h-11 w-11 shrink-0" aria-hidden="true" />
       </div>
 
-      {/* Controls row */}
-      <div className="flex h-14 md:h-44 items-center gap-3 md:gap-4 px-3 md:px-6">
-      {/* Hamburger — mobile only */}
-      <button
-        onClick={onMenuToggle}
-        className="md:hidden grid h-11 w-11 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:text-primary transition"
-        aria-label={t.header.menu}
-        aria-expanded={sidebarOpen}
-        aria-controls={sidebarId}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      {/* Desktop band, across the whole window */}
+      <div className="groove-band hidden md:block relative overflow-hidden" style={{ height: BAND_H }}>
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          {Array.from({ length: RING_COUNT }, (_, i) => {
+            const d = (FIRST_RING_R + i * RING_STEP) * 2;
+            return (
+              <span
+                key={i}
+                className="groove-ring"
+                style={{
+                  width: d,
+                  height: d,
+                  borderColor: ringColor(i),
+                  ["--groove-peak" as string]: ringPeak(i).toFixed(3),
+                  animationDuration: `${RING_CYCLE}s`,
+                  animationDelay: `${(i * RING_STAGGER).toFixed(2)}s`,
+                }}
+              />
+            );
+          })}
+        </div>
 
-      {/* Logo — desktop only */}
-      <div className="hidden md:flex items-center w-52 shrink-0">
-        <Link href="/dashboard" className="relative block w-52 h-[168px]">
-          <Image src="/logo.png" alt="RetroMan" fill className="object-contain object-left" />
-        </Link>
-      </div>
-
-      {/* Search */}
-      <div ref={searchRef} className="relative flex-1">
-        <form onSubmit={handleSearch} className="flex items-center gap-2 rounded-md border border-border bg-muted px-4 py-2.5">
-          <button type="submit" className="-my-1 -ml-1 grid h-11 w-11 shrink-0 place-items-center text-muted-foreground hover:text-primary transition"
-            aria-label={t.common.search}>
-            {searching ? (
-              <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            )}
-          </button>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            onFocus={() => { if (suggestions.length > 0) setShowDrop(true); }}
-            autoComplete="off"
-            className="flex-1 bg-transparent text-sm text-foreground search-slogan-placeholder outline-none"
-          />
-          {query === "" && (
-            <div className="hidden sm:flex items-center gap-1.5">
-              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">{t.header.chipName}</span>
-              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">{t.header.chipType}</span>
-              <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">{t.header.chipYear}</span>
-            </div>
-          )}
-        </form>
-
-        {/* Suggestions dropdown */}
-        {showDrop && suggestions.length > 0 && (
-          <div className="absolute left-0 top-full mt-1 w-full rounded-lg border border-border bg-card shadow-2xl z-50 overflow-hidden">
-            {suggestions.map((item) => {
-              const img = item.images.find((i) => i.isPrimary) ?? item.images[0];
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => pickSuggestion(item)}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted transition"
-                >
-                  <div className="w-8 h-10 rounded border border-border bg-muted shrink-0 overflow-hidden">
-                    {img?.url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img.url} alt="" className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-foreground truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.collection.name}{item.year ? ` · ${item.year}` : ""}</p>
-                  </div>
-                </button>
-              );
-            })}
-            <div className="border-t border-border px-4 py-2">
-              <button
-                type="button"
-                onClick={() => { setShowDrop(false); router.push(`/search?q=${encodeURIComponent(query.trim())}`); }}
-                className="text-xs text-primary hover:underline"
-              >
-                {t.header.allResultsFor} „{query.trim()}" {t.header.showAll}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        <div className="absolute inset-0 flex items-start justify-center">
+          <Link href="/dashboard" aria-label="RetroMan" style={{ marginTop: LOGO_OFFSET }}>
+            <Image src="/logo.png" alt="RetroMan" width={LOGO_H} height={LOGO_H} priority />
+          </Link>
+        </div>
       </div>
     </header>
   );

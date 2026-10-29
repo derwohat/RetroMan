@@ -29,7 +29,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [tempPw, setTempPw] = useState<{ name: string; password: string } | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", role: "USER" });
+  const [form, setForm] = useState({ username: "", name: "", email: "", role: "USER" });
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -61,7 +61,7 @@ export default function AdminUsersPage() {
     const { user, tempPassword } = await res.json();
     setUsers((prev) => [...prev, { ...user, deletedAt: null, mfaEnabled: false, lastLoginAt: null }]);
     setShowCreate(false);
-    setForm({ name: "", email: "", role: "USER" });
+    setForm({ username: "", name: "", email: "", role: "USER" });
     setTempPw({ name: user.name, password: tempPassword });
   }
 
@@ -292,6 +292,23 @@ export default function AdminUsersPage() {
               {t.adminUsers.createTitle}
             </h3>
             <form onSubmit={handleCreate} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colUsername}</label>
+                {/* autoComplete="off", not "username": this field names someone
+                    else's account, and the keychain would otherwise offer the
+                    admin their own sign-in to fill in. */}
+                <input
+                  required
+                  value={form.username}
+                  onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
+                  placeholder={t.adminUsers.usernamePlaceholder}
+                />
+              </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colName}</label>
                 <input

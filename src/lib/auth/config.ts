@@ -177,7 +177,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        const username = (credentials.username as string).toLowerCase();
+        // Trimmed as well as lowercased, the same way the account was created.
+        // Without the trim a trailing space — which phone keyboards add after
+        // an autocomplete pick — looked like a wrong password.
+        const username = (credentials.username as string).trim().toLowerCase();
 
         // Flood brake only — deliberately wide. It used to sit at 10 per
         // account and counted every attempt, so ten correct sign-ins locked

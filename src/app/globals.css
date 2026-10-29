@@ -820,3 +820,61 @@ input[type="checkbox"]:checked {
     min-height: 100dvh;
   }
 }
+
+/* ── Brand band ───────────────────────────────────────────────────────────── */
+
+/* The mark is cropped by the band, so both cut edges fade into the page: it
+   then reads as the record running out of frame rather than as a hard cut. */
+.groove-band::before,
+.groove-band::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 30px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.groove-band::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--background), transparent);
+}
+
+.groove-band::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--background), transparent);
+}
+
+/* Grooves continuing past the record. Only the opacity moves — a travelling
+   glow or a growing radius would make the browser lay the band out again on
+   every frame, sixteen times over. */
+.groove-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border-width: 1.6px;
+  border-style: solid;
+  opacity: 0;
+  animation-name: groovePulse;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+}
+
+@keyframes groovePulse {
+  0%   { opacity: 0; }
+  8%   { opacity: var(--groove-peak); }
+  34%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* Switched off, the rings stay faintly visible instead of vanishing: someone
+   who turned animation off should still see the design, not an empty band. */
+@media (prefers-reduced-motion: reduce) {
+  .groove-ring {
+    animation: none;
+    opacity: calc(var(--groove-peak) * 0.45);
+  }
+}

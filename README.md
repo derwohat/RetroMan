@@ -34,23 +34,42 @@ mkdir -p retroman && cd retroman
 curl -O https://raw.githubusercontent.com/derwohat/RetroMan/main/docker-compose.yml
 ```
 
-In der Datei sind **alle** `CHANGE_ME` zu ersetzen. Die Datei sagt an jeder
-Stelle dazu, wie der Wert erzeugt wird; die drei wichtigsten:
+Die Werte stehen **nicht** in der Compose-Datei, sondern daneben: in einer
+`.env` oder in der Variablen-Maske der Stack-Verwaltung. Beides funktioniert,
+weil jeder Wert in der Datei als `${...}` auftaucht — und genau daraus leitet
+eine Stack-Verwaltung ihre Eingabefelder ab.
+
+Vier Werte haben keine Vorgabe. Fehlt einer, bricht `docker compose up`
+sofort ab und nennt ihn beim Namen, statt einen Container zu starten, der
+gleich wieder abstürzt:
 
 | Wert | Wie er entsteht |
 |---|---|
-| `POSTGRES_PASSWORD` | frei wählbar, muss in `DATABASE_URL` identisch wiederholt werden |
+| `POSTGRES_PASSWORD` | frei wählbar. Steht nur hier — die Compose-Datei baut `DATABASE_URL` daraus |
+| `NEXTAUTH_URL` | die Adresse, unter der RetroMan von außen erreichbar ist |
 | `NEXTAUTH_SECRET` | 32 Zufallsbytes als Base64: `head -c 32 /dev/urandom \| base64` |
 | `ENCRYPTION_KEY` | **64 Hexzeichen**, anderes Format: `od -An -tx1 -N32 /dev/urandom \| tr -d " \n"` |
 
 Die beiden Geheimnisse sind nicht austauschbar — ein Base64-Wert im
-`ENCRYPTION_KEY` lässt den Start fehlschlagen.
+`ENCRYPTION_KEY` lässt den Start fehlschlagen. `.env.example` im Projekt
+zeigt alle Variablen samt der Befehle, die sie erzeugen; `openssl` ist
+darunter bewusst nicht, weil es auf einem nackten Docker-Host fehlt.
 
 Danach:
 
 ```sh
 docker compose up -d
 ```
+
+**Der Port ist zunächst nur vom Gerät selbst erreichbar** (`127.0.0.1:7007`).
+Hinter einem Reverse Proxy auf demselben Host ist das richtig so — dessen Ziel
+ist `localhost`. Wer RetroMan direkt von anderen Rechnern im Netz aufrufen
+will, setzt `RETROMAN_BIND=0.0.0.0`.
+
+> **Beim Umstieg von einer Installation vor 1.3.0:** Dort stand das Passwort
+> zweimal in der Compose-Datei, einmal als `POSTGRES_PASSWORD` und einmal
+> mitten in `DATABASE_URL`. Jetzt genügt `POSTGRES_PASSWORD` — es muss
+> dasselbe bleiben, sonst findet die Anwendung ihre Datenbank nicht mehr.
 
 Beim ersten Start legt der Container das Datenbankschema an und richtet die
 Standardsammlungen ein. Dann `http://<host>:7007` aufrufen: Die Anwendung

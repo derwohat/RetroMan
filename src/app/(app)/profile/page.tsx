@@ -385,9 +385,12 @@ export default function ProfilePage() {
               {([t.profile.currentPassword, t.profile.newPassword, t.profile.confirmPassword] as const).map((label, i) => {
                 const val = [pwCurrent, pwNew, pwConfirm][i];
                 const setter = [setPwCurrent, setPwNew, setPwConfirm][i];
+                // Only "new-password" makes iOS offer a strong password and keep it
+                // afterwards; on the current one it would offer to overwrite it.
+                const complete = i === 0 ? "current-password" : "new-password";
                 return (
                   <Field key={label} label={label}>
-                    <input type="password" value={val} onChange={(e) => setter(e.target.value)} className="retro-field w-full" required />
+                    <input type="password" autoComplete={complete} value={val} onChange={(e) => setter(e.target.value)} className="retro-field w-full" required />
                   </Field>
                 );
               })}

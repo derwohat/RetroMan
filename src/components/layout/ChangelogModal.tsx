@@ -9,6 +9,21 @@ type Props = {
   onClose?: () => void;
 };
 
+/**
+ * Renders **...** as bold and leaves everything else as plain text.
+ *
+ * Built from React nodes rather than from an HTML string, so there is no
+ * markup to escape and nothing a changelog line could inject. An unmatched
+ * ** stays visible as typed instead of swallowing the rest of the line.
+ */
+function withBoldLead(text: string): React.ReactNode {
+  const parts = text.split("**");
+  if (parts.length < 3) return text;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part,
+  );
+}
+
 function semverGt(a: string, b: string): boolean {
   const [ma, mi, pa] = a.split(".").map(Number);
   const [mb, mib, pb] = b.split(".").map(Number);
@@ -130,7 +145,7 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
                 {entry.changes.map((change, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    {change}
+                    <span>{withBoldLead(change)}</span>
                   </li>
                 ))}
               </ul>

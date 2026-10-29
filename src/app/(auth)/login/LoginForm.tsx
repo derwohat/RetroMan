@@ -85,6 +85,7 @@ export default function LoginForm({
             <label htmlFor="username" className="text-xs text-muted-foreground uppercase tracking-wider">{t.auth.username}</label>
             <input
               id="username" type="text" required autoComplete="username"
+              autoCapitalize="none" autoCorrect="off" spellCheck={false}
               value={username} onChange={(e) => setUsername(e.target.value)}
               className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />

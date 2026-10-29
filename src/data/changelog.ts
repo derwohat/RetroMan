@@ -6,6 +6,19 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.0",
+    date: "29.10.2026",
+    changes: [
+      "**Das Gerüst hat ein neues Gesicht.** Das Zeichen sitzt jetzt groß und angeschnitten über der ganzen Breite, und die Rillen laufen pulsierend nach außen weiter — von Pink an der Platte bis ins Cyan der Kassette am Rand. Die Suche ist dabei in die Seitenleiste gezogen, die etwas breiter geworden ist und ihren Einträgen mehr Luft zum Rand lässt",
+      "**Behoben: Ein Administrator konnte überhaupt keinen Benutzer anlegen.** Dem Formular fehlte das Feld für den Benutzernamen, den die App zwingend verlangt — jeder Versuch endete mit ‚Benutzername, Name und E-Mail erforderlich‘, ohne zu sagen, wo man ihn hätte eintragen sollen",
+      "**Behoben: Ein Leerzeichen hinter dem Benutzernamen sperrte aus.** Beim Anlegen des Kontos wurde es entfernt, beim Anmelden nicht. Handy-Tastaturen hängen nach einer Autovervollständigung gern eines an, und das sah dann aus wie ein falsches Passwort",
+      "**Der Kaufpreis zeigt das €-Zeichen jetzt auch auf der Detailseite.** Im Eintrags-Dialog stand es schon, auf der Seite selbst nie — eine blanke 24,55 ist eine Zahl, kein Preis",
+      "**Die Anmeldung arbeitet jetzt mit dem Schlüsselbund zusammen.** Der Benutzername wird auf dem iPhone nicht mehr großgeschrieben oder rot unterringelt, und beim Passwortwechsel im Profil schlägt das Gerät endlich ein starkes Passwort vor und merkt es sich danach",
+      "**Die Installation bricht jetzt ab, wenn ein Pflichtwert fehlt**, statt einen Container zu starten, der gleich wieder abstürzt. Das Datenbank-Passwort steht nur noch an einer Stelle statt an zweien, der Port ist in der Voreinstellung nur vom Gerät selbst erreichbar, und der Stack trägt seinen Namen in der Datei — ohne den legt ein Umzug stillschweigend eine leere Datenbank daneben",
+      "**Behoben: Ein leer eingetragener Mail-Port landete auf Port 0.** Eine leere Variable ist nicht dasselbe wie eine fehlende, und die Anwendung behandelte sie als Wert",
+    ],
+  },
+  {
     version: "1.2.3",
     date: "27.10.2026",
     changes: [
