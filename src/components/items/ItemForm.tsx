@@ -279,16 +279,28 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    setUploading(false);
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        // Saying nothing here is why a server that cannot write to its uploads
+        // directory looked exactly like nothing having happened: the spinner
+        // stopped, no image appeared, no reason was given.
+        const body = await res.json().catch(() => ({} as { error?: string }));
+        setError(body.error ?? t.forms.uploadFailed);
+        return;
+      }
       const { url } = await res.json();
       // Delete previous upload from disk if it was a local upload
       const prev = form.imageUrl;
       if (prev?.startsWith("/api/uploads/") || prev?.startsWith("/uploads/")) {
         fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: prev }) }).catch(() => {});
       }
+      setError("");
       set("imageUrl", url);
+    } catch {
+      setError(t.forms.uploadFailed);
+    } finally {
+      setUploading(false);
     }
   }
 

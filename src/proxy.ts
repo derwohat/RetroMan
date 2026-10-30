@@ -5,8 +5,23 @@ import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 // /api/app-settings carries only display settings (font size, language) and is
 // needed by the sign-in page itself, where nobody is signed in yet.
-const PUBLIC_PATHS = ["/login", "/setup", "/api/auth", "/api/upload", "/api/setup", "/api/app-settings"];
+//
+// /api/upload was in this list and nothing needed it there: uploading happens
+// in the item form, behind the sign-in. It let anyone who could reach the
+// address write and delete files, and because these were prefix matches it
+// opened /api/uploads/<name> for reading along with it - a route nobody had
+// listed.
+const PUBLIC_PATHS = ["/login", "/setup", "/api/auth", "/api/setup", "/api/app-settings"];
 const MFA_PATHS   = ["/verify-mfa", "/api/auth/mfa/verify"];
+
+/**
+ * A bare prefix match lets one entry open paths nobody wrote down: "/api/upload"
+ * also matches "/api/uploads/<name>". Comparing on segment boundaries keeps an
+ * entry to the route it names and the routes below it.
+ */
+function matches(pathname: string, prefixes: string[]): boolean {
+  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 /** A request for data, not for a page — it must not be answered with HTML. */
 function wantsData(pathname: string): boolean {
@@ -33,8 +48,8 @@ export async function proxy(req: NextRequest) {
   if (authBypassEnabled()) return NextResponse.next();
 
   const { nextUrl } = req;
-  const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p));
-  const isMfaPath = MFA_PATHS.some((p) => nextUrl.pathname.startsWith(p));
+  const isPublic = matches(nextUrl.pathname, PUBLIC_PATHS);
+  const isMfaPath = matches(nextUrl.pathname, MFA_PATHS);
 
   if (!isPublic) {
     const session = await auth();

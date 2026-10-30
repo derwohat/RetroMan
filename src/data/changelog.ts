@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.0",
+    date: "30.10.2026",
+    changes: [
+      "**Behoben: Bilder ließen sich ohne Anmeldung hochladen, löschen und ansehen.** Der Pfad `/api/upload` stand ausdrücklich in der Liste der öffentlich erreichbaren Adressen, und weil dort auf Wortanfänge verglichen wurde, öffnete dieser eine Eintrag zugleich `/api/uploads/<name>` — eine Adresse, die niemand freigegeben hatte. Wer die Instanz erreichte, konnte Dateien ablegen und fremde Bilder abrufen. Beide verlangen jetzt eine Sitzung, und der Vergleich läuft auf Abschnittsgrenzen, damit ein Eintrag nicht mehr seine Nachbarn mitöffnet",
+      "**Behoben: Auf einem NAS schlug jeder Bild-Upload fehl, ohne dass es irgendwo stand.** Das Bildverzeichnis liegt auf dem Wirtssystem und kommt dort mit dessen Rechten an — der Dienst durfte nur lesen. Der Start richtet das jetzt selbst ein. Geht das nicht, **bricht der Start ab** und nennt den genauen Befehl, statt mit einer Funktion weiterzulaufen, die dauerhaft kaputt ist",
+      "**Behoben: Ein fehlgeschlagener Upload sah aus wie gar nichts.** Das Formular behandelte nur den Erfolgsfall; ging es schief, hörte das Rädchen auf und sonst geschah nichts — kein Bild, kein Hinweis, kein Grund. Jetzt steht dort, woran es lag",
+      "Bilder werden nicht mehr als öffentlich zwischenspeicherbar ausgeliefert. Die Antwort hängt jetzt davon ab, wer fragt, und ein geteilter Zwischenspeicher darf das Bild des einen nicht dem nächsten reichen",
+    ],
+  },
+  {
     version: "1.3.0",
     date: "29.10.2026",
     changes: [

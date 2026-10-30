@@ -101,7 +101,13 @@ RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
 COPY docker/entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 
-USER nextjs
+# No USER directive here, on purpose. A bind mount over /app/uploads arrives
+# with the host's ownership and can be unwritable for the service, and only
+# root can correct that. The entrypoint repairs the directory and then drops
+# to nextjs:nodejs with setpriv (util-linux, already in the base image), which
+# execs rather than forks - so the server still becomes PID 1. Running the
+# image with "user: 1001:1001" also works: the entrypoint skips the repair and
+# goes straight on.
 
 EXPOSE 7007
 ENV PORT=7007

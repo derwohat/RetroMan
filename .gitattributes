@@ -1,0 +1,4 @@
+# Shell scripts are executed inside the Linux image. A CRLF shebang makes the
+# container fail to start at all, with an error that points nowhere useful, so
+# these keep LF endings regardless of the checkout platform.
+*.sh text eol=lf
