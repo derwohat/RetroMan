@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.1",
+    date: "30.10.2026",
+    changes: [
+      "**Die Abbruchmeldung beim Start nennt jetzt auch den Zugriffsmodus und den passenden Befehl.** Lag es nicht am Eigentümer des Bildverzeichnisses, sondern an einem fehlenden Schreibrecht, riet sie trotzdem zu einem `chown` — der dort nichts ausrichtet. Eine Anleitung, die den falschen Befehl nennt, kostet mehr Zeit als gar keine",
+    ],
+  },
+  {
     version: "1.4.0",
     date: "30.10.2026",
     changes: [

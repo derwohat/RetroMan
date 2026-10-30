@@ -22,11 +22,22 @@ if [ "$(id -u)" = "0" ]; then
   fi
   if ! as_app test -w "$UPLOAD_DIR"; then
     owner="$(stat -c '%u:%g' "$UPLOAD_DIR" 2>/dev/null || echo unbekannt)"
+    mode="$(stat -c '%a' "$UPLOAD_DIR" 2>/dev/null || echo unbekannt)"
     echo "RetroMan — FEHLER: $UPLOAD_DIR ist für den Dienst nicht beschreibbar." >&2
-    echo "  Eigentümer: $owner, der Dienst läuft als $APP_UID:$APP_GID." >&2
+    echo "  Eigentümer: $owner, Modus: $mode, der Dienst läuft als $APP_UID:$APP_GID." >&2
     echo "  Das Verzeichnis liegt auf dem Wirtssystem; von hier aus geht es nicht." >&2
-    echo "  Auf dem Wirtssystem ausführen:" >&2
-    echo "    chown -R $APP_UID:$APP_GID <Verzeichnis>" >&2
+    # Naming the wrong remedy costs more time than naming none: when the owner
+    # already matches, a chown changes nothing and sends the reader looking in
+    # the wrong place.
+    if [ "$owner" = "$APP_UID:$APP_GID" ]; then
+      echo "  Der Eigentümer stimmt bereits — es fehlt das Schreibrecht, oder das" >&2
+      echo "  Dateisystem ist schreibgeschützt eingehängt. Auf dem Wirtssystem:" >&2
+      echo "    chmod u+rwx <Verzeichnis>" >&2
+    else
+      echo "  Der Start hat versucht, den Eigentümer zu setzen, und durfte nicht." >&2
+      echo "  Auf dem Wirtssystem ausführen:" >&2
+      echo "    chown -R $APP_UID:$APP_GID <Verzeichnis>" >&2
+    fi
     echo "  Den Pfad nennt dieser Befehl:" >&2
     echo "    docker inspect -f '{{range .Mounts}}{{if eq .Destination \"$UPLOAD_DIR\"}}{{.Source}}{{end}}{{end}}' <Container>" >&2
     exit 1
