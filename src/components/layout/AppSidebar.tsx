@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 import { SearchBox } from "./SearchBox";
+import { SidebarNavGroup, type NavGroupItem } from "./SidebarNavGroup";
 import { ThemeToggle } from "./ThemeToggle";
 import { VersionBanner } from "./VersionBanner";
 
@@ -21,18 +22,52 @@ function IconLogout() {
   );
 }
 
-function IconProfile() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
-  );
-}
-function IconAdmin() {
+/** Group header for "Einstellungen". */
+function IconCog() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+// ── Icons for the entries inside the "Einstellungen" group ───────────────────
+// They came from the admin sidebar, which this group replaces.
+function IconUsers() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+function IconStack() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+  );
+}
+function IconTag() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  );
+}
+function IconServer() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="3" y="4" width="18" height="7" rx="2" />
+      <rect x="3" y="13" width="18" height="7" rx="2" />
+      <path strokeLinecap="round" d="M7 7.5h.01M7 16.5h.01" />
+    </svg>
+  );
+}
+function IconPencilSmall() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
     </svg>
   );
 }
@@ -74,7 +109,18 @@ function initials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: boolean; onClose?: () => void; onOpenChangelog?: () => void }) {
+export function AppSidebar({
+  role,
+  isOpen,
+  onClose,
+  onOpenChangelog,
+}: {
+  /** From the server, so the group is complete before /api/me answers. */
+  role: "USER" | "ADMIN" | null;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onOpenChangelog?: () => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [counts, setCounts] = useState({ favorites: 0 });
@@ -130,6 +176,21 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
     }, 150);
     return () => clearTimeout(timer);
   }, [pathname, collections]);
+
+  // Everything that is set rather than browsed. The four administration
+  // entries are only built for an administrator, so a normal user's sidebar
+  // holds no shields at all and the group is just their profile.
+  const settingsItems: NavGroupItem[] = [
+    { href: "/profile", label: t.header.profile, icon: <IconPencilSmall /> },
+    ...(role === "ADMIN"
+      ? ([
+          { href: "/admin/users", label: t.admin.users, icon: <IconUsers />, adminOnly: true },
+          { href: "/admin/collections", label: t.admin.collections, icon: <IconStack />, adminOnly: true },
+          { href: "/admin/tags", label: t.admin.tags, icon: <IconTag />, adminOnly: true },
+          { href: "/admin/settings", label: t.admin.system, icon: <IconServer />, adminOnly: true },
+        ] satisfies NavGroupItem[])
+      : []),
+  ];
 
   function navLink(href: string, icon: React.ReactNode, label: string, exact = false) {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -258,8 +319,19 @@ export function AppSidebar({ isOpen, onClose, onOpenChangelog }: { isOpen?: bool
         })()}
 
         {navLink("/stats",     <IconStats />,     t.nav.stats)}
-        {navLink("/profile",   <IconProfile />,    t.header.profileSettings)}
-        {profile?.role === "ADMIN" && navLink("/admin", <IconAdmin />, t.header.adminArea)}
+
+        {/* Codebook docs/product-standards.md, "Benutzerverwaltung unter
+            Einstellungen": no top-level entry of its own, and no separate
+            admin area either — one expandable group holds everything that is
+            set rather than browsed. The four entries with a shield are the
+            former admin area; a normal user only sees their profile. */}
+        <SidebarNavGroup
+          label={t.nav.settings}
+          icon={<IconCog />}
+          collapsed={collapsed}
+          adminOnlyLabel={t.admin.adminOnly}
+          items={settingsItems}
+        />
       </nav>
 
       {/* Footer — Codebook docs/product-standards.md, Sidebar-Profil:

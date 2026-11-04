@@ -80,6 +80,11 @@ services:
       - NODE_ENV=production
       # Required when accessed via reverse proxy or external domain
       - AUTH_TRUST_HOST=true
+      # How many proxies append to X-Forwarded-For in front of the app. The
+      # flood brake reads the client address that many entries from the end,
+      # because anything a client sends itself lands in front of it. 0 turns
+      # the header off entirely and puts every caller in one bucket.
+      - TRUSTED_PROXY_COUNT=${TRUSTED_PROXY_COUNT:-1}
       #
       # ─── Optional: mail, for the "forgot password" link ──────────────────
       # Leave SMTP_HOST empty and the feature simply stays off: the link is

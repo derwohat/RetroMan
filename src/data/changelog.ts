@@ -6,6 +6,20 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.5.0",
+    date: "04.11.2026",
+    changes: [
+      "**Alles, was man einstellt, steht jetzt an einer Stelle.** Der eigene Admin-Bereich mit seiner zweiten Seitenleiste ist aufgelöst: „Einstellungen“ ist ein aufklappbarer Block in der Hauptleiste, und darin stehen das eigene Profil sowie — für Administratoren — Benutzer, Sammlungen, Tags und System. Nebenbei sind damit zwei Seiten überhaupt erst erreichbar geworden: die Tag-Verwaltung war über die Navigation von nirgends zu finden, die Sammlungs-Verwaltung nur über einen Link im leeren Dashboard",
+      "**Behoben: Wer eine Verwaltungs-Adresse eintippte, ohne Administrator zu sein, bekam eine Seite, die nur Fehler zeigte.** Fremde Daten waren dabei nie zu sehen — die Schnittstellen dahinter haben immer abgelehnt — aber die Seite tat so, als hätte sie etwas anzuzeigen. Jetzt landet man auf der Übersicht",
+      "**Behoben: Eine Auswahlliste umzubenennen ließ die Einträge beim alten Namen stehen.** Bei „Shops“ und „Lagerort“ steht der Wert zusätzlich als Text am Eintrag selbst. Wer den Listenwert änderte, hatte danach beide Schreibweisen gleichzeitig in der Ansicht. Liste und Einträge wandern jetzt zusammen",
+      "**Behoben: Eine Listengruppe ließ sich mit jedem beliebigen Datenbankfeld verknüpfen** — auch mit dem, in dem das Passwort liegt. Der Feldname kam ungeprüft von außen; jetzt läuft er gegen eine feste Liste erlaubter Felder",
+      "**Die Bremse gegen Anmelde-Fluten zählt die Adresse jetzt richtig.** Hinter einem Reverse-Proxy stand sie an einer Stelle, die jeder Aufrufer selbst mitschicken kann — mit einer erfundenen Adresse pro Versuch griff sie nie. Gezählt wird jetzt von hinten, wo die Angabe vom Proxy selbst kommt. Die Anzahl der vorgeschalteten Proxys steht in `TRUSTED_PROXY_COUNT`, Vorgabe 1",
+      "**Die Schriften liefert die App selbst aus, statt sie von Google zu holen.** Damit geht keine Adresse eines Besuchers mehr an einen Dritten, und die Oberfläche sieht auch ohne Internetverbindung richtig aus",
+      "**Der Zeitpunkt der letzten Anmeldung ist auch dann zu sehen, wenn ein Konto sein Passwort wechseln muss.** Vorher stand dort nur der Hinweis-Chip, und der Zeitpunkt versteckte sich in einem Tooltip — auf dem Handy also nirgends",
+      "Eingabefelder sind überall 36 Pixel hoch. Vorher waren es 35, was man einzeln nicht sieht, untereinander aber schon",
+    ],
+  },
+  {
     version: "1.4.1",
     date: "30.10.2026",
     changes: [

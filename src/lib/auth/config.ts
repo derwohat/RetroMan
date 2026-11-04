@@ -8,6 +8,7 @@ import { isSecureConnection } from "@/lib/auth/cookieBinding";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionLimits } from "@/lib/auth/sessionLimits";
 import { rateLimit } from "@/lib/rateLimit";
+import { clientAddress } from "@/lib/clientAddress";
 import "@/lib/auth/types";
 
 class RateLimitedError extends CredentialsSignin {
@@ -185,8 +186,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
         // Flood brake only — deliberately wide. It used to sit at 10 per
         // account and counted every attempt, so ten correct sign-ins locked
         // the account; that is exactly the failure the Codebook warns about.
-        const forwardedFor = (await headers()).get("x-forwarded-for");
-        const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+        const ip = await clientAddress();
         if (!rateLimit(`login:ip:${ip}`, IP_FLOOD_LIMIT).ok) {
           throw new RateLimitedError();
         }

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/rateLimit";
+import { clientAddress } from "@/lib/clientAddress";
 import { consumeResetToken } from "@/lib/passwordReset";
 import { mailIsConfigured } from "@/lib/mailer";
 
@@ -16,8 +16,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "NotAvailable" }, { status: 404 });
   }
 
-  const forwardedFor = (await headers()).get("x-forwarded-for");
-  const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+  const ip = await clientAddress();
   const { ok } = rateLimit(`pwreset:confirm:${ip}`, CONFIRM_LIMIT);
   if (!ok) {
     return NextResponse.json({ error: "RateLimited" }, { status: 429 });

@@ -1,23 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import { NextAuthProvider } from "@/components/NextAuthProvider";
+import { fontVariables } from "@/fonts";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const pressStart2P = Press_Start_2P({
-  variable: "--font-press-start",
-  subsets: ["latin"],
-  weight: "400",
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -54,7 +38,7 @@ export default function RootLayout({
       lang="de"
       suppressHydrationWarning
       data-theme="retro80s"
-      className={`dark ${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} h-full antialiased`}
+      className={`dark ${fontVariables} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <NextAuthProvider>{children}</NextAuthProvider>

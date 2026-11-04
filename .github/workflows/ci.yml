@@ -12,9 +12,16 @@ jobs:
     name: Lint, Typecheck & Prisma Validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Node 20 is gone as an Actions runtime, so every action that still ran
+      # on it warned on each run. setup-node is in here although the suite's
+      # target list leaves it out: that list was written from a workflow with
+      # no test job, and v4 runs on Node 20 just the same.
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      # v5 caches automatically when package.json names a packageManager, and
+      # v6 narrows that to npm. Neither applies here: there is no such field,
+      # and the cache is asked for explicitly below.
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -51,10 +58,10 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -62,7 +69,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
           # latest used to follow the newest commit on main, so an untagged
@@ -75,7 +82,7 @@ jobs:
             type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile

@@ -130,9 +130,16 @@ export default function AdminUsersPage() {
       );
     }
     if (user.mustChangePassword) {
+      // Date and time belong in the column, not only in a tooltip: a tooltip
+      // never appears on a phone, and on a desktop nobody hovers a column
+      // they are scanning. Who has signed in and when must be readable at a
+      // glance - that is what the column is for.
       return (
-        <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-400" title={formatDate(user.lastLoginAt)}>
-          {t.adminUsers.firstLoginPending}
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-400">
+            {t.adminUsers.firstLoginPending}
+          </span>
+          <span className="text-[10px] text-muted-foreground tabular-nums">{formatDate(user.lastLoginAt)}</span>
         </span>
       );
     }

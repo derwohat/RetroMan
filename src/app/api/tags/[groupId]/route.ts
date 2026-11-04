@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/api/auth";
 import { prisma } from "@/lib/db/prisma";
+import { isLinkableItemField } from "@/lib/tags/linkedField";
 
 type Params = { params: Promise<{ groupId: string }> };
 
@@ -45,7 +46,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const data: Record<string, unknown> = {};
   if (body.color) data.color = body.color;
-  if (body.linkedField !== undefined) data.linkedField = body.linkedField || null;
+  if (body.linkedField !== undefined) {
+    // Checked here, not only where it is read: the value becomes a column
+    // name when a list value is renamed, so an unknown one is refused on the
+    // way in instead of being stored and tripped over later.
+    if (body.linkedField && !isLinkableItemField(body.linkedField)) {
+      return NextResponse.json({ error: "Unbekanntes verknüpftes Feld." }, { status: 400 });
+    }
+    data.linkedField = body.linkedField || null;
+  }
 
   const group = await prisma.tagGroup.update({ where: { id: groupId }, data });
   return NextResponse.json(group);

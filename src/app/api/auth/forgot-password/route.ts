@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/rateLimit";
+import { clientAddress } from "@/lib/clientAddress";
 import { createResetToken } from "@/lib/passwordReset";
 import { appBaseUrl, mailIsConfigured, sendMail } from "@/lib/mailer";
 import { translations, type Locale } from "@/lib/i18n";
@@ -19,8 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const rawLocale = typeof body?.locale === "string" ? body.locale : "de";
   const locale: Locale = isLocale(rawLocale) ? rawLocale : "de";
 
-  const forwardedFor = (await headers()).get("x-forwarded-for");
-  const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+  const ip = await clientAddress();
   const { ok } = rateLimit(`pwreset:request:${ip}`, REQUEST_LIMIT);
   if (!ok) {
     return NextResponse.json({ error: "RateLimited" }, { status: 429 });

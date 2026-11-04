@@ -44,13 +44,9 @@ function ringPeak(i: number): number {
 export function AppHeader({
   onMenuToggle,
   sidebarOpen = false,
-  // The app and the admin area each have their own drawer; the burger has to
-  // point at the one that is on the page.
-  sidebarId = "app-sidebar",
 }: {
   onMenuToggle?: () => void;
   sidebarOpen?: boolean;
-  sidebarId?: string;
 }) {
   const { t } = useTranslations();
 
@@ -64,7 +60,7 @@ export function AppHeader({
           className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:text-primary transition"
           aria-label={t.header.menu}
           aria-expanded={sidebarOpen}
-          aria-controls={sidebarId}
+          aria-controls="app-sidebar"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

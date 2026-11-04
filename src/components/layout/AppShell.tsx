@@ -10,7 +10,14 @@ import { SessionExpiryGuard } from "@/components/SessionExpiryGuard";
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  role,
+}: {
+  children: React.ReactNode;
+  /** Read on the server, so the sidebar is complete in the first paint. */
+  role: "USER" | "ADMIN" | null;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [changelogForceOpen, setChangelogForceOpen] = useState(false);
   const pathname = usePathname();
@@ -56,6 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
       <div className="flex flex-1 overflow-hidden">
         <AppSidebar
+          role={role}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           onOpenChangelog={() => setChangelogForceOpen(true)}
