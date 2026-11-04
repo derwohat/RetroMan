@@ -16,11 +16,14 @@ export async function GET(req: NextRequest) {
         { userId },
       ],
     },
-    orderBy: { order: "asc" },
+    // createdAt as a second key: with equal "order" the database is free to
+    // return either sequence, and it may differ between two requests — the
+    // list then appears to shuffle on its own.
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: {
       values: {
         where: q ? { value: { contains: q, mode: "insensitive" } } : {},
-        orderBy: { order: "asc" },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
       },
     },
   });

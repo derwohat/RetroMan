@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const groups = await prisma.tagGroup.findMany({
-    orderBy: { order: "asc" },
-    include: { values: { orderBy: { order: "asc" } } },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    include: { values: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
   });
 
   // Codebook docs/data-standards.md: the "Verwendet" column is delivered only
@@ -45,9 +45,13 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
   const { name, color } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Name erforderlich." }, { status: 400 });
-  const count = await prisma.tagGroup.count();
+  // max + 1, not count(): with count() a group created after another was
+  // deleted gets an order that is already taken, and two groups with the same
+  // order come back in whatever sequence the database feels like — the list
+  // then appears to shuffle on its own. Same approach the collections take.
+  const agg = await prisma.tagGroup.aggregate({ _max: { order: true } });
   const group = await prisma.tagGroup.create({
-    data: { name: name.trim(), order: count, ...(color ? { color } : {}) },
+    data: { name: name.trim(), order: (agg._max.order ?? -1) + 1, ...(color ? { color } : {}) },
     include: { values: true },
   });
   return NextResponse.json(group, { status: 201 });

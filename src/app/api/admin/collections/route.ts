@@ -14,7 +14,7 @@ export async function GET() {
         tagGroups: { include: { group: true }, orderBy: { createdAt: "asc" } },
         _count: { select: { items: true } },
       },
-      orderBy: { order: "asc" },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     });
     return NextResponse.json(collections);
   } catch {

@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.6.3",
+    date: "04.11.2026",
+    changes: [
+      "**Behoben: Die Reihenfolge der Sammlungen wurde bei jedem Neustart zurückgesetzt.** Wer eine Sammlung nach vorn zog, fand sie nach dem nächsten Update wieder an ihrem alten Platz. Schuld war die Einrichtungsroutine, die bei jedem Start läuft und die Vorgabe-Reihenfolge zurückschrieb — bei „PC-Spiele“ also zuverlässig ans Ende. Sie legt jetzt nur noch an, was fehlt, und fasst Vorhandenes nicht mehr an",
+      "**Behoben: Dasselbe galt für Symbol und Medientyp einer Sammlung** sowie für die Reihenfolge der Tag-Gruppen und der Werte darin. Wer ein Symbol änderte oder Werte sortierte, hatte nach dem nächsten Start die Vorgabe zurück",
+      "**Behoben: Zwei Listeneinträge konnten dieselbe Sortiernummer bekommen** — dann entschied die Datenbank, welcher zuerst kommt, und das konnte von Aufruf zu Aufruf wechseln. Neue Tag-Gruppen bekommen jetzt eine garantiert freie Nummer, und die Listen haben ein zweites, festes Sortierkriterium",
+    ],
+  },
+  {
     version: "1.6.2",
     date: "04.11.2026",
     changes: [

@@ -20,7 +20,7 @@ export async function GET() {
         },
         _count: { select: { items: true } },
       },
-      orderBy: { order: "asc" },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     });
     return NextResponse.json(collections);
   } catch {

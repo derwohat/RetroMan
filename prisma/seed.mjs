@@ -50,32 +50,42 @@ async function main() {
     );
     const ownerId = firstAdmin.rows[0]?.id ?? null;
 
+    // This seed runs on EVERY container start, so anything it writes to an
+    // existing row it writes again after every update and restart. It used to
+    // UPDATE icon, mediaType and "order" here — all three are editable in the
+    // app, so a collection dragged to the top was back at the bottom after the
+    // next restart, and a changed icon was back to the default. The user
+    // reported exactly that on 04.11.2026 for "PC-Spiele".
+    //
+    // The seed's job is to make sure the defaults EXIST, not to assert what
+    // they should look like. An existing collection is therefore left alone.
     let created = 0;
-    let updated = 0;
+    let vorhanden = 0;
     for (const col of DEFAULT_COLLECTIONS) {
       const existing = await client.query(`SELECT id FROM "Collection" WHERE name=$1 LIMIT 1`, [col.name]);
       if (existing.rows.length > 0) {
-        await client.query(
-          `UPDATE "Collection" SET icon=$1, "mediaType"=$2::\"MediaType\", "order"=$3 WHERE id=$4`,
-          [col.icon, col.mediaType, col.order, existing.rows[0].id],
-        );
-        updated++;
+        vorhanden++;
       } else if (ownerId) {
+        // Appended rather than placed at the index from the JSON: on a fresh
+        // database that yields exactly the file's order (0, 1, 2 …), and on an
+        // existing one a newly shipped default lands at the end instead of
+        // colliding with an arrangement somebody made.
+        const max = await client.query(`SELECT COALESCE(MAX("order"), -1) AS m FROM "Collection"`);
         await client.query(
           `INSERT INTO "Collection" (id, name, icon, "mediaType", "order", "gradingEnabled", "userId", "createdAt")
            VALUES ($1,$2,$3,$4::\"MediaType\",$5,false,$6,NOW())`,
-          [cuid(), col.name, col.icon, col.mediaType, col.order, ownerId],
+          [cuid(), col.name, col.icon, col.mediaType, Number(max.rows[0].m) + 1, ownerId],
         );
         created++;
       }
     }
 
     if (ownerId) {
-      console.log(`✓ collections: ${created} created, ${updated} updated`);
+      console.log(`✓ collections: ${created} created, ${vorhanden} already there (left untouched)`);
     } else {
       // First boot: nobody exists yet, so the setup page creates them for
       // the first admin instead.
-      console.log(`✓ collections: ${updated} updated, rest left to first-run setup`);
+      console.log(`✓ collections: ${vorhanden} already there, rest left to first-run setup`);
     }
 
     // ── Upsert Tag Groups ─────────────────────────────────────────────────────
@@ -88,16 +98,22 @@ async function main() {
       let groupId;
       if (existing.rows.length > 0) {
         groupId = existing.rows[0].id;
+        // "order" is NOT reasserted — the groups can be dragged into order in
+        // the app, and writing it here put them back on every restart.
+        // linkedField stays, because that is wiring and not a preference: it
+        // is what makes "Shops" point at Item.store, and the app validates it
+        // against the same allow-list (src/lib/tags/linkedField.ts).
         await client.query(
-          `UPDATE "TagGroup" SET "order"=$1, "linkedField"=$2 WHERE id=$3`,
-          [groupDef.order, groupDef.linkedField ?? null, groupId]
+          `UPDATE "TagGroup" SET "linkedField"=$1 WHERE id=$2`,
+          [groupDef.linkedField ?? null, groupId]
         );
       } else {
         groupId = cuid();
+        const max = await client.query(`SELECT COALESCE(MAX("order"), -1) AS m FROM "TagGroup" WHERE "isSystem"=true AND "userId" IS NULL`);
         await client.query(
           `INSERT INTO "TagGroup" (id, name, "order", color, "isSystem", "linkedField", "createdAt")
            VALUES ($1,$2,$3,'#ff2d95',true,$4,NOW())`,
-          [groupId, groupDef.name, groupDef.order, groupDef.linkedField ?? null]
+          [groupId, groupDef.name, Number(max.rows[0].m) + 1, groupDef.linkedField ?? null]
         );
       }
 
@@ -108,13 +124,18 @@ async function main() {
           [groupId, groupDef.values[i]]
         );
         if (existingVal.rows.length > 0) {
-          await client.query(`UPDATE "TagValue" SET "order"=$1 WHERE id=$2`, [i, existingVal.rows[0].id]);
-        } else {
-          await client.query(
-            `INSERT INTO "TagValue" (id, "groupId", value, "order", "createdAt") VALUES ($1,$2,$3,$4,NOW())`,
-            [cuid(), groupId, groupDef.values[i], i]
-          );
+          // Left alone: the values inside a group are draggable too, and
+          // rewriting "order" here undid that on every restart.
+          continue;
         }
+        const max = await client.query(
+          `SELECT COALESCE(MAX("order"), -1) AS m FROM "TagValue" WHERE "groupId"=$1`,
+          [groupId]
+        );
+        await client.query(
+          `INSERT INTO "TagValue" (id, "groupId", value, "order", "createdAt") VALUES ($1,$2,$3,$4,NOW())`,
+          [cuid(), groupId, groupDef.values[i], Number(max.rows[0].m) + 1]
+        );
       }
       console.log(`✓ Tag group "${groupDef.name}" synced (${groupDef.values.length} values)`);
     }
