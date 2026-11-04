@@ -35,6 +35,49 @@ export function IconPower({ className = BASE }: IconProps) {
   );
 }
 
+/** Lift an account lockout — an open padlock, not a key (that is the reset). */
+export function IconUnlock({ className = BASE }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="4.5" y="11" width="15" height="9.5" rx="2" />
+      <path strokeLinecap="round" d="M8.5 11V7.5a3.5 3.5 0 017 0" />
+      <path strokeLinecap="round" d="M12 14.5v2.5" />
+    </svg>
+  );
+}
+
+/** End every session of an account: a door with an arrow leaving through it. */
+export function IconSignOutAll({ className = BASE }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14 4.5H7.5A2 2 0 005.5 6.5v11a2 2 0 002 2H14" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12.5 12h7m0 0l-2.5-2.5m2.5 2.5L17 14.5" />
+    </svg>
+  );
+}
+
+// A yes/no cell, not an action: the tick and the dash state a fact about the
+// account. They are drawn heavier than the action icons so that a column of
+// them reads as a pattern from a distance. The word stands beside them — a
+// bare tick leaves open what it answers.
+const MARK = "h-3.5 w-3.5";
+
+export function IconCheck({ className = MARK }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+export function IconDash({ className = MARK }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden="true">
+      <path strokeLinecap="round" d="M6 12h12" />
+    </svg>
+  );
+}
+
 export function IconTrash({ className = BASE }: IconProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

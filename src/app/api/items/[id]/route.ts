@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 import { parseItemFields } from "@/lib/api/itemFields";
+import { checkLinkedFieldValues } from "@/lib/tags/linkedField";
 
 const UPLOAD_DIR =
   process.env.NODE_ENV === "production"
@@ -80,6 +81,15 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.message, field: parsed.field }, { status: 422 });
   }
   const data = parsed.data;
+
+  // Codebook docs/data-standards.md, rule 3 — same check as on create. Only
+  // the fields the request actually carries are looked at, so a PATCH that
+  // changes the title alone is not refused over a shop someone else entered
+  // before the list existed.
+  const listen = await checkLinkedFieldValues(data as Record<string, unknown>, userId);
+  if (!listen.ok) {
+    return NextResponse.json({ error: listen.message, field: listen.field }, { status: 422 });
+  }
 
   // tags as array of { tagValueId, groupId }
   let tagsUpdate = {};

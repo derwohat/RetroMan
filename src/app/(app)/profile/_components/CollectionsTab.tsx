@@ -198,9 +198,9 @@ function SortableCollection({ col, expanded, onExpand, onDelete, onReload, onRen
         <IconExpand open={expanded} />
 
         <button onClick={startEditName}
-          onKeyDown={(e) => e.stopPropagation()} className="grid h-11 w-11 shrink-0 place-items-center rounded text-[10px] text-muted-foreground hover:text-foreground transition" title={t.collections.rename}>✎</button>
+          onKeyDown={(e) => e.stopPropagation()} className="tap-target retro-btn-row grid w-8 shrink-0 place-items-center rounded text-[10px] text-muted-foreground hover:text-foreground transition" title={t.collections.rename}>✎</button>
         <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          onKeyDown={(e) => e.stopPropagation()} className="grid h-11 w-11 shrink-0 place-items-center rounded text-[10px] text-destructive/50 hover:text-destructive transition" title={t.collections.delete}>✕</button>
+          onKeyDown={(e) => e.stopPropagation()} className="tap-target retro-btn-row grid w-8 shrink-0 place-items-center rounded text-[10px] text-destructive/50 hover:text-destructive transition" title={t.collections.delete}>✕</button>
       </div>
 
       {expanded && (
@@ -242,8 +242,8 @@ function SortableCollection({ col, expanded, onExpand, onDelete, onReload, onRen
                 {fieldError && <p className="text-xs text-destructive">{fieldError}</p>}
                 <div className="flex gap-2">
                   <button type="button" onClick={() => { setShowAdd(false); setFieldError(""); setFieldForm({ name: "", fieldKey: "", fieldType: "TEXT", options: "", required: false }); }}
-                    className="flex-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
-                  <button type="submit" disabled={submitting} className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition">
+                    className="flex-1 retro-btn rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
+                  <button type="submit" disabled={submitting} className="flex-1 retro-btn rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition">
                     {submitting ? "…" : t.collections.addField}</button>
                 </div>
               </form>
@@ -383,7 +383,7 @@ export function CollectionsTab() {
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{t.userSettings.collectionsHint}</p>
         {!showCreate && (
-          <button onClick={() => setShowCreate(true)} className="flex shrink-0 items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90">
+          <button onClick={() => setShowCreate(true)} className="flex shrink-0 items-center gap-2 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90">
             + {t.collections.newCollection}
           </button>
         )}
@@ -415,11 +415,11 @@ export function CollectionsTab() {
               {MEDIA_TYPE_VALUES.map((v) => <option key={v} value={v}>{mediaTypeLabel(t, v)}</option>)}
             </select>
             <button type="submit" disabled={submitting}
-              className="shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
+              className="shrink-0 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
               {submitting ? "…" : t.common.save}
             </button>
             <button type="button" onClick={() => { setShowCreate(false); setColError(""); setColForm({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" }); }}
-              className="shrink-0 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
+              className="shrink-0 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
               ✕
             </button>
           </div>

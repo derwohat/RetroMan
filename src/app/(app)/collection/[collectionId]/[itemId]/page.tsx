@@ -1000,7 +1000,7 @@ export default function ItemDetailPage() {
                 <button
                   onClick={saveGrading}
                   disabled={gradingSaving || !gradingForm.service.trim() || !gradingForm.score.trim()}
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50 transition hover:opacity-90"
+                  className="retro-btn rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50 transition hover:opacity-90"
                 >
                   {gradingSaving ? t.common.saving : t.common.save}
                 </button>

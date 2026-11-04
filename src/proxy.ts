@@ -11,7 +11,27 @@ import { authBypassEnabled } from "@/lib/auth/devBypass";
 // address write and delete files, and because these were prefix matches it
 // opened /api/uploads/<name> for reading along with it - a route nobody had
 // listed.
-const PUBLIC_PATHS = ["/login", "/setup", "/api/auth", "/api/setup", "/api/app-settings"];
+// /forgot-password and /reset-password belong here and never were: whoever
+// needs them has no session by definition, so the guard below sent them to
+// the sign-in page and the whole flow was unreachable from a browser — found
+// on 04.11.2026 while the invitation link was being tested, which lands on
+// /reset-password and did the same. The APIs behind them were public all
+// along (through /api/auth), which is why the flow looked fine from a script
+// and broken from a browser.
+//
+// They do not need a session, but they are not unguarded: the request limit
+// in both routes and the single-use, hashed, expiring token are what protect
+// them. /change-password and /verify-mfa stay OUT of this list on purpose —
+// they are reached with a session, only one that is not finished yet.
+const PUBLIC_PATHS = [
+  "/login",
+  "/setup",
+  "/forgot-password",
+  "/reset-password",
+  "/api/auth",
+  "/api/setup",
+  "/api/app-settings",
+];
 const MFA_PATHS   = ["/verify-mfa", "/api/auth/mfa/verify"];
 
 /**
@@ -63,8 +83,13 @@ export async function proxy(req: NextRequest) {
     if (session.user.mustChangePassword && !nextUrl.pathname.startsWith("/change-password") && !isMfaPath) {
       return refuse(req, "/change-password");
     }
-    // Admin-only pages — redirect non-admins to dashboard
-    if (nextUrl.pathname.startsWith("/admin") && session.user.role !== "ADMIN") {
+    // Admin-only pages — redirect non-admins to dashboard.
+    //
+    // Compared on segment boundaries like the lists above, for the same reason
+    // read from the other side: a bare prefix also catches paths nobody meant,
+    // and a restriction list that overreaches locks people out of a route that
+    // was never administrative. /administration would have been an example.
+    if (matches(nextUrl.pathname, ["/admin"]) && session.user.role !== "ADMIN") {
       // Signed in but not permitted is a 403, not an expired session — the
       // guard in the browser must not send anyone to the sign-in page for it.
       if (wantsData(nextUrl.pathname)) {

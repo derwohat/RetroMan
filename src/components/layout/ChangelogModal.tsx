@@ -128,7 +128,7 @@ export function ChangelogModal({ forceOpen = false, onClose }: Props) {
               is open: nothing is acknowledged when someone looked it up. */}
           <button
             onClick={dismiss}
-            className="min-h-11 shrink-0 rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 transition"
+            className="retro-btn shrink-0 rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 transition"
           >
             {openedAutomatically ? t.header.changelogAck : t.header.changelogClose}
           </button>

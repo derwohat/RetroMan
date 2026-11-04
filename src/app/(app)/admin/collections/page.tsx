@@ -318,7 +318,7 @@ function SortableCollection({
         <button
           onClick={startEditName}
           onKeyDown={(e) => e.stopPropagation()}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded text-[10px] text-muted-foreground hover:text-foreground transition"
+          className="tap-target retro-btn-row grid w-8 shrink-0 place-items-center rounded text-[10px] text-muted-foreground hover:text-foreground transition"
           title={t.collections.rename}
         >
           ✎
@@ -328,7 +328,7 @@ function SortableCollection({
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           onKeyDown={(e) => e.stopPropagation()}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded text-[10px] text-destructive/50 hover:text-destructive transition"
+          className="tap-target retro-btn-row grid w-8 shrink-0 place-items-center rounded text-[10px] text-destructive/50 hover:text-destructive transition"
           title={t.collections.delete}
         >
           ✕
@@ -414,14 +414,14 @@ function SortableCollection({
                   <button
                     type="button"
                     onClick={() => { setShowAdd(false); setFieldError(""); setFieldForm({ name: "", fieldKey: "", fieldType: "TEXT", options: "", required: false }); }}
-                    className="flex-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition"
+                    className="flex-1 retro-btn rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition"
                   >
                     {t.common.cancel}
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition"
+                    className="flex-1 retro-btn rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground uppercase hover:opacity-90 disabled:opacity-50 transition"
                   >
                     {submitting ? "…" : t.collections.addField}
                   </button>
@@ -669,7 +669,7 @@ export default function AdminCollectionsPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
+          className="flex items-center gap-2 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
         >
           + {t.collections.newCollection}
         </button>
@@ -763,14 +763,14 @@ export default function AdminCollectionsPage() {
                 <button
                   type="button"
                   onClick={() => { setShowCreate(false); setColError(""); }}
-                  className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
+                  className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
                 >
                   {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+                  className="flex-1 retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
                 >
                   {submitting ? t.collections.creating : t.common.create}
                 </button>

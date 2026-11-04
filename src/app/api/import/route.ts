@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { fileUnknownLinkedValues } from "@/lib/tags/linkedField";
 
 async function getUserId(): Promise<string | null> {
   if (authBypassEnabled()) {
@@ -66,6 +67,15 @@ export async function POST(req: NextRequest) {
   let created = 0;
   let skipped = 0;
 
+  // Codebook docs/data-standards.md, rule 3: the import is exempt from the
+  // check — a foreign stock would fail a whole row over one unknown word —
+  // but it files the unknown values in the list first, so they are visible
+  // and can be tidied instead of silently diverging from it.
+  const listenwerte = await fileUnknownLinkedValues(
+    body.items.map((raw) => ({ store: raw.store ?? null, location: raw.location ?? null })),
+    userId,
+  );
+
   for (const raw of body.items) {
     if (!raw.title?.trim()) { skipped++; continue; }
 
@@ -109,5 +119,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ created, skipped });
+  // The number of newly filed list values travels with the report: an import
+  // that quietly grew the list is worth saying out loud.
+  return NextResponse.json({ created, skipped, newListValues: listenwerte });
 }

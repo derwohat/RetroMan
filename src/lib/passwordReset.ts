@@ -7,6 +7,15 @@ import { prisma } from "@/lib/db/prisma";
 const TOKEN_TTL_MS = 60 * 60_000;
 const TOKEN_BYTES = 32;
 
+/**
+ * An invitation is the same token with a longer life — Codebook
+ * docs/user-management.md, point 4: the invited person sets their own password
+ * on first visit, and the admin never sees one. Seven days, because an
+ * invitation often waits for someone's next working day; a reset link is
+ * answered within the hour or not at all.
+ */
+export const INVITE_TTL_MS = 7 * 24 * 60 * 60_000;
+
 // SHA-256 rather than bcrypt: this is 256 bits of CSPRNG output, not a
 // human-chosen secret, so there is nothing to brute-force and no reason to pay
 // a KDF's cost on every request. Hashing at all is what matters — a leaked
@@ -20,7 +29,10 @@ function hashToken(raw: string): string {
  * user — otherwise an older link, possibly already in the wrong hands, keeps
  * working alongside the new one.
  */
-export async function createResetToken(userId: string): Promise<string> {
+export async function createResetToken(
+  userId: string,
+  ttlMs: number = TOKEN_TTL_MS,
+): Promise<string> {
   const raw = randomBytes(TOKEN_BYTES).toString("base64url");
 
   await prisma.$transaction([
@@ -32,7 +44,7 @@ export async function createResetToken(userId: string): Promise<string> {
       data: {
         userId,
         tokenHash: hashToken(raw),
-        expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+        expiresAt: new Date(Date.now() + ttlMs),
       },
     }),
   ]);

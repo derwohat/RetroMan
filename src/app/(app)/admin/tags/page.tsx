@@ -22,7 +22,7 @@ import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
 import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
 
-type TagValue = { id: string; value: string; order: number };
+type TagValue = { id: string; value: string; order: number; usage?: number };
 type TagGroup = { id: string; name: string; color: string; order: number; isSystem: boolean; values: TagValue[] };
 
 // ── Drag Handle Icon ───────────────────────────────────────────────────────────
@@ -100,6 +100,22 @@ function SortableValue({
           </span>
         )}
       </div>
+      {/* Codebook docs/data-standards.md: "Dazu gehört eine Spalte
+          „Verwendet"" — without it nobody can tell which value is safe to
+          delete. "0" is said out loud rather than left blank: blank reads as
+          "not counted", and that is the one thing it must not mean here. */}
+      {tagValue.usage !== undefined && (
+        <span
+          className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground tabular-nums"
+          title={
+            tagValue.usage === 0
+              ? t.adminTags.usageNone
+              : `${tagValue.usage} ${t.adminTags.usageSuffix}`
+          }
+        >
+          {tagValue.usage}
+        </span>
+      )}
       <button
         onClick={() => onDelete(groupId, tagValue.id)}
         className="opacity-0 group-hover/value:opacity-100 text-[10px] text-destructive/60 hover:text-destructive transition ml-1 shrink-0"
@@ -325,6 +341,14 @@ export default function AdminTagsPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ type: "group"; group: TagGroup } | { type: "value"; group: TagGroup; value: TagValue } | null>(null);
+  // Rueckfrage vor dem Zusammenfuehren, mit der Zahl aus der Antwort der API.
+  const [mergeAsk, setMergeAsk] = useState<{
+    groupId: string;
+    valueId: string;
+    from: string;
+    into: string;
+    affectedItems: number;
+  } | null>(null);
 
   const deleteImpact = useDeleteImpact(
 
@@ -344,12 +368,16 @@ export default function AdminTagsPage() {
   const colorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/tag-groups");
+    // with_usage: die Spalte "Verwendet" verlangt der Standard, und sie
+    // begruendet die Zahl in der Zusammenfuehren-Rueckfrage. Nur hier, nicht
+    // in den Abfragen, die ein Auswahlfeld in der App fuellen.
+    const res = await fetch("/api/admin/tag-groups?with_usage=true");
     if (res.ok) setGroups(await res.json());
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  const loadGroups = load;
 
   function toggleGroup(id: string) {
     setOpenGroups((prev) => {
@@ -433,22 +461,61 @@ export default function AdminTagsPage() {
     }
   }
 
-  async function handleRenameValue(groupId: string, valueId: string, newValue: string) {
+  /**
+   * Codebook docs/data-standards.md, rule 2: renaming onto a value that
+   * already exists merges the two, after a question that names how many
+   * records are affected. A bare "already exists" would leave the one person
+   * who can fix the duplicate without a way to do it.
+   */
+  async function handleRenameValue(
+    groupId: string,
+    valueId: string,
+    newValue: string,
+    confirmMerge = false,
+  ) {
     const res = await fetch(`/api/admin/tag-groups/${groupId}/values/${valueId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ value: newValue }),
+      body: JSON.stringify({ value: newValue, ...(confirmMerge ? { confirmMerge: true } : {}) }),
     });
-    if (res.ok) {
-      const updated: TagValue = await res.json();
-      setGroups((prev) =>
-        prev.map((g) =>
-          g.id === groupId
-            ? { ...g, values: g.values.map((v) => (v.id === valueId ? updated : v)) }
-            : g
-        )
-      );
+
+    if (res.status === 409) {
+      const info = await res.json();
+      if (info.mergeRequired) {
+        setMergeAsk({
+          groupId,
+          valueId,
+          from: info.from,
+          into: info.into,
+          affectedItems: info.affectedItems ?? 0,
+        });
+        return;
+      }
     }
+    if (!res.ok) {
+      alert(await errorText(res, t.common.error));
+      return;
+    }
+    const updated: { id: string; value: string; merged: boolean } = await res.json();
+    if (updated.merged) {
+      // The old entry is gone and its records moved, so the list is reloaded
+      // rather than patched in place — a merge changes more than one row.
+      setMergeAsk(null);
+      loadGroups();
+      return;
+    }
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              values: g.values.map((v) =>
+                v.id === valueId ? { ...v, value: updated.value } : v,
+              ),
+            }
+          : g,
+      ),
+    );
   }
 
   async function handleReorderValues(groupId: string, newOrder: TagValue[]) {
@@ -511,7 +578,7 @@ export default function AdminTagsPage() {
         </div>
         <button
           onClick={() => { setShowCreateGroup(true); setNewGroupName(""); setCreateError(""); }}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 shrink-0"
+          className="flex items-center gap-2 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 shrink-0"
         >
           {t.adminTags.newGroup}
         </button>
@@ -571,14 +638,14 @@ export default function AdminTagsPage() {
                 <button
                   type="button"
                   onClick={() => { setShowCreateGroup(false); setCreateError(""); }}
-                  className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
+                  className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
                 >
                   {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+                  className="flex-1 retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
                 >
                   {creating ? "…" : t.common.create}
                 </button>
@@ -603,6 +670,49 @@ export default function AdminTagsPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {/* Codebook docs/data-standards.md, rule 2: renaming onto an existing
+          value merges the two, after a question that names the number of
+          affected records. The number comes from the API's 409, so what is
+          shown here is what the server counted — not an estimate made in the
+          browser. */}
+      {mergeAsk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 shadow-2xl">
+            <h3 className="font-heading text-[10px] uppercase tracking-widest text-primary">
+              {t.adminTags.mergeTitle}
+            </h3>
+            <p className="text-sm text-foreground">
+              {t.adminTags.mergeQuestion
+                .replace("{from}", mergeAsk.from)
+                .replace("{into}", mergeAsk.into)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {mergeAsk.affectedItems === 1
+                ? t.adminTags.mergeAffectedOne
+                : t.adminTags.mergeAffected.replace("{count}", String(mergeAsk.affectedItems))}
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setMergeAsk(null)}
+                className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground"
+              >
+                {t.common.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleRenameValue(mergeAsk.groupId, mergeAsk.valueId, mergeAsk.into, true)
+                }
+                className="flex-1 retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium uppercase tracking-wider text-primary-foreground transition hover:opacity-90"
+              >
+                {t.adminTags.mergeConfirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

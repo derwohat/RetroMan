@@ -164,8 +164,12 @@ export function AppSidebar({
     const timer = setTimeout(() => {
       const aside = document.querySelector("aside");
       if (!aside) return;
-      const marked = Array.from(aside.querySelectorAll("a")).filter(
-        (a) => a.getAttribute("aria-current") === "page" || a.className.includes("border-primary"),
+      // Buttons too, not only links: the "Einstellungen" group header is a
+      // button, and when it is collapsed on one of its own routes it is the
+      // element carrying the marking. Querying links alone reported zero
+      // markings for a sidebar that showed one.
+      const marked = Array.from(aside.querySelectorAll("a, button")).filter(
+        (el) => el.getAttribute("aria-current") === "page" || el.className.includes("border-primary"),
       );
       if (marked.length !== 1) {
         console.warn(

@@ -13,12 +13,20 @@ import { prisma } from "@/lib/db/prisma";
 // would break the ambient session types — see Codebook docs/coding-standards.md.
 
 /** What caused a mail. Stored with the attempt so the history says why. */
-export type MailTrigger = "test" | "passwordReset";
+export type MailTrigger = "test" | "passwordReset" | "invitation";
 
 interface MailMessage {
   to: string;
   subject: string;
   text: string;
+  /**
+   * The HTML version. Brandbook §13 and Codebook docs/operations.md
+   * "Gestaltete Mails": two versions in ONE mail, text first, so whoever
+   * turns HTML off still reads a mail written on its own terms. Optional so
+   * a caller that has no layout yet still sends plain text rather than
+   * nothing.
+   */
+  html?: string;
   trigger: MailTrigger;
   /** The person who triggered it, where one did. */
   userId?: string | null;
@@ -185,7 +193,11 @@ export async function sendMail(message: MailMessage): Promise<MailOutcome> {
       replyTo: from,
       to: message.to,
       subject: message.subject,
+      // text BEFORE html: nodemailer builds multipart/alternative in the
+      // order given, and a reader that takes the first part has to get the
+      // text one.
       text: message.text,
+      ...(message.html ? { html: message.html } : {}),
     });
     const outcome: MailOutcome = { status: "sent" };
     await recordAttempt(message, outcome);

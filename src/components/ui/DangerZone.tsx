@@ -184,7 +184,7 @@ export function DangerZone({
           <button
             type="button"
             onClick={cancel}
-            className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
+            className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
           >
             {t.common.cancel}
           </button>

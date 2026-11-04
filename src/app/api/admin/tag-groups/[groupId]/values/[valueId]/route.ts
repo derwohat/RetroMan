@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
-import { renameLinkedItemField } from "@/lib/tags/linkedField";
+import { renameOrMergeValue } from "@/lib/tags/linkedField";
+import { renameAnswer } from "@/lib/tags/renameResponse";
 
 async function checkAdmin(): Promise<NextResponse | null> {
   if (authBypassEnabled()) return null;
@@ -16,44 +17,32 @@ async function checkAdmin(): Promise<NextResponse | null> {
   return null;
 }
 
-/** Thrown inside the transaction so the rollback happens before the answer. */
-class NotFoundError extends Error {}
 type Params = { params: Promise<{ groupId: string; valueId: string }> };
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId, valueId } = await params;
-  const { value } = await req.json();
+  const { value, confirmMerge } = await req.json();
   if (!value?.trim()) return NextResponse.json({ error: "Wert erforderlich." }, { status: 400 });
-  const neu = value.trim();
 
   // One transaction, because the list entry and the records that carry it as
   // text have to move together. Renaming only the entry left the list saying
   // one thing and the records another, with no way back to a single value.
+  // Codebook docs/data-standards.md, rules 1 and 2.
   try {
-    const { updated, mitgeschrieben } = await prisma.$transaction(async (tx) => {
-      const vorher = await tx.tagValue.findUnique({
-        where: { id: valueId, groupId },
-        select: { value: true },
-      });
-      if (!vorher) throw new NotFoundError();
-      const updated = await tx.tagValue.update({
-        where: { id: valueId, groupId },
-        data: { value: neu },
-      });
-      const mitgeschrieben = await renameLinkedItemField(tx, groupId, vorher.value, neu);
-      return { updated, mitgeschrieben };
-    });
-    return NextResponse.json({ ...updated, updatedItems: mitgeschrieben });
+    const result = await prisma.$transaction((tx) =>
+      renameOrMergeValue(tx, groupId, valueId, value.trim(), confirmMerge === true),
+    );
+    return renameAnswer(result);
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
-    }
     // Nothing was written: the transaction rolled back, so the list entry and
     // the records are still in step. Say so instead of a bare 500.
     console.error("Umbenennen fehlgeschlagen:", err);
-    return NextResponse.json({ error: "Umbenennen fehlgeschlagen, nichts geändert." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Umbenennen fehlgeschlagen, nichts geändert." },
+      { status: 500 },
+    );
   }
 }
 

@@ -6,6 +6,24 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.6.0",
+    date: "04.11.2026",
+    changes: [
+      "**Behoben: Der Weg „Passwort vergessen“ war im Browser noch nie benutzbar.** Beide Seiten lagen versehentlich hinter der Anmeldung — und wer sein Passwort vergessen hat, ist ja gerade nicht angemeldet. Der Link aus der Mail landete deshalb auf der Anmeldeseite. Aufgefallen ist das erst, weil der neue Einladungslink denselben Weg nimmt",
+      "**Neue Konten werden per Mail eingeladen, sobald ein Mailserver eingerichtet ist.** Der Administrator sieht dann überhaupt kein Passwort mehr; die eingeladene Person setzt ihr eigenes über einen Link, der sieben Tage gilt und genau einmal funktioniert. Ohne Mailserver bleibt alles wie bisher beim Einmal-Passwort — und wenn der Versand scheitert, bekommt der Administrator es samt Begründung zu sehen, statt mit einem unbenutzbaren Konto dazustehen",
+      "**Die Mails sehen jetzt aus wie die App.** Als HTML, mit der Textfassung in derselben Nachricht, damit auch lesbar bleibt, wer HTML abgeschaltet hat. Nachgeladen wird nichts: keine Bilder, keine Schriften, kein Zählpixel — das Zeichen ist aus Tabellenzellen gebaut und erscheint auch dort, wo Bilder blockiert sind",
+      "**Behoben: Die eigene Rolle und der eigene Aktiv-Status ließen sich selbst ändern.** Wer sich aus Versehen die eigenen Rechte entzog, kam nicht mehr an sie heran. Das geht jetzt nur noch über einen anderen Administrator. Umgekehrt **darf** ein anderer Administrator ein Admin-Konto jetzt abschalten oder löschen — vorher war das gar nicht möglich, ein ausscheidender Administrator blieb für immer aktiv. Mindestens ein aktiver Administrator muss übrig bleiben",
+      "**Neu: Eine Kontosperre nach Fehlversuchen lässt sich vorzeitig aufheben**, statt bis zu 24 Stunden zu warten. Der Knopf erscheint nur bei einem Konto, das wirklich gesperrt ist",
+      "**Neu: „Überall abmelden“** beendet alle Sitzungen eines Kontos, ohne sonst etwas daran zu ändern. Bisher ging das nur als Nebenwirkung von Deaktivieren oder Passwort-Zurücksetzen",
+      "**Behoben: Einen Listenwert auf einen vorhandenen umzubenennen endete in einem Fehler.** Jetzt wird gefragt, wie viele Einträge betroffen sind, und auf Wunsch werden beide Werte zusammengeführt — der einzige Weg, bereits entstandene Dubletten wieder zu einem Wert zu machen",
+      "**Neu: Die Tag-Verwaltung zeigt, wie oft jeder Wert verwendet wird.** Ohne diese Zahl ist nicht zu erkennen, welcher Wert gefahrlos gelöscht werden kann",
+      "**Geändert: Shop und Lagerort müssen jetzt aus der Liste kommen.** Ein frei eingetippter Wert wird abgelehnt — damit nicht mehr „Medimops“, „MEDIMOPS“ und „Medi mops“ nebeneinander entstehen, die jede Suche und jede Auswertung zerlegen. Bestehende Einträge bleiben unberührt, und an einem alten Eintrag lassen sich andere Felder weiter ändern. Der Import ist ausgenommen: er legt unbekannte Werte in der Liste an, wo sie sichtbar und aufräumbar sind",
+      "**Die Anmeldeseiten haben einen neuen Kopf:** das Zeichen groß und mittig auf der oberen Kante einer Karte, darunter die Wortmarke. Gilt für alle Seiten vor der Anmeldung, von der Ersteinrichtung bis zum Passwortwechsel",
+      "**Knöpfe und Felder sind überall gleich hoch** — 36 Pixel am Schreibtisch, 44 am Finger. **Dabei behoben:** die Feldhöhe aus dem letzten Release richtete sich versehentlich nach der gewählten Schriftgröße und lag je nach Einstellung bei 29, 34 oder 38 Pixeln statt bei 36",
+      "Behoben: Eine Adresse wie `/administration` war für normale Benutzer gesperrt, obwohl sie nichts mit der Verwaltung zu tun hat — der Vergleich lief auf Wortanfänge statt auf Abschnittsgrenzen",
+    ],
+  },
+  {
     version: "1.5.1",
     date: "04.11.2026",
     changes: [

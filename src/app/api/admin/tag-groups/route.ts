@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { usageByValueId } from "@/lib/tags/linkedField";
 
 async function checkAdmin(): Promise<NextResponse | null> {
   if (authBypassEnabled()) return null;
@@ -15,13 +16,27 @@ async function checkAdmin(): Promise<NextResponse | null> {
   return null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const groups = await prisma.tagGroup.findMany({
     orderBy: { order: "asc" },
     include: { values: { orderBy: { order: "asc" } } },
   });
+
+  // Codebook docs/data-standards.md: the "Verwendet" column is delivered only
+  // when it is asked for, never in the requests that merely fill a select box
+  // in the app — it walks every item.
+  if (req.nextUrl.searchParams.get("with_usage") === "true") {
+    const usage = await usageByValueId(prisma);
+    return NextResponse.json(
+      groups.map((g) => ({
+        ...g,
+        values: g.values.map((v) => ({ ...v, usage: usage[v.id] ?? 0 })),
+      })),
+    );
+  }
+
   return NextResponse.json(groups);
 }
 

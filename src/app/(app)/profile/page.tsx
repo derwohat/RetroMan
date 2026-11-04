@@ -309,15 +309,15 @@ export default function ProfilePage() {
               <div>
                 <p className="text-xs text-muted-foreground mb-3">{t.profile.exportHint}</p>
                 <div className="flex flex-wrap gap-2">
-                  <a href="/api/export?format=json" download className="inline-flex min-h-11 items-center rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportJson}</a>
-                  <a href="/api/export?format=csv" download className="inline-flex min-h-11 items-center rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportCsv}</a>
+                  <a href="/api/export?format=json" download className="inline-flex items-center retro-btn rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportJson}</a>
+                  <a href="/api/export?format=csv" download className="inline-flex items-center retro-btn rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">{t.profile.exportCsv}</a>
                 </div>
               </div>
               <div className="border-t border-border pt-4">
                 <p className="text-xs text-muted-foreground mb-3">{t.profile.importHint}</p>
                 <div className="flex items-center gap-3 flex-wrap">
                   <button type="button" onClick={() => importFileRef.current?.click()} disabled={importing}
-                    className="rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50">
+                    className="retro-btn rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition disabled:opacity-50">
                     {importing ? t.profile.importing : t.profile.importBtn}
                   </button>
                   <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
@@ -361,7 +361,7 @@ export default function ProfilePage() {
 
           <Section title={t.profile.gdprTitle}>
             <p className="text-xs text-muted-foreground">{t.profile.gdprHint}</p>
-            <a href="/api/export?format=gdpr" download className="inline-flex min-h-11 items-center rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">
+            <a href="/api/export?format=gdpr" download className="inline-flex items-center retro-btn rounded-md border border-border px-4 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary transition">
               {t.profile.gdprDownload}
             </a>
           </Section>
@@ -396,7 +396,7 @@ export default function ProfilePage() {
               })}
               {pwError && <p className="text-xs text-destructive">{pwError}</p>}
               <div className="flex items-center gap-3">
-                <button type="submit" disabled={pwSaving} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
+                <button type="submit" disabled={pwSaving} className="retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
                   {pwSaving ? t.profile.changingPassword : t.profile.changePasswordBtn}
                 </button>
                 {pwMsg && <span className="text-xs text-green-500">{pwMsg}</span>}
@@ -411,7 +411,7 @@ export default function ProfilePage() {
             {mfaMsg && <p className="text-xs text-green-500">{mfaMsg}</p>}
             {mfaError && <p className="text-xs text-destructive">{mfaError}</p>}
             {!profile?.mfaEnabled && !mfaQr && (
-              <button onClick={startMfaSetup} disabled={mfaLoading} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
+              <button onClick={startMfaSetup} disabled={mfaLoading} className="retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
                 {mfaLoading ? t.profile.mfaLoading : t.profile.mfaSetup}
               </button>
             )}
@@ -424,7 +424,7 @@ export default function ProfilePage() {
                   <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={mfaToken}
                     onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, ""))} placeholder="123456"
                     className="retro-field w-32 font-mono text-center tracking-widest" required />
-                  <button type="submit" disabled={mfaLoading || mfaToken.length !== 6} className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
+                  <button type="submit" disabled={mfaLoading || mfaToken.length !== 6} className="retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
                     {mfaLoading ? t.profile.mfaVerifying : t.profile.mfaConfirm}
                   </button>
                   <button type="button" onClick={() => setMfaQr(null)} className="text-xs text-muted-foreground hover:text-foreground">{t.profile.mfaCancel}</button>

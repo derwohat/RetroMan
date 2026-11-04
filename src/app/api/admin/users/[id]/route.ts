@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { randomBytes } from "crypto";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { actingUserId, guardRoleOrStatusChange } from "@/lib/auth/adminGuards";
 
 function genPassword() {
   return randomBytes(8).toString("base64url").slice(0, 12);
@@ -45,18 +46,63 @@ export async function PATCH(
   if (body.action === "toggle-active") {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
-    if (user.role === "ADMIN" && !user.deletedAt) {
-      return NextResponse.json({ error: "Admin-Accounts können nicht deaktiviert werden." }, { status: 403 });
-    }
+    const nextActive = user.deletedAt !== null;
+    const refused = await guardRoleOrStatusChange(id, { nextActive });
+    if (refused) return NextResponse.json({ error: refused.error }, { status: refused.status });
     await prisma.user.update({
       where: { id },
-      data: { deletedAt: user.deletedAt ? null : new Date() },
+      data: { deletedAt: nextActive ? null : new Date() },
     });
     return NextResponse.json({ success: true });
   }
 
   if (body.action === "change-role") {
+    // The role arrived unchecked and was written straight through — an
+    // administrator could demote themselves or the last admin with one call,
+    // and then nobody could put it back. Same allow-list reasoning as for the
+    // linked field: a value that becomes authority must be validated.
+    if (body.role !== "USER" && body.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unbekannte Rolle." }, { status: 400 });
+    }
+    const refused = await guardRoleOrStatusChange(id, { nextRole: body.role });
+    if (refused) return NextResponse.json({ error: refused.error }, { status: refused.status });
     await prisma.user.update({ where: { id }, data: { role: body.role } });
+    return NextResponse.json({ success: true });
+  }
+
+  // Codebook docs/user-management.md, point 2: an administrator can lift an
+  // account lockout early instead of waiting out the backoff window.
+  if (body.action === "unlock") {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { lockedUntil: true, failedLoginAttempts: true },
+    });
+    if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    await prisma.user.update({
+      where: { id },
+      data: { lockedUntil: null, failedLoginAttempts: 0 },
+    });
+    console.info(`[admin] Sperre aufgehoben für Konto ${id}`);
+    return NextResponse.json({ success: true });
+  }
+
+  // Point 3: end every session of an account without changing anything else.
+  // RetroMan carries JWT sessions, so there is no session table to clear —
+  // the jwt callback compares passwordChangedAt against the stamp in the
+  // token on every request, so moving that value forward drops all of them
+  // at once.
+  if (body.action === "revoke-sessions") {
+    const actorId = await actingUserId();
+    if (actorId && actorId === id) {
+      return NextResponse.json(
+        { error: "Für das eigene Konto gibt es „Abmelden“." },
+        { status: 409 },
+      );
+    }
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    await prisma.user.update({ where: { id }, data: { passwordChangedAt: new Date() } });
+    console.info(`[admin] Alle Sitzungen beendet für Konto ${id}`);
     return NextResponse.json({ success: true });
   }
 
@@ -76,11 +122,11 @@ export async function DELETE(
   if (denied) return denied;
 
   const { id } = await params;
-  const user = await prisma.user.findUnique({ where: { id }, select: { role: true } });
-  if (!user) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
-  if (user.role === "ADMIN") {
-    return NextResponse.json({ error: "Admin-Accounts können nicht gelöscht werden." }, { status: 403 });
-  }
+  // Deleting is the hardest form of "no longer active", so it goes through
+  // the same two guards: never your own account, and never the last active
+  // administrator.
+  const refused = await guardRoleOrStatusChange(id, { removing: true });
+  if (refused) return NextResponse.json({ error: refused.error }, { status: refused.status });
   await prisma.user.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

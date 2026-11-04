@@ -63,7 +63,7 @@ export function SaveButton({ state, disabled, label, className }: SaveButtonProp
       <button
         type="submit"
         disabled={disabled || state === "saving"}
-        className={`quittung ${state === "saved" ? "quittung--fertig" : ""} min-h-11 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition ${className ?? ""}`}
+        className={`quittung ${state === "saved" ? "quittung--fertig" : ""} retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition ${className ?? ""}`}
       >
         <span>{state === "saving" ? t.common.saving : (label ?? t.common.save)}</span>
       </button>

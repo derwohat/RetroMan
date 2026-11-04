@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
-import Image from "next/image";
+import { AuthCard, AuthHeader } from "@/components/auth/AuthHeader";
 import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
 export default function ChangePasswordPage() {
@@ -51,12 +51,9 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="min-h-viewport flex items-center justify-center bg-background grid-bg px-4 py-6">
-      <div className="w-full max-w-sm space-y-8">
+      <AuthCard>
+        <AuthHeader slogan={t.auth.slogan} />
         <div className="flex flex-col items-center gap-3">
-          <div className="relative w-full h-48">
-            <Image src="/logo.png" alt="RetroMan" fill className="object-contain" priority />
-          </div>
-          <p className="slogan-glow text-sm tracking-widest italic">{t.auth.slogan}</p>
           <p className="text-muted-foreground text-xs">
             {t.auth.changePasswordPrompt}
           </p>
@@ -100,12 +97,12 @@ export default function ChangePasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50"
+            className="w-full retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50"
           >
             {loading ? t.auth.saving : t.auth.savePassword}
           </button>
         </form>
-      </div>
+      </AuthCard>
     </div>
   );
 }

@@ -255,7 +255,7 @@ export function TagsTab() {
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{t.userSettings.tagsHint}</p>
         <button onClick={() => { setShowCreateGroup(true); setNewGroupName(""); setCreateError(""); }}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 shrink-0">
+          className="flex items-center gap-2 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 shrink-0">
           {t.adminTags.newGroup}
         </button>
       </div>
@@ -291,8 +291,8 @@ export function TagsTab() {
               </div>
               {createError && <p className="text-xs text-destructive">{createError}</p>}
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => { setShowCreateGroup(false); setCreateError(""); }} className="flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
-                <button type="submit" disabled={creating} className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
+                <button type="button" onClick={() => { setShowCreateGroup(false); setCreateError(""); }} className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">{t.common.cancel}</button>
+                <button type="submit" disabled={creating} className="flex-1 retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition">
                   {creating ? "…" : t.common.create}</button>
               </div>
             </form>

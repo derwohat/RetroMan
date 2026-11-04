@@ -157,7 +157,7 @@ export function MailProbe() {
                 <button
                   onClick={() => void sendTest()}
                   disabled={sending || recipient.trim().length === 0}
-                  className="shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+                  className="shrink-0 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
                 >
                   {sending ? (
                     <span className="flex items-center gap-2">

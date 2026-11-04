@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { safeReturnTarget } from "@/components/SessionExpiryGuard";
-import Image from "next/image";
+import { AuthCard, AuthHeader } from "@/components/auth/AuthHeader";
 import Link from "next/link";
 import { useStandaloneTranslations } from "@/hooks/useStandaloneTranslations";
 
@@ -58,13 +58,8 @@ export default function LoginForm({
 
   return (
     <div className="min-h-viewport flex items-center justify-center bg-background grid-bg px-4 py-6">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative w-full h-48">
-            <Image src="/logo.png" alt="RetroMan" fill className="object-contain" priority />
-          </div>
-          <p className="slogan-glow text-sm tracking-widest italic">{t.auth.slogan}</p>
-        </div>
+      <AuthCard>
+        <AuthHeader slogan={t.auth.slogan} />
 
         {passwordWasReset && (
           <p className="text-xs text-primary text-center" role="status">
@@ -104,7 +99,7 @@ export default function LoginForm({
 
           <button
             type="submit" disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50 neon-border"
+            className="w-full retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90 disabled:opacity-50 neon-border"
           >
             {loading ? t.auth.signingIn : t.auth.signIn}
           </button>
@@ -117,7 +112,7 @@ export default function LoginForm({
             </div>
           )}
         </form>
-      </div>
+      </AuthCard>
     </div>
   );
 }

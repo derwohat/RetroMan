@@ -293,7 +293,7 @@ export default function AdminSettingsPage() {
             <button
               onClick={runMigration}
               disabled={migrating}
-              className="shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+              className="shrink-0 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
             >
               {migrating ? (
                 <span className="flex items-center gap-2">
@@ -460,7 +460,7 @@ export default function AdminSettingsPage() {
                         type="button"
                         onClick={() => void clearKey(service.key)}
                         disabled={savingKey === service.key}
-                        className="rounded-md border border-destructive/50 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 transition"
+                        className="retro-btn rounded-md border border-destructive/50 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 transition"
                       >
                         {t.common.delete}
                       </button>

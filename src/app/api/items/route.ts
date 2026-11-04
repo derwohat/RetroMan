@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 import { parseItemFields } from "@/lib/api/itemFields";
+import { checkLinkedFieldValues } from "@/lib/tags/linkedField";
 
 async function getUserId(): Promise<string | null> {
   if (authBypassEnabled()) {
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.message, field: parsed.field }, { status: 422 });
   }
   const itemData = parsed.data;
+
+  // Codebook docs/data-standards.md, rule 3: where a list is the source, the
+  // API checks it. The select box in the form is a convenience, not an
+  // assurance.
+  const listen = await checkLinkedFieldValues(itemData as Record<string, unknown>, userId);
+  if (!listen.ok) {
+    return NextResponse.json({ error: listen.message, field: listen.field }, { status: 422 });
+  }
 
   const tagLinks: Array<{ tagValueId: string; groupId: string }> = Array.isArray(tags) ? tags : [];
 

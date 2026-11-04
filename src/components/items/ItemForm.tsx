@@ -410,7 +410,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
           <button
             type="submit"
             disabled={saving}
-            className="min-h-11 shrink-0 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
+            className="shrink-0 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
           >
             {saving ? t.common.saving : item ? t.forms.update : t.forms.add}
           </button>
@@ -806,7 +806,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
 
         {/* Footer */}
         <div className="flex gap-2 border-t border-border px-5 py-4 shrink-0">
-          <button type="button" onClick={requestClose} className="min-h-11 flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
+          <button type="button" onClick={requestClose} className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition">
             {t.common.cancel}
           </button>
         </div>
@@ -820,14 +820,14 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                 <button
                   type="button"
                   onClick={() => setAskDiscard(false)}
-                  className="min-h-11 flex-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
+                  className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
                 >
                   {t.forms.discardBack}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setAskDiscard(false); onClose(); }}
-                  className="min-h-11 flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 transition"
+                  className="retro-btn flex-1 rounded-md bg-destructive px-3 py-2 text-xs font-medium text-white uppercase tracking-wider hover:opacity-90 transition"
                 >
                   {t.forms.discardConfirm}
                 </button>

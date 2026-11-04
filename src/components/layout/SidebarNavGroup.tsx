@@ -114,13 +114,21 @@ export function SidebarNavGroup({
     );
   }
 
+  // Collapsed by hand while standing on one of its entries, the header takes
+  // the marking over — for the same reason as the 48px rail above. Without
+  // this the sidebar shows no marking at all on that route, which breaks
+  // "Immer genau eine Markierung" just as two markings would. Forcing the
+  // group open instead would fight the click that just closed it.
+  const headerMarked = Boolean(activeItem) && !open;
+
   return (
     <div>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className={`group min-h-11 ${ROW} ${ROW_IDLE}`}
+        aria-current={headerMarked ? "page" : undefined}
+        className={`group min-h-11 ${ROW} ${headerMarked ? ROW_ACTIVE : ROW_IDLE}`}
       >
         <span className="shrink-0">{icon}</span>
         <span className="flex-1 truncate text-sm">{label}</span>
