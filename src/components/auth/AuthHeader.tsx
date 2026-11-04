@@ -1,30 +1,24 @@
-import Image from "next/image";
-
 /**
- * The head every page before the sign-in carries.
+ * The head every page before the sign-in carries: the wordmark, the slogan,
+ * then the card's content.
  *
- * Codebook docs/product-standards.md, "Das Markenzeichen steht auf der Kante
- * der Anmeldekarte": the mark large and centred, half of it above the card's
- * top edge, the wordmark centred under it, then the card's content. Measures
- * are fixed by that standard and written out below next to each value, because
- * a number without its reason gets tidied away.
+ * RetroMan is **deliberately exempt** from the Codebook standard "Das
+ * Markenzeichen steht auf der Kante der Anmeldekarte"
+ * (docs/product-standards.md). The 84px mark overhanging the card's top edge
+ * was built to the standard's measures in v1.6.0 and taken out again in
+ * v1.6.1 on the user's call: it did not look good here. The standard itself
+ * leaves room for that — it fixes the form for the products that carry it,
+ * not a duty for every product to carry it.
  *
- * One component rather than six copies — it goes in as the first child of the
- * card, and the mark sits absolutely so it moves nothing in the content.
+ * What stays, because it reads well and costs nothing: the card, and the
+ * wordmark as type rather than as an image — "Retro" in the brand colour,
+ * "Man" neutral, which is the one thing the standard asks for that RetroMan
+ * had never done. Set in RetroMan's own sans (Geist) rather than the
+ * Brandbook's Outfit: a seventh font file for one line of type costs every
+ * visitor bytes for a difference nobody can name.
  *
- * Two deliberate departures, both named in the Codebook entry:
- *  - The wordmark is set in RetroMan's own sans (Geist), not the Brandbook's
- *    Outfit. Shipping a seventh font file for one line of type costs every
- *    visitor bytes for a difference nobody can name; the FORM the standard
- *    asks for — large, centred, domain part in the brand colour — is what
- *    carries it.
- *  - The slogan stays. It is RetroMan's own and sits inside the 20px gap the
- *    standard leaves between wordmark and content, so the rhythm is unchanged.
+ * One component rather than six copies — it is the first child of the card.
  */
-
-const MARK_PX = 84; // Brandbook: 80–90 px on the sign-in page
-const BACKING_PX = 4; // card-coloured ring, or the card edge cuts the mark
-const CARD_PAD_TOP_PX = 58;
 
 export function AuthHeader({
   /** Pages without a title of their own make the wordmark the h1. */
@@ -36,40 +30,8 @@ export function AuthHeader({
 }) {
   const Wordmark = asHeading ? "h1" : "div";
 
-  // What has to sit half above the card's edge is the MARK, not the ring
-  // around it, and the offset is measured from this header — which starts
-  // below the card's border AND its top padding. Each term named, because
-  // every one of them cost a pixel when it was missing: positioning the ring
-  // instead of the mark measured 41 px of overhang, and forgetting the card's
-  // own border measured 41 again. Measured 42 with all four.
-  const CARD_BORDER_PX = 1;
-  const BACKING_BORDER_PX = 1;
-  const markTop = -(
-    CARD_BORDER_PX +
-    CARD_PAD_TOP_PX +
-    MARK_PX / 2 +
-    BACKING_PX +
-    BACKING_BORDER_PX
-  );
-
   return (
-    <div className="relative">
-      <div
-        className="absolute left-1/2 -translate-x-1/2 rounded-[22px] border border-border bg-card"
-        style={{ top: markTop, padding: BACKING_PX }}
-        aria-hidden="true"
-      >
-        <Image
-          src="/icon-512.png"
-          alt=""
-          width={MARK_PX}
-          height={MARK_PX}
-          sizes={`${MARK_PX}px`}
-          priority
-          className="block"
-        />
-      </div>
-
+    <div>
       <Wordmark className="text-center text-[28px] font-bold leading-tight tracking-tight">
         <span className="text-primary">Retro</span>
         <span className="text-foreground">Man</span>
@@ -80,17 +42,17 @@ export function AuthHeader({
 }
 
 /**
- * The card the header sits on, with the room the overhang needs.
+ * The card the header sits on.
  *
- * space-y-5 is the 20 px the standard puts between the wordmark and the
- * content; every further gap inside the card follows the same rhythm.
+ * space-y-5 is 20 px between the head and the content, and the same rhythm
+ * for every further gap inside the card. The card used to carry 42 px of top
+ * margin and 58 px of top padding to make room for the overhanging mark;
+ * with the mark gone, so is the room — otherwise the head would float in an
+ * empty band that nothing explains.
  */
 export function AuthCard({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card px-6 pb-6 shadow-xl"
-      style={{ marginTop: MARK_PX / 2, paddingTop: CARD_PAD_TOP_PX }}
-    >
+    <div className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card p-6 shadow-xl">
       {children}
     </div>
   );

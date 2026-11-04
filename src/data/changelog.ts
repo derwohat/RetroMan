@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.6.1",
+    date: "04.11.2026",
+    changes: [
+      "**Das Zeichen über der Anmeldekarte ist wieder weg.** Es saß angeschnitten über der oberen Kante — in RetroMan sah das nicht gut aus. Die Karte bleibt, und oben darin steht der Name jetzt als Schrift statt als Bild: „Retro“ in der Markenfarbe, „Man“ daneben. Der Platz, der nur für den Überstand da war, ist mit zurückgenommen, damit über dem Namen kein leerer Streifen stehen bleibt",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "04.11.2026",
     changes: [
