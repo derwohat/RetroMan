@@ -8,10 +8,19 @@ import { currentRole } from "@/lib/auth/currentRole";
  * bring their own sidebar — Codebook docs/product-standards.md,
  * "Benutzerverwaltung unter Einstellungen". Their routes are unchanged.
  *
- * What they never had is a gate of their own. The APIs behind them all answer
- * 403 to a non-administrator, so nothing leaked, but someone who typed
- * /admin/users got a page that only produced errors. A signed-in user who may
- * not be here belongs somewhere they may be, not on a broken page.
+ * This is the SECOND lock on the role, not the first. src/proxy.ts has checked
+ * it before every request for a long time and redirects a non-administrator to
+ * the dashboard, so nothing was open. This one sits at the pages themselves and
+ * holds when the first is misconfigured: a changed `config.matcher`, or /admin
+ * landing in PUBLIC_PATHS. That is not hypothetical — in v1.4.0 one entry in
+ * exactly that list opened the upload route, and the one check standing behind
+ * it is what decides whether such a mistake is a bug or a breach.
+ *
+ * It was first committed as a fix for a page that "only produced errors". That
+ * was wrong: the run meant to prove it measured the proxy, because this layout
+ * was never switched off for the comparison. Codebook
+ * docs/product-standards.md, point 3 of "Vier Dinge, die beim Auflösen eines
+ * separaten Admin-Bereichs auffallen".
  *
  * The surrounding (app) layout has already established that there is a
  * session; this one only decides about the role.

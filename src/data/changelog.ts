@@ -6,11 +6,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.5.1",
+    date: "04.11.2026",
+    changes: [
+      "**Richtigstellung zum Eintrag für 1.5.0.** Dort stand, ein Fehler sei behoben worden: wer eine Verwaltungs-Adresse eintippte, ohne Administrator zu sein, habe eine Seite voller Fehler bekommen. Das war falsch — die Prüfung sitzt seit Langem vor allen Anfragen und hat solche Aufrufe immer schon zur Übersicht geschickt. Hinzugekommen ist nur ein zweites Schloss an den Seiten selbst, als Absicherung gegen einen Eintragungsfehler am ersten. Der Punkt ist entsprechend umgeschrieben. Alle übrigen Punkte von 1.5.0 bleiben wie sie sind",
+    ],
+  },
+  {
     version: "1.5.0",
     date: "04.11.2026",
     changes: [
       "**Alles, was man einstellt, steht jetzt an einer Stelle.** Der eigene Admin-Bereich mit seiner zweiten Seitenleiste ist aufgelöst: „Einstellungen“ ist ein aufklappbarer Block in der Hauptleiste, und darin stehen das eigene Profil sowie — für Administratoren — Benutzer, Sammlungen, Tags und System. Nebenbei sind damit zwei Seiten überhaupt erst erreichbar geworden: die Tag-Verwaltung war über die Navigation von nirgends zu finden, die Sammlungs-Verwaltung nur über einen Link im leeren Dashboard",
-      "**Behoben: Wer eine Verwaltungs-Adresse eintippte, ohne Administrator zu sein, bekam eine Seite, die nur Fehler zeigte.** Fremde Daten waren dabei nie zu sehen — die Schnittstellen dahinter haben immer abgelehnt — aber die Seite tat so, als hätte sie etwas anzuzeigen. Jetzt landet man auf der Übersicht",
+      "Der Verwaltungsbereich hat ein zweites, unabhängiges Schloss bekommen. Das erste sitzt vor allen Anfragen und hat immer gehalten; das zweite sitzt an den Seiten selbst und greift auch dann, wenn am ersten einmal etwas falsch eingetragen wird. Nichts, was man als Nutzer merkt — genau das ist der Zweck",
       "**Behoben: Eine Auswahlliste umzubenennen ließ die Einträge beim alten Namen stehen.** Bei „Shops“ und „Lagerort“ steht der Wert zusätzlich als Text am Eintrag selbst. Wer den Listenwert änderte, hatte danach beide Schreibweisen gleichzeitig in der Ansicht. Liste und Einträge wandern jetzt zusammen",
       "**Behoben: Eine Listengruppe ließ sich mit jedem beliebigen Datenbankfeld verknüpfen** — auch mit dem, in dem das Passwort liegt. Der Feldname kam ungeprüft von außen; jetzt läuft er gegen eine feste Liste erlaubter Felder",
       "**Die Bremse gegen Anmelde-Fluten zählt die Adresse jetzt richtig.** Hinter einem Reverse-Proxy stand sie an einer Stelle, die jeder Aufrufer selbst mitschicken kann — mit einer erfundenen Adresse pro Versuch griff sie nie. Gezählt wird jetzt von hinten, wo die Angabe vom Proxy selbst kommt. Die Anzahl der vorgeschalteten Proxys steht in `TRUSTED_PROXY_COUNT`, Vorgabe 1",
