@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 import { SearchBox } from "./SearchBox";
-import { SidebarNavGroup, type NavGroupItem } from "./SidebarNavGroup";
+import { SidebarNavGroup, SUB_ROW, type NavGroupItem } from "./SidebarNavGroup";
 import { ThemeToggle } from "./ThemeToggle";
 import { VersionBanner } from "./VersionBanner";
 
@@ -71,6 +71,14 @@ function IconPencilSmall() {
     </svg>
   );
 }
+/** "Sammlungen" — the same shelf the 48 px rail has always shown. */
+function IconCollections() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4v10H3zM10 4h4v13h-4zM17 7h4v10h-4z" />
+    </svg>
+  );
+}
 function IconFavorites() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -123,6 +131,9 @@ export function AppSidebar({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
+  // The marking check below must not count before the list is there: on a
+  // collection page the marked entry is one of these links.
+  const [collectionsLoaded, setCollectionsLoaded] = useState(false);
   const [counts, setCounts] = useState({ favorites: 0 });
   const [profile, setProfile] = useState<Profile | null>(null);
   const pathname = usePathname();
@@ -137,9 +148,16 @@ export function AppSidebar({
 
   function refreshCollections() {
     fetch("/api/collections")
-      .then((r) => (r.ok ? r.json() : []))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((cols: Collection[]) => setCollections(cols))
-      .catch(() => {});
+      .catch((error: unknown) => {
+        // The sidebar keeps the list it has; say why it did not refresh.
+        console.warn("[nav] Sammlungen konnten nicht geladen werden:", error);
+      })
+      .finally(() => setCollectionsLoaded(true));
   }
 
   useEffect(() => {
@@ -161,15 +179,18 @@ export function AppSidebar({
   // change and complains. Development only — stripped from the build.
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
+    // Counting before the list has arrived reported zero markings on every
+    // collection page whose request took longer than the 150 ms below.
+    if (!collectionsLoaded) return;
     const timer = setTimeout(() => {
       const aside = document.querySelector("aside");
       if (!aside) return;
       // Buttons too, not only links: the "Einstellungen" group header is a
-      // button, and when it is collapsed on one of its own routes it is the
-      // element carrying the marking. Querying links alone reported zero
-      // markings for a sidebar that showed one.
+      // button, and when it is folded on one of its own routes it is the
+      // element carrying the marking (as aria-current="location"). Querying
+      // links alone reported zero markings for a sidebar that showed one.
       const marked = Array.from(aside.querySelectorAll("a, button")).filter(
-        (el) => el.getAttribute("aria-current") === "page" || el.className.includes("border-primary"),
+        (el) => el.hasAttribute("aria-current") || el.className.includes("border-primary"),
       );
       if (marked.length !== 1) {
         console.warn(
@@ -179,7 +200,7 @@ export function AppSidebar({
       }
     }, 150);
     return () => clearTimeout(timer);
-  }, [pathname, collections]);
+  }, [pathname, collections, collectionsLoaded]);
 
   // Everything that is set rather than browsed. The four administration
   // entries are only built for an administrator, so a normal user's sidebar
@@ -252,31 +273,14 @@ export function AppSidebar({
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
-        {/* Collections header. It links to a real page of its own, so on that
-            page it has to carry the marking — otherwise the sidebar shows
-            nothing at all and leaves open where you are. */}
-        {!collapsed && (
-          <div className="px-5 pt-1 pb-1">
-            <Link
-              href="/dashboard"
-              aria-current={pathname === "/dashboard" ? "page" : undefined}
-              className={`font-heading text-[10px] uppercase tracking-widest transition-colors ${
-                pathname === "/dashboard"
-                  ? "text-primary neon-glow"
-                  : "text-muted-foreground hover:text-primary"
-              }`}
-            >
-              {t.nav.collections}
-            </Link>
-          </div>
-        )}
-        {collapsed && navLink("/dashboard", (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4v10H3zM10 4h4v13h-4zM17 7h4v10h-4z" />
-          </svg>
-        ), t.nav.collections, true)}
+        {/* "Sammlungen" is an entry like any other: it leads to the overview
+            of all collections and carries the marking there. The collections
+            are its level-2 rows (Codebook "Untermenüs in der Seitenleiste").
+            The group is deliberately not foldable — decided 04.11.2026. */}
+        {navLink("/dashboard", <IconCollections />, t.nav.collections, true)}
 
-        {/* Individual collections */}
+        {/* Individual collections. The 48 px rail has no room for an
+            indent, so there they keep the level-1 row. */}
         {collections.map((col) => {
           const href = `/collection/${col.id}`;
           const isActive = pathname.startsWith(href);
@@ -286,17 +290,19 @@ export function AppSidebar({
               href={href}
               title={collapsed ? col.name : undefined}
               aria-current={isActive ? "page" : undefined}
-              className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${
+              className={`${
+                collapsed ? "flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors" : SUB_ROW
+              } ${
                 isActive
                   ? "bg-primary/10 text-primary border-r-2 border-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <span className="shrink-0">
-                <CategoryIcon icon={col.icon} className="h-5 w-5" />
+                <CategoryIcon icon={col.icon} className={collapsed ? "h-5 w-5" : "h-4 w-4"} />
               </span>
               {!collapsed && (
-                <span className="flex-1 truncate text-sm">{col.name}</span>
+                <span className="flex-1 truncate text-[13px]">{col.name}</span>
               )}
               {!collapsed && col._count.items > 0 && (
                 <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{col._count.items}</span>
@@ -330,6 +336,7 @@ export function AppSidebar({
             set rather than browsed. The four entries with a shield are the
             former admin area; a normal user only sees their profile. */}
         <SidebarNavGroup
+          id="settings"
           label={t.nav.settings}
           icon={<IconCog />}
           collapsed={collapsed}

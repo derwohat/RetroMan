@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.8.0",
+    date: "04.11.2026",
+    changes: [
+      "**Behoben: Nach dem Umsortieren zog die Seitenleiste nicht mit.** Wer unter Einstellungen → Sammlungen eine Sammlung verschob, sah links weiter die alte Reihenfolge, bis die Seite neu geladen wurde — gespeichert war die neue längst, nur die Leiste wusste nichts davon. Jetzt folgt sie sofort, ebenso beim Anlegen, Umbenennen und Löschen. Lehnt der Server eine Umsortierung ab, springt die Liste zurück und sagt, warum, statt eine Reihenfolge zu zeigen, die es nicht gibt",
+      "**„Sammlungen“ ist jetzt ein Menüpunkt wie jeder andere** — mit Symbol und in derselben Größe wie „Favoriten“ und „Statistiken“, statt als kleine Überschrift in Pixelschrift. Ein Klick darauf führt wie bisher zur Übersicht. Die einzelnen Sammlungen stehen eingerückt darunter, genau wie die Unterpunkte von „Einstellungen“",
+      "**Zugeklappte Menügruppen bleiben zugeklappt.** Wer „Einstellungen“ zuklappt, findet die Gruppe nach dem Neuladen und auf jeder anderen Seite wieder so vor; gemerkt wird das pro Browser. Steht die gerade geöffnete Seite in der zugeklappten Gruppe, trägt deren Überschrift die Markierung, damit immer sichtbar bleibt, wo man ist. Die senkrechte Linie neben den Unterpunkten ist weg — sie ließ sie aussehen wie eine eigene Spalte",
+      "**Sicherheit: Das Umsortieren nimmt nur noch die eigenen Sammlungen an.** Bisher schrieb der Server die neue Position auf jede Sammlung, deren Kennung ein Administrator ihm schickte, auch auf die eines anderen Kontos. Jetzt muss die Liste genau die eigenen Sammlungen enthalten, vollständig und ohne Doppelte; eine veraltete Liste aus einem zweiten Tab wird mit dem Hinweis abgelehnt, die Seite neu zu laden",
+    ],
+  },
+  {
     version: "1.7.0",
     date: "04.11.2026",
     changes: [

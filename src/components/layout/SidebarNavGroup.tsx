@@ -1,22 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
  * An expandable group of entries in the app sidebar.
  *
- * Codebook docs/product-standards.md, "Benutzerverwaltung unter Einstellungen":
- * user management is not a top-level sidebar entry but a child of
- * "Einstellungen", which becomes an expandable group. TicketMan's
- * `sidebar-nav-group.tsx` is the reference; this is the same idea in
- * RetroMan's own markup.
- *
- * Two rules from the same document shape the details:
- *  - "Immer genau eine Markierung": the group header never carries the marking
- *    while one of its children is visible and marked. Collapsed, the header
- *    takes the marking instead, because the marked child is not on screen.
+ * Codebook docs/product-standards.md, "Untermenüs in der Seitenleiste"
+ * (reference ImmoMan AppShell.vue, TicketMan sidebar-nav-group.tsx):
+ *  - Every row of every level is a full row with the same edge, so the active
+ *    marking sits on the same edge on both levels. RetroMan keeps its own edge
+ *    (right, 2 px — a recorded deviation), but keeps it on both levels.
+ *  - Level 2 is indented through the link's own padding, never a wrapper
+ *    margin and never a connecting line. The line this group used to draw made
+ *    the children look like a column of their own.
+ *  - The remembered state alone decides whether a group is open, also for the
+ *    group holding the open page. While such a group is shut, its header
+ *    carries the one marking instead, as aria-current="location", because
+ *    the page itself is the hidden child ("Immer genau eine Markierung").
  *  - A collapsed sidebar (48 px) has no room to expand anything, so the header
  *    becomes a plain link to the group's first entry.
  */
@@ -28,6 +30,64 @@ export type NavGroupItem = {
   /** Shown with a shield, because only an administrator sees it. */
   adminOnly?: boolean;
 };
+
+/** Level-2 row, shared with the collections list in AppSidebar. */
+export const SUB_ROW = "flex min-h-9 w-full items-center gap-2.5 py-2 pl-9 pr-5 text-left transition-colors";
+
+const ROW = "flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors";
+const ROW_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
+const ROW_ACTIVE = "bg-primary/10 text-primary border-r-2 border-primary";
+
+// ── Remembered folding ───────────────────────────────────────────────────────
+// Folded groups are stored, not open ones, so a group added later starts open
+// instead of appearing folded just because it is missing from the saved list.
+// The raw string is the store snapshot: useSyncExternalStore compares
+// snapshots by identity, and a freshly parsed array would never compare equal.
+// The server snapshot is "" (everything open), so the server HTML and the
+// first client render agree and hydration does not complain.
+const STORAGE_KEY = "retroman.nav.collapsed";
+const listeners = new Set<() => void>();
+
+function subscribe(onChange: () => void): () => void {
+  listeners.add(onChange);
+  return () => {
+    listeners.delete(onChange);
+  };
+}
+
+function readRaw(): string {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) ?? "";
+  } catch {
+    // Private window or blocked site data: every group simply stays open.
+    return "";
+  }
+}
+
+function parseFolded(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    // A value written by hand or by an older version: treat it as "nothing
+    // folded" rather than breaking the sidebar.
+    return [];
+  }
+}
+
+function toggleFolded(id: string): void {
+  const current = parseFolded(readRaw());
+  const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Not being able to persist is no reason to refuse folding. Without
+    // storage the click has no effect, so say why in the console.
+    console.warn("[nav] Klappzustand konnte nicht gespeichert werden (localStorage gesperrt).");
+  }
+  for (const listener of listeners) listener();
+}
 
 function IconChevron() {
   return (
@@ -63,37 +123,31 @@ function IconShield({ title }: { title: string }) {
   );
 }
 
-const ROW = "flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors";
-const ROW_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
-const ROW_ACTIVE = "bg-primary/10 text-primary border-r-2 border-primary";
-
 export function SidebarNavGroup({
+  id,
   label,
   icon,
   items,
   collapsed,
   adminOnlyLabel,
 }: {
+  /** Stable key under which this group's folded state is remembered. */
+  id: string;
   label: string;
   icon: React.ReactNode;
   items: NavGroupItem[];
+  /** The whole sidebar is the 48 px rail. */
   collapsed: boolean;
   /** Tooltip on the shield, e.g. "Nur für Administratoren". */
   adminOnlyLabel: string;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(true);
+  const folded = parseFolded(useSyncExternalStore(subscribe, readRaw, () => ""));
+  const open = !folded.includes(id);
 
   const activeItem = items.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
-
-  // Arriving at a child from somewhere else — a link, a search result, a
-  // bookmark — must not leave the marking hidden inside a collapsed group.
-  // Without this the sidebar would show no marking at all on that route.
-  useEffect(() => {
-    if (activeItem) setOpen(true);
-  }, [activeItem]);
 
   if (items.length === 0) return null;
 
@@ -106,7 +160,7 @@ export function SidebarNavGroup({
       <Link
         href={first.href}
         title={label}
-        aria-current={activeItem ? "page" : undefined}
+        aria-current={activeItem ? "location" : undefined}
         className={`min-h-11 ${ROW} ${activeItem ? ROW_ACTIVE : ROW_IDLE}`}
       >
         <span className="shrink-0">{icon}</span>
@@ -114,20 +168,15 @@ export function SidebarNavGroup({
     );
   }
 
-  // Collapsed by hand while standing on one of its entries, the header takes
-  // the marking over — for the same reason as the 48px rail above. Without
-  // this the sidebar shows no marking at all on that route, which breaks
-  // "Immer genau eine Markierung" just as two markings would. Forcing the
-  // group open instead would fight the click that just closed it.
   const headerMarked = Boolean(activeItem) && !open;
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => toggleFolded(id)}
         aria-expanded={open}
-        aria-current={headerMarked ? "page" : undefined}
+        aria-current={headerMarked ? "location" : undefined}
         className={`group min-h-11 ${ROW} ${headerMarked ? ROW_ACTIVE : ROW_IDLE}`}
       >
         <span className="shrink-0">{icon}</span>
@@ -135,28 +184,22 @@ export function SidebarNavGroup({
         <IconChevron />
       </button>
 
-      {open && (
-        // The vertical line shows what the indented entries belong to.
-        <div className="relative before:absolute before:left-[26px] before:top-0.5 before:bottom-0.5 before:w-px before:bg-border/60 before:content-['']">
-          {items.map((item) => {
-            const isActive = item === activeItem;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`flex min-h-9 w-full items-center gap-2.5 py-2 pl-[42px] pr-5 text-left transition-colors ${
-                  isActive ? ROW_ACTIVE : ROW_IDLE
-                }`}
-              >
-                <span className="shrink-0">{item.icon}</span>
-                <span className="flex-1 truncate text-[13px]">{item.label}</span>
-                {item.adminOnly && <IconShield title={adminOnlyLabel} />}
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      {open &&
+        items.map((item) => {
+          const isActive = item === activeItem;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? "page" : undefined}
+              className={`${SUB_ROW} ${isActive ? ROW_ACTIVE : ROW_IDLE}`}
+            >
+              <span className="shrink-0">{item.icon}</span>
+              <span className="flex-1 truncate text-[13px]">{item.label}</span>
+              {item.adminOnly && <IconShield title={adminOnlyLabel} />}
+            </Link>
+          );
+        })}
     </div>
   );
 }

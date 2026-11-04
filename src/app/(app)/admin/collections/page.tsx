@@ -505,6 +505,10 @@ function SortableCollection({
 export default function AdminCollectionsPage() {
   const { t } = useTranslations();
   const [collections, setCollections] = useState<Collection[]>([]);
+  // Faults of the list itself — a refused reorder or rename. Both used to be
+  // silent: the screen showed the change, the server kept the old state, and
+  // the difference only appeared on the next reload.
+  const [listError, setListError] = useState("");
   const [allTagGroups, setAllTagGroups] = useState<TagGroupOption[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [expanded,    setExpanded]    = useState<string | null>(null);
@@ -538,18 +542,40 @@ export default function AdminCollectionsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  /**
+   * The sidebar lists the collections too, and it only reloads when told.
+   * The profile page always told it; this page never did, so a reorder,
+   * a new collection, a rename or a deletion here showed in the sidebar only
+   * after a full page reload — reported on 04.11.2026.
+   */
+  function notifySidebar() {
+    window.dispatchEvent(new CustomEvent("collections-updated"));
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = collections.findIndex((c) => c.id === active.id);
     const newIndex = collections.findIndex((c) => c.id === over.id);
+    const vorher = collections;
     const reordered = arrayMove(collections, oldIndex, newIndex);
     setCollections(reordered);
-    await fetch("/api/admin/collections/reorder", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: reordered.map((c) => c.id) }),
-    });
+    setListError("");
+    try {
+      const res = await fetch("/api/admin/collections/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: reordered.map((c) => c.id) }),
+      });
+      if (!res.ok) throw new Error(await errorText(res, t.common.error));
+      notifySidebar();
+    } catch (error) {
+      // The answer was never checked before: on a refusal the screen kept the
+      // new order while the server held the old one. Put the screen back and
+      // say why, rather than show an order that does not exist.
+      setCollections(vorher);
+      setListError(error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -569,6 +595,7 @@ export default function AdminCollectionsPage() {
     setSubmitting(false);
     if (!res.ok) { setColError((await res.json()).error ?? t.collections.fieldError); return; }
     await load();
+    notifySidebar();
     setShowCreate(false);
     setColForm({ name: "", icon: "gamepad", mediaType: "GAME", customMediaTypeLabel: "" });
   }
@@ -581,6 +608,11 @@ export default function AdminCollectionsPage() {
     });
     if (res.ok) {
       setCollections((prev) => prev.map((c) => c.id === id ? { ...c, name } : c));
+      setListError("");
+      notifySidebar();
+    } else {
+      // A refused rename did nothing at all before — no change, no word.
+      setListError(await errorText(res, t.common.error));
     }
   }
 
@@ -592,6 +624,7 @@ export default function AdminCollectionsPage() {
     if (!res.ok) throw new Error(await errorText(res, t.common.error));
     setCollections((prev) => prev.filter((c) => c.id !== deleteTarget.id));
     setDeleteTarget(null);
+    notifySidebar();
   }
 
   async function handleAssignTagGroup(colId: string, groupId: string) {
@@ -674,6 +707,12 @@ export default function AdminCollectionsPage() {
           + {t.collections.newCollection}
         </button>
       </div>
+
+      {listError && (
+        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          {listError}
+        </p>
+      )}
 
       {loading ? (
         <p className="text-sm text-muted-foreground">{t.collections.loading}</p>
