@@ -1,3 +1,5 @@
+import { AuthGrooves } from "@/components/auth/AuthGrooves";
+
 /**
  * The head every page before the sign-in carries: the wordmark, the slogan,
  * then the card's content.
@@ -42,18 +44,27 @@ export function AuthHeader({
 }
 
 /**
- * The card the header sits on.
+ * The card the header sits on, and the record's grooves behind it.
  *
  * space-y-5 is 20 px between the head and the content, and the same rhythm
  * for every further gap inside the card. The card used to carry 42 px of top
  * margin and 58 px of top padding to make room for the overhanging mark;
  * with the mark gone, so is the room — otherwise the head would float in an
  * empty band that nothing explains.
+ *
+ * The grooves come from here rather than from each of the six pages: they are
+ * a sibling of the card inside the page's centring wrapper, so a page gets
+ * them by using this card and cannot forget them. z-10 on the card keeps it
+ * above the layer; the layer itself is fixed and clips its own overflow, so
+ * nothing it draws can put a scrollbar on the page.
  */
 export function AuthCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card p-6 shadow-xl">
-      {children}
-    </div>
+    <>
+      <AuthGrooves />
+      <div className="relative z-10 w-full max-w-sm space-y-5 rounded-xl border border-border bg-card p-6 shadow-xl">
+        {children}
+      </div>
+    </>
   );
 }

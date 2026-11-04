@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.6.2",
+    date: "04.11.2026",
+    changes: [
+      "**Hinter der Anmeldekarte liegt jetzt eine Schallplatte.** Sieben Rillen umkreisen die Karte und pulsieren im Dreisekundentakt nach außen — von Pink innen nach Cyan außen, dieselbe Bewegung, die das Kopfband der App schon macht. Die Karte liegt dabei mitten auf der Platte, und rundherum laufen die Rillen weiter. Wer im Betriebssystem „Bewegung reduzieren“ eingestellt hat, sieht sie still stehen",
+    ],
+  },
+  {
     version: "1.6.1",
     date: "04.11.2026",
     changes: [
