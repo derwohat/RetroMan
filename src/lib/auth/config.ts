@@ -36,12 +36,29 @@ function lockDurationMs(failedAttempts: number): number {
   return Math.min(BASE_LOCK_MS * 2 ** Math.max(0, blocks), MAX_LOCK_MS);
 }
 
-// Set once when this module loads (= server/process start).
-// In production: any JWT issued before this moment is rejected → forces re-login after restart.
-// In dev: always 0 so HMR saves don't log the user out constantly.
-const SERVER_BOOT_AT = process.env.NODE_ENV === "production"
-  ? Math.floor(Date.now() / 1000)
-  : 0;
+// In production: any JWT issued before this server process started is
+// rejected → forces re-login after a restart. In dev: always 0 so HMR saves
+// don't log the user out constantly.
+//
+// The stamp lives on globalThis, once per process, not in a module constant.
+// The production build bundles this module once per layer — proxy, route
+// handlers, server components — and each copy loads on its first use. The
+// server-component copy loaded only on the first page request after sign-in,
+// stamped a later second than the token just issued, and refused it: the
+// first sign-in after every restart could bounce back to /login. The layers
+// share one process and one globalThis, so the first copy to load fixes the
+// moment for all of them — still after every token of the previous process.
+const BOOT_KEY = "__retromanAuthBootAt";
+
+function serverBootAt(): number {
+  if (process.env.NODE_ENV !== "production") return 0;
+  const shared = globalThis as typeof globalThis & { [BOOT_KEY]?: number };
+  const stamp = shared[BOOT_KEY] ?? Math.floor(Date.now() / 1000);
+  shared[BOOT_KEY] = stamp;
+  return stamp;
+}
+
+const SERVER_BOOT_AT = serverBootAt();
 
 /**
  * next-auth hands the real request to the HTTP handlers — the place where

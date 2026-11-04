@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.8.1",
+    date: "04.11.2026",
+    changes: [
+      "**Behoben: Die erste Anmeldung nach einem Neustart oder Update konnte zurück auf die Anmeldeseite springen.** Ein Neustart beendet absichtlich alle bestehenden Sitzungen. Den Startzeitpunkt dafür legte aber jeder Teil der App einzeln fest, und der Teil für die Seiten tat das erst beim ersten Seitenaufruf nach der Anmeldung — die gerade ausgestellte Anmeldung galt ihm dann als „von vor dem Neustart“. Je nach Sekundentakt ging es mal gut, mal nicht; die zweite Anmeldung klappte immer. Jetzt gilt ein Startzeitpunkt für die ganze App, und Sitzungen von vor dem Neustart enden weiterhin",
+    ],
+  },
+  {
     version: "1.8.0",
     date: "04.11.2026",
     changes: [
