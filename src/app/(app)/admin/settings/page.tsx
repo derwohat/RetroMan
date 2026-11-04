@@ -137,6 +137,14 @@ export default function AdminSettingsPage() {
   const keySave = useSaveState();
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [keyError, setKeyError] = useState("");
+  // Codebook docs/product-standards.md, "Anleitungen zu Fremddiensten": the
+  // open instructions are only half of it — the other half is proof that the
+  // key actually works. Kept per service, so testing one does not wipe the
+  // answer of another.
+  const [probing, setProbing] = useState<string | null>(null);
+  const [probeResult, setProbeResult] = useState<
+    Record<string, { status: string; httpStatus?: number; message?: string }>
+  >({});
   const [migrateStatus, setMigrateStatus] = useState<MigrateStatus | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [migrateOutput, setMigrateOutput] = useState<string[] | null>(null);
@@ -208,6 +216,62 @@ export default function AdminSettingsPage() {
       return;
     }
     setSettings((prev) => (prev ? { ...prev, [serviceKey]: false } : prev));
+    // A deleted key makes an old verdict a lie — it would still read "works"
+    // next to a field that is now empty.
+    setProbeResult((prev) => {
+      const next = { ...prev };
+      delete next[serviceKey];
+      return next;
+    });
+  }
+
+  /**
+   * Asks the service itself whether the stored key works, and shows its
+   * answer in its own words. The key never leaves the server — only the
+   * verdict about it comes back.
+   */
+  async function probeKey(serviceKey: string) {
+    setProbing(serviceKey);
+    setProbeResult((prev) => {
+      const next = { ...prev };
+      delete next[serviceKey];
+      return next;
+    });
+    try {
+      const res = await fetch("/api/admin/settings/probe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: serviceKey }),
+      });
+      if (res.status === 429) {
+        const d = await res.json().catch(() => ({}));
+        setProbeResult((p) => ({
+          ...p,
+          [serviceKey]: {
+            status: "failed",
+            message: t.settings.probeRateLimited.replace("{secs}", String(d.retryAfterSecs ?? 60)),
+          },
+        }));
+        return;
+      }
+      if (!res.ok) {
+        // Read the body BEFORE the state update: the callback handed to
+        // setProbeResult is not async, so an await inside it does not compile.
+        const text = await errorText(res, t.common.error);
+        setProbeResult((p) => ({ ...p, [serviceKey]: { status: "failed", message: text } }));
+        return;
+      }
+      const ergebnis = await res.json();
+      setProbeResult((p) => ({ ...p, [serviceKey]: ergebnis }));
+    } catch (error) {
+      // A browser-side fault is still an answer the admin needs to see.
+      setProbeResult((p) => ({
+        ...p,
+        [serviceKey]: { status: "failed", message: error instanceof Error ? error.message : String(error) },
+      }));
+    } finally {
+      setProbing(null);
+    }
   }
 
   async function saveSetting(patch: Record<string, unknown>) {
@@ -458,6 +522,16 @@ export default function AdminSettingsPage() {
                     {isSet && (
                       <button
                         type="button"
+                        onClick={() => void probeKey(service.key)}
+                        disabled={probing !== null || savingKey === service.key}
+                        className="retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50 transition"
+                      >
+                        {probing === service.key ? t.settings.probeRunning : t.settings.probe}
+                      </button>
+                    )}
+                    {isSet && (
+                      <button
+                        type="button"
                         onClick={() => void clearKey(service.key)}
                         disabled={savingKey === service.key}
                         className="retro-btn rounded-md border border-destructive/50 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 transition"
@@ -466,6 +540,39 @@ export default function AdminSettingsPage() {
                       </button>
                     )}
                   </form>
+
+                  {/* The service's own words, unchanged. "401 Invalid API key"
+                      says what to change; "Verbindung fehlgeschlagen" does
+                      not. Same reasoning as the test mail. */}
+                  {probeResult[service.key] && (
+                    <p
+                      role="status"
+                      className={`mt-2 rounded-md border p-2 text-xs ${
+                        probeResult[service.key].status === "ok"
+                          ? "border-green-500/40 bg-green-500/10 text-green-500"
+                          : probeResult[service.key].status === "notConfigured"
+                            ? "border-border bg-muted text-muted-foreground"
+                            : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {probeResult[service.key].status === "ok" && t.settings.probeOk}
+                      {probeResult[service.key].status === "notConfigured" && t.settings.probeNoKey}
+                      {probeResult[service.key].status === "failed" && (
+                        <>
+                          {t.settings.probeFailed}
+                          {probeResult[service.key].httpStatus
+                            ? ` (HTTP ${probeResult[service.key].httpStatus})`
+                            : ""}
+                          {probeResult[service.key].message ? (
+                            <span className="mt-1 block font-mono break-all opacity-90">
+                              {probeResult[service.key].message}
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </p>
+                  )}
+
                   {keyError && savingKey === null && (
                     <p className="mt-2 text-xs text-destructive">{keyError}</p>
                   )}

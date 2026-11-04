@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.7.0",
+    date: "04.11.2026",
+    changes: [
+      "**Neu: Jeder hinterlegte Schlüssel für einen Fremddienst lässt sich jetzt prüfen.** Neben dem Feld steht ein Knopf „Prüfen“, der eine Probe-Anfrage an den Dienst schickt — mit genau derselben Anmeldung, die die App später auch benutzt — und dessen **Originalmeldung** anzeigt. Ein falscher Schlüssel sagt jetzt „Invalid API key“, statt sich Wochen später als „kein Cover gefunden“ zu tarnen, wo niemand nach der Ursache sucht. Gilt für Discogs, TheGamesDB, TMDB, OMDb, ComicVine und Google Books",
+      "**Der Schlüssel verlässt dabei den Server nicht** — nur das Urteil über ihn kommt zurück. Ist kein Schlüssel hinterlegt, wird gar nichts angefragt, und mehr als zehn Prüfungen pro Minute sind nicht möglich, damit der Knopf nicht zum Dauerfeuer auf fremde Server wird",
+    ],
+  },
+  {
     version: "1.6.3",
     date: "04.11.2026",
     changes: [
