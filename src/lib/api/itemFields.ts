@@ -17,7 +17,7 @@
  */
 
 const CONDITIONS = ["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"] as const;
-const ITEM_STATUSES = ["OPENED", "SEALED", "GRADED"] as const;
+const ITEM_STATUSES = ["OPENED", "CIB", "SEALED", "GRADED"] as const;
 const COLLECTION_STATUSES = ["OWNED", "WISHLIST"] as const;
 
 /** Upper bounds that keep a pasted novel out of a one-line column. */

@@ -11,8 +11,11 @@ export async function GET(req: NextRequest) {
 
   const groups = await prisma.tagGroup.findMany({
     where: {
+      // Shared groups (no owner: system ones and those an admin created
+      // under Einstellungen → Tags) plus one's own. Matching isSystem alone
+      // left admin-created groups invisible to everyone.
       OR: [
-        { isSystem: true },
+        { userId: null },
         { userId },
       ],
     },
@@ -55,17 +58,19 @@ export async function PUT(req: NextRequest) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { order } = await req.json() as { order: string[] };
+  const { order } = await req.json() as { order: unknown };
+  if (!Array.isArray(order)) {
+    return NextResponse.json({ error: "order muss eine Liste sein." }, { status: 400 });
+  }
 
-  const systemGroups = await prisma.tagGroup.findMany({ where: { isSystem: true }, select: { id: true } });
-  const systemIds = new Set(systemGroups.map((g) => g.id));
-
+  // Profil → Meine Tags orders one's own groups only. This used to set the
+  // shared system groups to 0 as well — a write to everyone's data from
+  // anyone's profile — and a foreign id made the update throw.
   let userIdx = 1;
-  await Promise.all(
-    order.map((id) => {
-      if (systemIds.has(id)) return prisma.tagGroup.update({ where: { id }, data: { order: 0 } });
-      return prisma.tagGroup.update({ where: { id, userId }, data: { order: userIdx++ } });
-    })
+  await prisma.$transaction(
+    order
+      .filter((id): id is string => typeof id === "string")
+      .map((id) => prisma.tagGroup.updateMany({ where: { id, userId }, data: { order: userIdx++ } })),
   );
   return NextResponse.json({ ok: true });
 }

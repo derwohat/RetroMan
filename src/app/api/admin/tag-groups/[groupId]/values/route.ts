@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { refuseUnlessShared } from "@/lib/tags/sharedGroup";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 
 async function checkAdmin(): Promise<NextResponse | null> {
@@ -21,6 +22,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   const { value } = await req.json();
   if (!value?.trim()) return NextResponse.json({ error: "Wert erforderlich." }, { status: 400 });
   const count = await prisma.tagValue.count({ where: { groupId } });
@@ -34,6 +37,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   const { order } = await req.json() as { order: string[] };
   await Promise.all(
     order.map((id, idx) =>

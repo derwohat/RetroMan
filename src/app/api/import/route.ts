@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const defaultCollectionId = collections[0].id;
 
   const VALID_CONDITIONS = new Set(["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"]);
-  const VALID_STATUSES = new Set(["OPENED", "SEALED", "GRADED"]);
+  const VALID_STATUSES = new Set(["OPENED", "CIB", "SEALED", "GRADED"]);
 
   let created = 0;
   let skipped = 0;

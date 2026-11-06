@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { refuseUnlessShared } from "@/lib/tags/sharedGroup";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 import { renameOrMergeValue } from "@/lib/tags/linkedField";
 import { renameAnswer } from "@/lib/tags/renameResponse";
@@ -23,6 +24,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId, valueId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   const { value, confirmMerge } = await req.json();
   if (!value?.trim()) return NextResponse.json({ error: "Wert erforderlich." }, { status: 400 });
 
@@ -50,6 +53,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId, valueId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   await prisma.tagValue.delete({ where: { id: valueId, groupId } });
   return NextResponse.json({ ok: true });
 }

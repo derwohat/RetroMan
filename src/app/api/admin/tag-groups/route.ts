@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { SHARED_GROUP_WHERE } from "@/lib/tags/sharedGroup";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 import { usageByValueId } from "@/lib/tags/linkedField";
 
@@ -19,7 +20,9 @@ async function checkAdmin(): Promise<NextResponse | null> {
 export async function GET(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
+  // Shared groups only: someone's private group is theirs, under Profil.
   const groups = await prisma.tagGroup.findMany({
+    where: SHARED_GROUP_WHERE,
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: { values: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
   });
@@ -60,13 +63,19 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const denied = await checkAdmin();
   if (denied) return denied;
-  const { order } = await req.json() as { order: string[] };
-  // System groups keep order 0; user groups start from 1
-  const systemGroups = await prisma.tagGroup.findMany({ where: { isSystem: true }, select: { id: true } });
-  const systemIds = new Set(systemGroups.map((g) => g.id));
+  const { order } = await req.json() as { order: unknown };
+  if (!Array.isArray(order)) {
+    return NextResponse.json({ error: "order muss eine Liste sein." }, { status: 400 });
+  }
+  // The list comes from the browser: only shared groups are ordered here,
+  // any other id is skipped instead of written.
+  const shared = await prisma.tagGroup.findMany({ where: SHARED_GROUP_WHERE, select: { id: true, isSystem: true } });
+  const sharedIds = new Set(shared.map((g) => g.id));
+  const systemIds = new Set(shared.filter((g) => g.isSystem).map((g) => g.id));
+  // System groups keep order 0; the other shared groups start from 1
   let userIdx = 1;
   await Promise.all(
-    order.map((id) => {
+    order.filter((id): id is string => typeof id === "string" && sharedIds.has(id)).map((id) => {
       if (systemIds.has(id)) return prisma.tagGroup.update({ where: { id }, data: { order: 0 } });
       return prisma.tagGroup.update({ where: { id }, data: { order: userIdx++ } });
     })

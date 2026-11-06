@@ -6,6 +6,19 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.0",
+    date: "07.11.2026",
+    changes: [
+      "**Neu: Status „CIB“.** Zwischen „Geöffnet“ und „Versiegelt“ steht jetzt CIB — geöffnet, aber vollständig mit Verpackung und Anleitung. Wählbar auf der Objektseite, beim Anlegen und im Import",
+      "**Neu: Die Karten der Sammlungsübersicht lassen sich in der Größe verstellen.** Derselbe Schieberegler wie in einer Sammlung, fünf Stufen von sieben bis zwei Karten je Reihe. Stufe 3 ist die bisherige Größe, und der Browser merkt sich die Wahl",
+      "**Das €-Zeichen steht direkt am Kaufpreis:** „12,99 €“, wie man es schreibt, statt mit der ganzen Feldbreite dazwischen. Es rückt beim Tippen mit und kommt jetzt aus derselben Schrift wie die Ziffern — der alte Umweg über eine Systemschrift war seit den selbst ausgelieferten Schriften überflüssig",
+      "**Tags haben jetzt je einen Ort.** Unter Profil → „Meine Tags“ stehen nur noch die eigenen Gruppen, unter Einstellungen → Tags nur die gemeinsamen für alle. Bisher erschienen die gemeinsamen an beiden Stellen. Eine Gruppe, die ein Administrator dort anlegt, taucht jetzt auch in den Formularen auf — bisher blieb sie unsichtbar",
+      "**Sicherheit: Der Admin-Bereich sieht keine privaten Tag-Gruppen anderer Nutzer mehr.** Er zeigte sie bisher an und ließ sie umbenennen, ändern und löschen. Jetzt kennt er nur die gemeinsamen Gruppen; eine private antwortet ihm mit „nicht gefunden“. Und das Sortieren der eigenen Gruppen im Profil schreibt nicht mehr in die gemeinsamen hinein",
+      "**„Benutzer anlegen“ fragt nach, bevor Eingaben verloren gehen.** Abbrechen und Erstellen stehen oben im Dialog; wer etwas eingetippt hat und per Escape, Klick daneben oder Abbrechen schließt, bekommt die Rückfrage „Ungespeicherte Änderungen“. Eine Ablehnung wie „Benutzername bereits vergeben“ erscheint im Dialog, die Eingaben bleiben stehen. Das Einmal-Passwort danach schließt nur über seinen Knopf, damit es kein versehentlicher Klick verschwinden lässt",
+      "**Der Zustand „Neuwertig“ heißt jetzt „Neu“**, und der Abmelden-Block im Profil ist weg — der Knopf sitzt ohnehin unten in der Seitenleiste",
+    ],
+  },
+  {
     version: "1.8.1",
     date: "04.11.2026",
     changes: [

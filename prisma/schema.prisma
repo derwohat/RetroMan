@@ -37,6 +37,7 @@ enum Condition {
 
 enum ItemStatus {
   OPENED
+  CIB
   SEALED
   GRADED
 }

@@ -449,12 +449,6 @@ input[type="date"].retro-field::-webkit-date-and-time-value {
   text-align: left;
 }
 
-/* The app font has no euro sign, and WebKits fallback draws it inside a box.
-   A plain system stack renders it as the character it is. */
-.currency-mark {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-}
-
 .retro-field::placeholder {
   color: var(--muted-foreground);
 }

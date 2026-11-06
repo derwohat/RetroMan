@@ -16,7 +16,7 @@ import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
 
 type TagValue = { id: string; value: string; order: number };
-type TagGroup = { id: string; name: string; color: string; order: number; isSystem: boolean; values: TagValue[] };
+type TagGroup = { id: string; name: string; color: string; order: number; isSystem: boolean; userId: string | null; values: TagValue[] };
 
 function SortableValue({ tagValue, groupId, onDelete, onRename, t }: {
   tagValue: TagValue; groupId: string; onDelete: (groupId: string, valueId: string) => void;
@@ -168,7 +168,12 @@ export function TagsTab() {
 
   const load = useCallback(async () => {
     const res = await fetch("/api/tags");
-    if (res.ok) setGroups(await res.json());
+    // /api/tags also carries the shared groups, because the item forms need
+    // them. Here only one's own are listed: the shared ones have their one
+    // place under Einstellungen → Tags, and showing them twice is what made
+    // it unclear where a group belongs.
+    if (res.ok) setGroups(((await res.json()) as TagGroup[]).filter((g) => g.userId !== null));
+    else console.error("[profile/tags] Tag-Gruppen nicht geladen:", res.status);
     setLoading(false);
   }, []);
 

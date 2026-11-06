@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
+import { refuseUnlessShared } from "@/lib/tags/sharedGroup";
 import { isLinkableItemField } from "@/lib/tags/linkedField";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 
@@ -22,6 +23,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   const existing = await prisma.tagGroup.findUnique({ where: { id: groupId } });
   if (existing?.isSystem) return NextResponse.json({ error: "System-Gruppen können nicht umbenannt werden." }, { status: 403 });
   const { name } = await req.json();
@@ -38,6 +41,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   const body = await req.json();
   if (!body.color && body.linkedField === undefined)
     return NextResponse.json({ error: "Kein Feld zum Aktualisieren." }, { status: 400 });
@@ -60,6 +65,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const denied = await checkAdmin();
   if (denied) return denied;
   const { groupId } = await params;
+  const notShared = await refuseUnlessShared(groupId);
+  if (notShared) return notShared;
   const existing = await prisma.tagGroup.findUnique({ where: { id: groupId } });
   if (existing?.isSystem) return NextResponse.json({ error: "System-Gruppen können nicht gelöscht werden." }, { status: 403 });
   await prisma.tagGroup.delete({ where: { id: groupId } });

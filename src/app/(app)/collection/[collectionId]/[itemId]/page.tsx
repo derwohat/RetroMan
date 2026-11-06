@@ -9,6 +9,7 @@ import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 import { DangerZone } from "@/components/ui/DangerZone";
 import { DateField } from "@/components/ui/DateField";
+import { TrailingUnit } from "@/components/ui/TrailingUnit";
 import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
 import { errorText } from "@/lib/api/errorText";
 import type { Translations } from "@/lib/i18n";
@@ -138,13 +139,15 @@ function InlineEditableField({
   type?: "text" | "number" | "date" | "select" | "textarea";
   options?: Array<{ value: string; label: string }>;
   placeholder?: string;
-  /** Unit shown inside the field, right-aligned. A bare 24,55 is a number, not a price. */
+  /** Unit shown inside the field, right after the value. A bare 24,55 is a number, not a price. */
   suffix?: string;
   onSave: (value: string | null) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(value ?? "");
   const [focused, setFocused] = useState(false);
   const { state, track, clear } = useSaveState();
+  // Measured by the unit that follows the value (TrailingUnit).
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (!focused) setDraft(value ?? ""); }, [value, focused]);
 
@@ -189,6 +192,7 @@ function InlineEditableField({
 
   const inputEl = (
     <input
+      ref={inputRef}
       type={type}
       className={suffix ? `${cls} pr-8` : cls}
       value={draft}
@@ -206,9 +210,7 @@ function InlineEditableField({
         {suffix ? (
           <div className="relative">
             {inputEl}
-            <span className="currency-mark pointer-events-none absolute right-3 inset-y-0 grid place-items-center text-sm text-muted-foreground">
-              {suffix}
-            </span>
+            <TrailingUnit inputRef={inputRef} text={draft || placeholder || ""} unit={suffix} />
           </div>
         ) : inputEl}
       </dd>
@@ -327,7 +329,7 @@ function TagGroupDropdown({ group, selectedValueId, onSelect, noValuesLabel }: {
 // ── Constants ─────────────────────────────────────────────────────────────────
 // Localized option lists are built from the translations inside the component.
 const CONDITION_KEYS = ["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"] as const;
-const ITEM_STATUS_KEYS = ["OPENED", "SEALED", "GRADED"] as const;
+const ITEM_STATUS_KEYS = ["OPENED", "CIB", "SEALED", "GRADED"] as const;
 
 const META_ORDER: Record<string, string[]> = {
   TheGamesDB:  ["platform", "publisher", "developer", "genre", "rating", "overview"],

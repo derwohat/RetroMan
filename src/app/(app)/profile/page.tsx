@@ -365,15 +365,6 @@ export default function ProfilePage() {
               {t.profile.gdprDownload}
             </a>
           </Section>
-
-          <div className="rounded-xl border border-destructive/30 bg-card p-6 space-y-3">
-            <h3 className="text-sm font-medium text-destructive">{t.profile.logoutTitle}</h3>
-            <p className="text-xs text-muted-foreground">{t.profile.logoutHint}</p>
-            <button onClick={() => signOut({ callbackUrl: "/login" })}
-              className="rounded-md border border-destructive px-4 py-2 text-xs font-medium text-destructive uppercase tracking-wider hover:bg-destructive hover:text-white transition">
-              {t.profile.logoutBtn}
-            </button>
-          </div>
         </div>
       )}
 

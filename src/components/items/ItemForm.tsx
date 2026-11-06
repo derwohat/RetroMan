@@ -5,6 +5,7 @@ import { DateField } from "@/components/ui/DateField";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { useTranslations } from "@/components/LanguageProvider";
+import { TrailingUnit } from "@/components/ui/TrailingUnit";
 
 type CollectionField = {
   id: string;
@@ -59,7 +60,7 @@ interface Props {
 }
 
 const CONDITION_KEYS = ["MINT", "VERY_GOOD", "GOOD", "USED", "POOR"] as const;
-const ITEM_STATUS_KEYS = ["OPENED", "SEALED", "GRADED"] as const;
+const ITEM_STATUS_KEYS = ["OPENED", "CIB", "SEALED", "GRADED"] as const;
 
 const STANDARD_GROUP_NAMES = ["Shops", "Lagerort"];
 
@@ -111,6 +112,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
   const [selectedMeta, setSelectedMeta]   = useState<{ externalId: string; externalSource: string; metadata: Record<string, unknown> | null } | null>(null);
   const [tagGroups, setTagGroups]         = useState<TagGroup[]>([]);
   const fileRef      = useRef<HTMLInputElement>(null);
+  const priceRef     = useRef<HTMLInputElement>(null);
   const pickerRef    = useRef<HTMLDivElement>(null);
   const metaRef      = useRef<HTMLDivElement>(null);
   const metaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -705,20 +707,21 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label={t.forms.purchasePrice}>
                 {/* The currency sits in the field rather than in the label:
-                    a bare 24,55 is a number, not a price. */}
+                    a bare 24,55 is a number, not a price. It stands right
+                    after the digits, as the price is written: 24,55 €. */}
                 <div className="relative">
                   <input
+                    ref={priceRef}
                     type="number"
                     min="0"
                     step="0.01"
                     inputMode="decimal"
+                    placeholder="0,00"
                     value={form.purchasePrice}
                     onChange={(e) => set("purchasePrice", e.target.value)}
                     className="retro-field w-full pr-8"
                   />
-                  <span className="currency-mark pointer-events-none absolute right-3 inset-y-0 grid place-items-center text-sm text-muted-foreground">
-                    €
-                  </span>
+                  <TrailingUnit inputRef={priceRef} text={form.purchasePrice || "0,00"} unit="€" />
                 </div>
               </Field>
               <Field label={t.forms.purchaseDate}>

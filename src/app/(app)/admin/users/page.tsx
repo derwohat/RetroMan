@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "@/components/LanguageProvider";
 import { DangerZone } from "@/components/ui/DangerZone";
+import { FormDialog, NoticeDialog } from "@/components/ui/FormDialog";
+import { errorText } from "@/lib/api/errorText";
 import { useDeleteImpact } from "@/components/ui/useDeleteImpact";
 import { IconCheck, IconDash, IconKey, IconPower, IconShieldOff, IconSignOutAll, IconTrash, IconUnlock } from "@/components/ui/RowIcons";
 
@@ -25,6 +27,8 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+const EMPTY_FORM = { username: "", name: "", email: "", role: "USER" };
+
 export default function AdminUsersPage() {
   const { t } = useTranslations();
   const [users, setUsers] = useState<User[]>([]);
@@ -41,7 +45,7 @@ export default function AdminUsersPage() {
     | { kind: "invited"; name: string; email: string }
     | null
   >(null);
-  const [form, setForm] = useState({ username: "", name: "", email: "", role: "USER" });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -73,26 +77,40 @@ export default function AdminUsersPage() {
       });
   }, []);
 
+  // What closing the dialog would lose — asked about before it is lost.
+  const createDirty =
+    form.username !== EMPTY_FORM.username || form.name !== EMPTY_FORM.name ||
+    form.email !== EMPTY_FORM.email || form.role !== EMPTY_FORM.role;
+
   const neverLoggedInCount = users.filter((u) => !u.deletedAt && !u.lastLoginAt).length;
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleCreate(): Promise<void> {
     setFormError("");
     setSubmitting(true);
-    const res = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+    } catch (error) {
+      // No answer at all: the dialog and its input stay, with the reason.
+      setSubmitting(false);
+      setFormError(error instanceof Error ? error.message : String(error));
+      return;
+    }
     setSubmitting(false);
-    if (!res.ok) { setFormError((await res.json()).error ?? t.common.error); return; }
+    // Refused (name taken, address invalid …): the message goes into the
+    // dialog and the input stays, so it can be corrected in place.
+    if (!res.ok) { setFormError(await errorText(res, t.common.error)); return; }
     const { user, tempPassword, invitedByMail, mailFailed, mailError } = await res.json();
     setUsers((prev) => [
       ...prev,
       { ...user, deletedAt: null, mfaEnabled: false, lastLoginAt: null, lockedUntil: null },
     ]);
     setShowCreate(false);
-    setForm({ username: "", name: "", email: "", role: "USER" });
+    setForm(EMPTY_FORM);
 
     // Three outcomes, not one — Codebook docs/user-management.md, point 4.
     // With a mail server the admin sees no password at all; without one, or
@@ -223,7 +241,7 @@ export default function AdminUsersPage() {
           <p className="mt-1 text-sm text-muted-foreground">{users.length} {t.adminUsers.countLabel}</p>
         </div>
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => { setForm(EMPTY_FORM); setFormError(""); setShowCreate(true); }}
           className="flex items-center gap-2 retro-btn rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider transition hover:opacity-90"
         >
           {t.adminUsers.newUser}
@@ -407,83 +425,70 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Create User Modal */}
+      {/* Create user — Codebook "Anlegen als Overlay": header with Abbrechen
+          and Erstellen, no ✕, and a question before input is thrown away. */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">
-              {t.adminUsers.createTitle}
-            </h3>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colUsername}</label>
-                {/* autoComplete="off", not "username": this field names someone
-                    else's account, and the keychain would otherwise offer the
-                    admin their own sign-in to fill in. */}
-                <input
-                  required
-                  value={form.username}
-                  onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-                  placeholder={t.adminUsers.usernamePlaceholder}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colName}</label>
-                <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-                  placeholder={t.adminUsers.namePlaceholder}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colEmail}</label>
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-                  placeholder={t.adminUsers.emailPlaceholder}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.role}</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                  className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
-                >
-                  <option value="USER">{t.adminUsers.roleUser}</option>
-                  <option value="ADMIN">{t.adminUsers.roleAdmin}</option>
-                </select>
-              </div>
-              {formError && <p className="text-xs text-destructive">{formError}</p>}
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => { setShowCreate(false); setFormError(""); }}
-                  className="flex-1 retro-btn rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
-                >
-                  {t.common.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition"
-                >
-                  {submitting ? t.common.creating : t.common.create}
-                </button>
-              </div>
-            </form>
+        <FormDialog
+          title={t.adminUsers.createTitle}
+          submitLabel={t.common.create}
+          busyLabel={t.common.creating}
+          busy={submitting}
+          dirty={createDirty}
+          error={formError}
+          onSubmit={handleCreate}
+          onClose={() => { setShowCreate(false); setFormError(""); }}
+        >
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colUsername}</label>
+            {/* autoComplete="off", not "username": this field names someone
+                else's account, and the keychain would otherwise offer the
+                admin their own sign-in to fill in. */}
+            <input
+              required
+              autoFocus
+              value={form.username}
+              onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
+              placeholder={t.adminUsers.usernamePlaceholder}
+            />
           </div>
-        </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colName}</label>
+            <input
+              required
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
+              placeholder={t.adminUsers.namePlaceholder}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.colEmail}</label>
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
+              placeholder={t.adminUsers.emailPlaceholder}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.adminUsers.role}</label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              className="retro-field w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none"
+            >
+              <option value="USER">{t.adminUsers.roleUser}</option>
+              <option value="ADMIN">{t.adminUsers.roleAdmin}</option>
+            </select>
+          </div>
+        </FormDialog>
       )}
 
       <DangerZone
@@ -501,61 +506,39 @@ export default function AdminUsersPage() {
           Admin kein Passwort, ohne einen bleibt das Einmal-Passwort der
           einzige Weg. */}
       {result?.kind === "invited" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 shadow-2xl">
-            <h3 className="font-heading text-[10px] uppercase tracking-widest text-primary">
-              {t.adminUsers.invitedTitle}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {t.adminUsers.invitedHint}{" "}
-              <span className="font-medium text-foreground">{result.name}</span>.
-            </p>
-            <div className="rounded-md border border-border bg-muted p-3 text-center">
-              <code className="select-all break-all font-mono text-sm text-foreground">
-                {result.email}
-              </code>
-            </div>
-            <p className="text-xs text-muted-foreground">{t.adminUsers.invitedNote}</p>
-            <button
-              onClick={() => setResult(null)}
-              className="w-full retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium uppercase tracking-wider text-primary-foreground transition hover:opacity-90"
-            >
-              {t.adminUsers.understood}
-            </button>
+        <NoticeDialog title={t.adminUsers.invitedTitle} buttonLabel={t.adminUsers.understood} onClose={() => setResult(null)}>
+          <p className="text-sm text-muted-foreground">
+            {t.adminUsers.invitedHint}{" "}
+            <span className="font-medium text-foreground">{result.name}</span>.
+          </p>
+          <div className="rounded-md border border-border bg-muted p-3 text-center">
+            <code className="select-all break-all font-mono text-sm text-foreground">
+              {result.email}
+            </code>
           </div>
-        </div>
+          <p className="text-xs text-muted-foreground">{t.adminUsers.invitedNote}</p>
+        </NoticeDialog>
       )}
 
       {result?.kind === "password" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-4">
-            <h3 className="font-heading text-[10px] text-primary uppercase tracking-widest">
-              {t.adminUsers.tempPassword}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {t.adminUsers.tempPasswordHint}{" "}
-              <span className="font-medium text-foreground">{result.name}</span>.{" "}
-              {t.adminUsers.tempPasswordNote}
+        <NoticeDialog title={t.adminUsers.tempPassword} buttonLabel={t.adminUsers.understood} onClose={() => setResult(null)}>
+          <p className="text-sm text-muted-foreground">
+            {t.adminUsers.tempPasswordHint}{" "}
+            <span className="font-medium text-foreground">{result.name}</span>.{" "}
+            {t.adminUsers.tempPasswordNote}
+          </p>
+          {result.mailError !== undefined && (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-400">
+              {t.adminUsers.inviteMailFailed}
+              {result.mailError ? " (" + result.mailError + ")" : ""}
             </p>
-            {result.mailError !== undefined && (
-              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-400">
-                {t.adminUsers.inviteMailFailed}
-                {result.mailError ? " (" + result.mailError + ")" : ""}
-              </p>
-            )}
-            <div className="rounded-md border border-primary/30 bg-primary/5 p-4 text-center">
-              <code className="font-mono text-xl text-primary tracking-widest select-all">
-                {result.password}
-              </code>
-            </div>
-            <button
-              onClick={() => setResult(null)}
-              className="w-full retro-btn rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground uppercase tracking-wider hover:opacity-90 transition"
-            >
-              {t.adminUsers.understood}
-            </button>
+          )}
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-4 text-center">
+            <code className="font-mono text-xl text-primary tracking-widest select-all">
+              {result.password}
+            </code>
           </div>
-        </div>
+        </NoticeDialog>
       )}
     </div>
   );
