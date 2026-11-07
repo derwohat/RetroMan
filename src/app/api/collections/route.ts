@@ -17,6 +17,8 @@ export async function GET() {
             showInView: true,
             group: { select: { id: true, name: true, color: true, linkedField: true } },
           },
+          // Without an order the database may return them differently each time.
+          orderBy: { createdAt: "asc" },
         },
         _count: { select: { items: true } },
       },

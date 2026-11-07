@@ -155,10 +155,6 @@ const TYPES: Record<string, ImpactType> = {
     authorize: (id) => requireOwnCollection(id),
     count: (id) => countCollection(id),
   },
-  "admin:collection": {
-    authorize: () => requireAdmin(),
-    count: (id) => countCollection(id),
-  },
   item: {
     authorize: (id) => requireOwnItem(id),
     count: (id) => countItem(id),
@@ -166,10 +162,6 @@ const TYPES: Record<string, ImpactType> = {
   field: {
     // The field hangs off a collection, so the right is the collection's.
     authorize: (id) => requireOwnCollection(id),
-    count: (_id, subId) => countCollectionField(subId ?? ""),
-  },
-  "admin:field": {
-    authorize: () => requireAdmin(),
     count: (_id, subId) => countCollectionField(subId ?? ""),
   },
   tagGroup: {

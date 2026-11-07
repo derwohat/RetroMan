@@ -33,7 +33,7 @@ type Field = {
   order: number;
 };
 
-type CollectionTagGroupAdmin = {
+type CollectionTagGroupLink = {
   groupId: string;
   showInView: boolean;
   group: { id: string; name: string };
@@ -48,7 +48,7 @@ type Collection = {
   customMediaTypeLabel: string | null;
   order: number;
   fields: Field[];
-  tagGroups: CollectionTagGroupAdmin[];
+  tagGroups: CollectionTagGroupLink[];
   _count: { items: number };
 };
 
@@ -222,7 +222,7 @@ function SortableCollection({
         ? fieldForm.options.split(",").map((o) => o.trim()).filter(Boolean)
         : [],
     };
-    const res = await fetch(`/api/admin/collections/${col.id}/fields`, {
+    const res = await fetch(`/api/collections/${col.id}/fields`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -238,12 +238,12 @@ function SortableCollection({
   // single click and without a word. Now it asks, and names how many.
   const [deleteFieldTarget, setDeleteFieldTarget] = useState<{ id: string; name: string } | null>(null);
   const fieldImpact = useDeleteImpact(
-    deleteFieldTarget ? { type: "admin:field", id: col.id, subId: deleteFieldTarget.id } : null,
+    deleteFieldTarget ? { type: "field", id: col.id, subId: deleteFieldTarget.id } : null,
   );
 
   async function handleDeleteField() {
     if (!deleteFieldTarget) return;
-    const res = await fetch(`/api/admin/collections/${col.id}/fields/${deleteFieldTarget.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/collections/${col.id}/fields/${deleteFieldTarget.id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(await errorText(res, t.common.error));
     setDeleteFieldTarget(null);
     onReload();
@@ -502,7 +502,15 @@ function SortableCollection({
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function AdminCollectionsPage() {
+/**
+ * Einstellungen → Sammlungen, for every user. Collections belong to one
+ * person, so this manages one's own — through /api/collections, whose
+ * routes check the owner. It used to exist twice: here under /admin for
+ * administrators and as a copied tab in the profile for everyone. The
+ * admin copy of the API checked no owner at all, so an administrator could
+ * rename or delete another person's collection, items included, by its id.
+ */
+export default function CollectionSettingsPage() {
   const { t } = useTranslations();
   const [collections, setCollections] = useState<Collection[]>([]);
   // Faults of the list itself — a refused reorder or rename. Both used to be
@@ -520,7 +528,7 @@ export default function AdminCollectionsPage() {
 
   const deleteImpact = useDeleteImpact(
 
-    deleteTarget ? { type: "admin:collection", id: deleteTarget.id } : null,
+    deleteTarget ? { type: "collection", id: deleteTarget.id } : null,
 
   );
 
@@ -529,7 +537,7 @@ export default function AdminCollectionsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [colRes, tagsRes] = await Promise.all([
-      fetch("/api/admin/collections"),
+      fetch("/api/collections"),
       fetch("/api/tags"),
     ]);
     if (colRes.ok) setCollections(await colRes.json());
@@ -562,7 +570,7 @@ export default function AdminCollectionsPage() {
     setCollections(reordered);
     setListError("");
     try {
-      const res = await fetch("/api/admin/collections/reorder", {
+      const res = await fetch("/api/collections/reorder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: reordered.map((c) => c.id) }),
@@ -582,7 +590,7 @@ export default function AdminCollectionsPage() {
     e.preventDefault();
     setColError("");
     setSubmitting(true);
-    const res = await fetch("/api/admin/collections", {
+    const res = await fetch("/api/collections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -601,7 +609,7 @@ export default function AdminCollectionsPage() {
   }
 
   async function handleRename(id: string, name: string) {
-    const res = await fetch(`/api/admin/collections/${id}`, {
+    const res = await fetch(`/api/collections/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -618,7 +626,7 @@ export default function AdminCollectionsPage() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    const res = await fetch(`/api/admin/collections/${deleteTarget.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/collections/${deleteTarget.id}`, { method: "DELETE" });
     // Checked before the row goes: a refused deletion used to remove the
     // collection from the screen anyway, and it reappeared on reload.
     if (!res.ok) throw new Error(await errorText(res, t.common.error));
@@ -628,7 +636,7 @@ export default function AdminCollectionsPage() {
   }
 
   async function handleAssignTagGroup(colId: string, groupId: string) {
-    const res = await fetch(`/api/admin/collections/${colId}/tag-groups`, {
+    const res = await fetch(`/api/collections/${colId}/tag-groups`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ groupId }),
@@ -645,7 +653,7 @@ export default function AdminCollectionsPage() {
   }
 
   async function handleRemoveTagGroup(colId: string, groupId: string) {
-    const res = await fetch(`/api/admin/collections/${colId}/tag-groups/${groupId}`, { method: "DELETE" });
+    const res = await fetch(`/api/collections/${colId}/tag-groups/${groupId}`, { method: "DELETE" });
     if (!res.ok) return;
     setCollections((prev) =>
       prev.map((c) =>
@@ -665,7 +673,7 @@ export default function AdminCollectionsPage() {
           : c
       )
     );
-    const res = await fetch(`/api/admin/collections/${colId}/tag-groups/${groupId}`, { method: "PATCH" });
+    const res = await fetch(`/api/collections/${colId}/tag-groups/${groupId}`, { method: "PATCH" });
     if (!res.ok) {
       // Revert on failure
       setCollections((prev) =>
@@ -683,7 +691,7 @@ export default function AdminCollectionsPage() {
     if (!col) return;
     const next = !col.gradingEnabled;
     setCollections((prev) => prev.map((c) => c.id === colId ? { ...c, gradingEnabled: next } : c));
-    const res = await fetch(`/api/admin/collections/${colId}`, {
+    const res = await fetch(`/api/collections/${colId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gradingEnabled: next }),

@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.1",
+    date: "07.11.2026",
+    changes: [
+      "**Sammlungen verwaltet jetzt jeder an einer Stelle: unter Einstellungen → Sammlungen.** Bisher gab es dieselbe Verwaltung zweimal — als Reiter im Profil für alle und unter Einstellungen nur für Administratoren. Der Profil-Reiter ist weg, dafür steht „Sammlungen“ jetzt für jeden Nutzer in der Seitenleiste. Wer die alte Adresse als Lesezeichen hat, landet automatisch auf der neuen",
+      "**Sicherheit: Ein Administrator konnte fremde Sammlungen umbenennen oder löschen** — samt allen Objekten darin, über die Kennung der Sammlung. Die Oberfläche bot das nie an, die Schnittstelle dahinter prüfte aber nicht, wem die Sammlung gehört. Diese zweite Schnittstelle ist entfernt; die verbleibende prüft bei jedem Zugriff den Besitzer",
+      "**Behoben: Ein normaler Nutzer ohne Sammlungen wurde mit „Sammlung anlegen“ in den Admin-Bereich geschickt** und dort abgewiesen. Der Link führt jetzt auf die eigene Verwaltung",
+    ],
+  },
+  {
     version: "1.9.0",
     date: "07.11.2026",
     changes: [

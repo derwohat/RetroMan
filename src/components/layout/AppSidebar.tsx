@@ -207,10 +207,12 @@ export function AppSidebar({
   // holds no shields at all and the group is just their profile.
   const settingsItems: NavGroupItem[] = [
     { href: "/profile", label: t.header.profile, icon: <IconPencilSmall /> },
+    // One's own collections, for everyone: they belong to the person, not
+    // to the administration.
+    { href: "/settings/collections", label: t.admin.collections, icon: <IconStack /> },
     ...(role === "ADMIN"
       ? ([
           { href: "/admin/users", label: t.admin.users, icon: <IconUsers />, adminOnly: true },
-          { href: "/admin/collections", label: t.admin.collections, icon: <IconStack />, adminOnly: true },
           { href: "/admin/tags", label: t.admin.tags, icon: <IconTag />, adminOnly: true },
           { href: "/admin/settings", label: t.admin.system, icon: <IconServer />, adminOnly: true },
         ] satisfies NavGroupItem[])

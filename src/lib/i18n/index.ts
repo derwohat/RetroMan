@@ -599,7 +599,6 @@ const de = {
     lightMode: "Hell",
     tabProfil: "Profil",
     tabSicherheit: "Sicherheit",
-    tabSammlungen: "Sammlungen",
     tabTags: "Meine Tags",
   },
   userSettings: {
@@ -1303,7 +1302,6 @@ export const translations: Record<Locale, Translations> = {
       lightMode: "Light",
       tabProfil: "Profile",
       tabSicherheit: "Security",
-      tabSammlungen: "Collections",
       tabTags: "My tags",
     },
     userSettings: {
@@ -1999,7 +1997,6 @@ export const translations: Record<Locale, Translations> = {
       lightMode: "Clair",
       tabProfil: "Profil",
       tabSicherheit: "Sécurité",
-      tabSammlungen: "Collections",
       tabTags: "Mes tags",
     },
     userSettings: {

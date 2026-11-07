@@ -18,6 +18,13 @@ const nextConfig: NextConfig = {
   experimental: {
     turbopackFileSystemCacheForDev: false,
   },
+  // Einstellungen → Sammlungen moved out of the admin area. Config
+  // redirects run before the proxy, so an old bookmark lands on the new page
+  // for every user instead of on the admin lock. Temporary (307): a permanent
+  // one would stay cached in browsers if the address ever moved again.
+  async redirects() {
+    return [{ source: "/admin/collections", destination: "/settings/collections", permanent: false }];
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

@@ -5,11 +5,10 @@ import { signOut } from "next-auth/react";
 import { useTranslations } from "@/components/LanguageProvider";
 import { SaveButton, useSaveState } from "@/components/ui/SaveButton";
 import { errorText } from "@/lib/api/errorText";
-import { CollectionsTab } from "./_components/CollectionsTab";
 import { TagsTab } from "./_components/TagsTab";
 
 type Profile = { id: string; name: string; email: string; role: string; preferredLanguage: string; mfaEnabled: boolean };
-type Tab = "profil" | "sicherheit" | "sammlungen" | "tags";
+type Tab = "profil" | "sicherheit" | "tags";
 
 const LANGUAGES = [
   { value: "de", label: "Deutsch" },
@@ -222,7 +221,6 @@ export default function ProfilePage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "profil",    label: t.profile.tabProfil },
     { id: "sicherheit", label: t.profile.tabSicherheit },
-    { id: "sammlungen", label: t.profile.tabSammlungen },
     { id: "tags",      label: t.profile.tabTags },
   ];
 
@@ -444,13 +442,6 @@ export default function ProfilePage() {
           </Section>
 
           <AccountDeleteSection onDeleted={() => signOut({ callbackUrl: "/login" })} />
-        </div>
-      )}
-
-      {/* ── SAMMLUNGEN TAB ── */}
-      {activeTab === "sammlungen" && (
-        <div className="max-w-3xl">
-          <CollectionsTab />
         </div>
       )}
 

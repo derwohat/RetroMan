@@ -149,7 +149,7 @@ export default function DashboardPage() {
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <CategoryIcon icon={null} className="h-16 w-16 opacity-20 mb-4" />
               <p className="text-sm text-muted-foreground">{t.dashboard.emptyTitle}</p>
-              <Link href="/admin/collections" className="mt-3 text-xs text-primary hover:underline">
+              <Link href="/settings/collections" className="mt-3 text-xs text-primary hover:underline">
                 {t.dashboard.emptyLink}
               </Link>
             </div>
