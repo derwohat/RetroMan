@@ -1,6 +1,6 @@
 {
   "name": "retroman",
-  "version": "1.9.3",
+  "version": "1.9.4",
   "private": true,
   "scripts": {
     "dev": "next dev -p 7002",
@@ -16,8 +16,8 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@zxing/browser": "^0.2.0",
     "argon2": "^0.45.1",
     "bcryptjs": "^3.0.3",
@@ -26,7 +26,7 @@
     "nodemailer": "^10.4.0",
     "otplib": "^13.4.1",
     "pg": "^8.21.0",
-    "prisma": "^7.8.0",
+    "prisma": "^7.10.1",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",

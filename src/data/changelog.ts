@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.4",
+    date: "09.11.2026",
+    changes: [
+      "**Technik: Die Datenbank-Bausteine (Prisma) stehen wieder auf einer gemeinsamen Version.** Beim Sicherheitsupdate in 1.9.4 war das Werkzeug, das beim Bauen den Datenbank-Code erzeugt, schon auf 7.10.1 gesprungen, die Bibliothek, die ihn ausführt, aber noch auf 7.8.0. Das lief nachweislich, ist aber genau die Art Mischung, die beim nächsten Update unerwartet bricht. Für Nutzer ändert sich nichts",
+    ],
+  },
+  {
     version: "1.9.3",
     date: "09.11.2026",
     changes: [
