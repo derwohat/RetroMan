@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.5",
+    date: "09.11.2026",
+    changes: [
+      "**Wartung: Der monatliche Versions-Check ist eingerichtet.** Alle verwendeten Bausteine wurden geprüft und, wo es kleine Updates gab, aktualisiert — darunter React, die Diagramme der Statistik-Seite, die Passwort-Verschlüsselung und die Datenbank-Anbindung. Für Nutzer ändert sich nichts",
+      "**Ab jetzt erinnert RetroMan sich selbst:** Ist der nächste Check fällig, legt GitHub automatisch eine Aufgabe dafür an. So bleibt keine Sicherheitslücke liegen, nur weil niemand nachgesehen hat",
+    ],
+  },
+  {
     version: "1.9.4",
     date: "09.11.2026",
     changes: [

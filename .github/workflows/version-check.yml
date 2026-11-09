@@ -1,0 +1,72 @@
+name: Versions-Check
+
+# Reminder for the monthly version and upgrade check (Codebook
+# project-workflow.md "Monatlicher Versions- und Upgrade-Check", reference
+# KONTOR). This job only reminds: it opens one issue once the newest entry of
+# the protocol in docs/Versionspflege.md is a calendar month old. The check
+# itself runs in a session along the checklist there, and every upgrade is
+# decided by Dennis.
+on:
+  schedule:
+    # Mondays 06:00 UTC: at most a week between "due" and the reminder.
+    # Scheduled runs use the workflow file on the default branch.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+# Least privilege: read the repository, write nothing but issues.
+permissions:
+  contents: read
+  issues: write
+
+defaults:
+  run:
+    shell: bash
+
+# One reminder run at a time, so two runs cannot both see "no issue open".
+concurrency:
+  group: version-check
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # SECURITY: no token left in .git/config; this job needs no git access.
+          persist-credentials: false
+      - name: Fälligkeit prüfen
+        id: due
+        # Node is preinstalled on the runner; the script uses built-ins only.
+        run: node .github/scripts/version-check-due.mjs
+      - name: Issue öffnen, falls keins offen ist
+        if: steps.due.outputs.due == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Step outputs go through the environment, never straight into the
+          # script, so nothing from a file can become shell code.
+          LAST_CHECK: ${{ steps.due.outputs.last }}
+          DUE_ON: ${{ steps.due.outputs.due_on }}
+        run: |
+          # Counted from the plain issue list, not the search API: its index lags
+          # behind, and two quick runs would each open an issue.
+          open_count=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 200 \
+            --json title --jq '[.[] | select(.title | startswith("Versions-Check fällig"))] | length')
+          if [ "$open_count" -gt 0 ]; then
+            echo "Ein Issue „Versions-Check fällig“ ist schon offen."
+            exit 0
+          fi
+          body=$(cat <<EOF
+          Der monatliche Versions- und Upgrade-Check ist fällig: letzter Check am $LAST_CHECK, fällig seit $DUE_ON.
+
+          Ablauf und Checkliste: [docs/Versionspflege.md]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/Versionspflege.md) (Codebook \`project-workflow.md\` „Monatlicher Versions- und Upgrade-Check“).
+
+          - [ ] Checkliste abgearbeitet, Ergebnis als Vorschlag mit Empfehlung an Dennis
+          - [ ] Protokollzeile in docs/Versionspflege.md, auch ohne Befund
+          - [ ] Ausnahmen-Tabelle geprüft
+          - [ ] Beschlossene Upgrades im nächsten Release, Lücken mit Fix sofort
+
+          Dieses Issue schließen, sobald die Protokollzeile auf main steht.
+          EOF
+          )
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "Versions-Check fällig (letzter: $LAST_CHECK)" --body "$body"

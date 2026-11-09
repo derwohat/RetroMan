@@ -40,6 +40,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The reminder in version-check.yml only runs weekly; a broken date rule
+      # would stay silent until then. Built-in test runner, nothing to install.
+      - name: Test version-check script
+        run: node --test .github/scripts/version-check-due.test.mjs
+
       - name: Validate Prisma schema
         run: npx prisma validate
         env:
