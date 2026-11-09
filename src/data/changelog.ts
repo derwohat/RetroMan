@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.10.0",
+    date: "09.11.2026",
+    changes: [
+      "**Sicherheit: RetroMan läuft jetzt auf Node.js 26.** Die bisherige Version 20 bekam seit Ende April keine Sicherheitsupdates mehr, und das Grundsystem des Containers wurde seitdem nicht mehr erneuert. Eine Prüfung des Abbilds fand dort 7 kritische Lücken — mit Node 26 sind es keine mehr, und für die verbleibenden gibt es noch keine Reparatur, die man einspielen könnte. Node 26 wird bis April 2029 gepflegt",
+      "**Das Abbild holt sich beim Bauen die neuesten Sicherheitsupdates seines Grundsystems** und enthält kein npm mehr, das im Betrieb ohnehin nie gebraucht wurde",
+      "**Für Nutzer ändert sich nichts.** Geprüft wurde ausdrücklich das Update aus 1.10.0: Bestehende Daten bleiben unverändert, und alle gespeicherten Passwörter funktionieren weiter",
+    ],
+  },
+  {
     version: "1.9.5",
     date: "09.11.2026",
     changes: [

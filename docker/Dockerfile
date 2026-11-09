@@ -1,5 +1,10 @@
 # ─── Stage 1: Dependencies ────────────────────────────────────────────────────
-FROM node:20-slim AS deps
+# Node 26, Active LTS from 28.10.2026 to 20.10.2027, supported until 30.04.2029.
+# Node 20 left support on 30.04.2026, and node:20-slim stopped being rebuilt in
+# April: a Trivy scan found 7 critical issues in the image, all inherited from
+# it (docs/Versionspflege.md, check of 09.11.2026). All four stages stay on
+# the same version, so argon2 is compiled for the Node that runs it.
+FROM node:26-slim AS deps
 # Debian rather than Alpine: argon2 is a native module, and on musl the wrong
 # prebuilt binary gets picked and segfaults on load — the process dies with no
 # JavaScript error at all. glibc sidesteps the choice entirely.
@@ -7,10 +12,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+# argon2 is compiled here on purpose, always. node-gyp-build only compiles
+# when the shipped prebuild fails to load: on Node 20 / Debian 12 it failed
+# and build/Release appeared; on Node 26 / Debian 13 it loads, nothing is
+# compiled, and the COPY of argon2/build in the runner had nothing to copy.
+# That prebuild is the one that segfaulted in the image before (see the
+# runner), so it is not left to chance: --build-from-source is the switch
+# node-gyp-build reads. The check fails the build here, readably, rather
+# than at a COPY further down.
+RUN npm install \
+  && npm rebuild argon2 --build-from-source \
+  && test -f node_modules/argon2/build/Release/argon2.node \
+  || { echo 'argon2 wurde nicht kompiliert (node_modules/argon2/build/Release fehlt)'; exit 1; }
 
 # ─── Stage 2: Builder ─────────────────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:26-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -26,7 +42,7 @@ RUN npm run build
 
 # ─── Stage 3: Minimal Prisma CLI for migrations ───────────────────────────────
 # Only installs prisma + its transitive deps (~100 MB vs ~964 MB full node_modules)
-FROM node:20-slim AS migrator
+FROM node:26-slim AS migrator
 WORKDIR /migrate
 
 # npm install is where Prisma picks which schema engine to keep, and it picks
@@ -44,23 +60,39 @@ COPY package.json ./orig-package.json
 RUN node -e "\
   const p = require('./orig-package.json'); \
   const v = (p.dependencies || {}).prisma || (p.devDependencies || {}).prisma || 'latest'; \
-  require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', dependencies: { prisma: v } })); \
-  " && npm install && rm orig-package.json
+  require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', dependencies: { prisma: v }, allowScripts: { prisma: true, '@prisma/engines': true } })); \
+  " && npm install && rm orig-package.json \
+  && ls node_modules/@prisma/engines/ | grep -q schema-engine \
+  || { echo 'Prisma-Engine fehlt im Migrator (Installationsskript nicht gelaufen?)'; exit 1; }
+# allowScripts above: this package.json is generated, so the approval from the
+# project's package.json does not reach it. npm 12 blocks unapproved install
+# scripts, and without Prisma's the schema engine is missing — a container
+# without internet could then not run its migrations.
 
 # ─── Stage 4: Runner ──────────────────────────────────────────────────────────
-FROM node:20-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Prisma reads the libssl version to pick its query engine; node:20-slim ships
+# Prisma reads the libssl version to pick its query engine; node:*-slim ships
 # without openssl, so every start logged a warning that it may not work as
 # expected and fell back to a guess. Migrations ran anyway, but a documented
 # guess is not something to ship.
+#
+# apt-get upgrade takes Debian's security fixes that are newer than the base
+# image, instead of waiting for its next rebuild (zlib1g on 09.11.2026).
+#
+# npm and npx go: nothing in this image runs them (the entrypoint calls node
+# directly, migrations use /migrate's own prisma), and the npm bundled with
+# the base image carried the only Node-layer findings of the scan (undici,
+# brace-expansion). The migrator stage above keeps its npm; it is not shipped.
 RUN apt-get update \
+  && apt-get upgrade -y --no-install-recommends \
   && apt-get install -y --no-install-recommends openssl \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Ties the GHCR package to this repository on every successful push, so the
 # link does not depend on someone having set it once by hand in the UI.
