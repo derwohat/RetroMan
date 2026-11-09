@@ -37,6 +37,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       // Full navigation rather than a router push: the reset just invalidated
       // every token for this account, so any client-side session state is
       // stale and must not be carried over.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full navigation drops the stale client session; router.push would keep it
       window.location.href = "/login?reset=done";
       return;
     }

@@ -129,6 +129,7 @@ export default function ProfilePage() {
       // would fail on the next click without explanation.
       setPwMsg(t.profile.passwordChangedSignOut);
       await signOut({ redirect: false });
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full navigation drops the stale client session; router.push would keep it
       window.location.href = "/login?pwchanged=1";
       return;
     }

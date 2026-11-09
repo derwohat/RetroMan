@@ -46,6 +46,7 @@ export default function ChangePasswordPage() {
     // Sign out cleanly and land on the login page with an explanation rather
     // than letting the next request fail on a dead token.
     await signOut({ redirect: false });
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full navigation drops the stale client session; router.push would keep it
     window.location.href = "/login?pwchanged=1";
   }
 

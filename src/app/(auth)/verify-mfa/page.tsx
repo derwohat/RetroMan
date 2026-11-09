@@ -42,6 +42,7 @@ export default function VerifyMfaPage() {
     // Clear mfaPending in the JWT, then hard-redirect so the proxy
     // reads the fresh cookie instead of the stale client-side session
     await update({ mfaPending: false });
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full navigation drops the stale client session; router.push would keep it
     window.location.href = "/";
   }
 

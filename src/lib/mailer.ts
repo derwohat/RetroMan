@@ -1,14 +1,16 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import { prisma } from "@/lib/db/prisma";
 
 // SMTP_* variable names follow the Man-Suite convention (Codebook
 // docs/operations.md). An empty SMTP_HOST means "no mail server configured",
 // which is the normal state in local development, not an error.
 //
-// nodemailer is pinned to ^9 via package.json overrides rather than the ^7/^8
-// next-auth peer-depends on for its optional email provider
-// (GHSA-p6gq-j5cr-w38f, a high-severity SSRF/file-read fix). Safe here because
-// RetroMan only uses the Credentials provider. The matching `@auth/core`
+// nodemailer is pinned to ^10.4 via package.json overrides rather than the
+// ^7/^8 next-auth peer-depends on for its optional email provider. ^9 came
+// with GHSA-p6gq-j5cr-w38f (SSRF/file read); ^10.4 with the addressparser fixes
+// of 11/2026, where display text could become a recipient (GHSA-m943-m63m-w62w,
+// GHSA-85x2-q946-cp5h and others). Safe here because RetroMan only uses the
+// Credentials provider; v10 needs Node 20 or newer. The matching `@auth/core`
 // devDependency keeps npm from nesting that package under next-auth, which
 // would break the ambient session types — see Codebook docs/coding-standards.md.
 
@@ -60,9 +62,9 @@ function env(name: string): string | undefined {
   return raw && raw.trim() ? raw : undefined;
 }
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
-function getTransporter(): nodemailer.Transporter | null {
+function getTransporter(): Transporter | null {
   const host = env("SMTP_HOST");
   if (!host) return null;
 

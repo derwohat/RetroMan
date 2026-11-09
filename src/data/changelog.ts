@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.3",
+    date: "09.11.2026",
+    changes: [
+      "**Sicherheit: Das Web-Gerüst Next.js ist auf 16.4.5 aktualisiert.** Die bisherige Fassung hatte eine kritische Lücke, mit der sich unter bestimmten Bedingungen die Anmeldesperre umgehen ließ — genau die Stelle, an der RetroMan prüft, ob jemand angemeldet ist und Admin-Seiten sehen darf",
+      "**Sicherheit: Die Anmeldung (Auth.js) ist auf den reparierten Stand gebracht.** Behoben ist unter anderem ein Fall, in dem eine Anmeldeprüfung bei einem Konfigurationsfehler durchlässig statt gesperrt ausfiel",
+      "**Sicherheit: Der Mailversand nutzt nodemailer 10.** Ältere Fassungen konnten bei ungewöhnlich geschriebenen Adressen Text aus der Adresse als zusätzlichen Empfänger behandeln. Einladungen und Passwort-Mails gehen jetzt nachweislich genau an die eingetragene Adresse",
+      "**Im Betrieb sind damit keine bekannten Sicherheitslücken in den verwendeten Paketen mehr offen** (vorher 33, davon 4 kritisch). Für Nutzer ändert sich nichts an der Bedienung",
+    ],
+  },
+  {
     version: "1.9.2",
     date: "09.11.2026",
     changes: [
