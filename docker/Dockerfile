@@ -1,5 +1,10 @@
 # ─── Stage 1: Dependencies ────────────────────────────────────────────────────
-FROM node:20-slim AS deps
+# Node 26, Active LTS from 28.10.2026 to 20.10.2027, supported until 30.04.2029.
+# Node 20 left support on 30.04.2026, and node:20-slim stopped being rebuilt in
+# April: a Trivy scan found 7 critical issues in the image, all inherited from
+# it (docs/Versionspflege.md, check of 09.11.2026). All four stages stay on
+# the same version, so argon2 is compiled for the Node that runs it.
+FROM node:26-slim AS deps
 # Debian rather than Alpine: argon2 is a native module, and on musl the wrong
 # prebuilt binary gets picked and segfaults on load — the process dies with no
 # JavaScript error at all. glibc sidesteps the choice entirely.
@@ -10,7 +15,7 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 # ─── Stage 2: Builder ─────────────────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:26-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -26,7 +31,7 @@ RUN npm run build
 
 # ─── Stage 3: Minimal Prisma CLI for migrations ───────────────────────────────
 # Only installs prisma + its transitive deps (~100 MB vs ~964 MB full node_modules)
-FROM node:20-slim AS migrator
+FROM node:26-slim AS migrator
 WORKDIR /migrate
 
 # npm install is where Prisma picks which schema engine to keep, and it picks
@@ -48,19 +53,29 @@ RUN node -e "\
   " && npm install && rm orig-package.json
 
 # ─── Stage 4: Runner ──────────────────────────────────────────────────────────
-FROM node:20-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Prisma reads the libssl version to pick its query engine; node:20-slim ships
+# Prisma reads the libssl version to pick its query engine; node:*-slim ships
 # without openssl, so every start logged a warning that it may not work as
 # expected and fell back to a guess. Migrations ran anyway, but a documented
 # guess is not something to ship.
+#
+# apt-get upgrade takes Debian's security fixes that are newer than the base
+# image, instead of waiting for its next rebuild (zlib1g on 09.11.2026).
+#
+# npm and npx go: nothing in this image runs them (the entrypoint calls node
+# directly, migrations use /migrate's own prisma), and the npm bundled with
+# the base image carried the only Node-layer findings of the scan (undici,
+# brace-expansion). The migrator stage above keeps its npm; it is not shipped.
 RUN apt-get update \
+  && apt-get upgrade -y --no-install-recommends \
   && apt-get install -y --no-install-recommends openssl \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Ties the GHCR package to this repository on every successful push, so the
 # link does not depend on someone having set it once by hand in the UI.

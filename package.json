@@ -1,6 +1,6 @@
 {
   "name": "retroman",
-  "version": "1.9.5",
+  "version": "1.10.0-rc.1",
   "private": true,
   "scripts": {
     "dev": "next dev -p 7002",
@@ -40,7 +40,7 @@
     "@auth/core": "0.41.3",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",

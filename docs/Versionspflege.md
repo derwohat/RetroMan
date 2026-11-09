@@ -14,8 +14,8 @@ ist. Das Datum liest `.github/scripts/version-check-due.mjs` (Tests:
 ## Checkliste
 
 1. **Laufzeiten**
-   - Node: `docker/Dockerfile` (alle vier Stufen `node:20-slim`) und `package.json`
-     (`@types/node`). Release-Linie und Support-Phase laut https://nodejs.org/en/about/previous-releases
+   - Node: `docker/Dockerfile` (alle vier Stufen `node:26-slim`), `.github/workflows/ci.yml`
+     (`node-version`) und `package.json` (`@types/node`) — immer dieselbe Hauptversion. Release-Linie und Support-Phase laut https://nodejs.org/en/about/previous-releases
      und den Tags von https://hub.docker.com/_/node.
    - PostgreSQL: `docker-compose.yml` (`postgres:16-alpine`). Neue Hauptversion nur über
      Sicherung und Wiederherstellung, nie durch Umstellen des Abbilds.
