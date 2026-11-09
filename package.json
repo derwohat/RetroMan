@@ -1,6 +1,6 @@
 {
   "name": "retroman",
-  "version": "1.10.0-rc.1",
+  "version": "1.10.0-rc.2",
   "private": true,
   "scripts": {
     "dev": "next dev -p 7002",
@@ -51,5 +51,10 @@
     "shadcn": "^4.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "argon2": true,
+    "prisma": true,
+    "@prisma/engines": true
   }
 }

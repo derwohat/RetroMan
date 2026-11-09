@@ -12,7 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+# argon2 is compiled here on purpose, always. node-gyp-build only compiles
+# when the shipped prebuild fails to load: on Node 20 / Debian 12 it failed
+# and build/Release appeared; on Node 26 / Debian 13 it loads, nothing is
+# compiled, and the COPY of argon2/build in the runner had nothing to copy.
+# That prebuild is the one that segfaulted in the image before (see the
+# runner), so it is not left to chance: --build-from-source is the switch
+# node-gyp-build reads. The check fails the build here, readably, rather
+# than at a COPY further down.
+RUN npm install \
+  && npm rebuild argon2 --build-from-source \
+  && test -f node_modules/argon2/build/Release/argon2.node \
+  || { echo 'argon2 wurde nicht kompiliert (node_modules/argon2/build/Release fehlt)'; exit 1; }
 
 # ─── Stage 2: Builder ─────────────────────────────────────────────────────────
 FROM node:26-slim AS builder
@@ -49,8 +60,14 @@ COPY package.json ./orig-package.json
 RUN node -e "\
   const p = require('./orig-package.json'); \
   const v = (p.dependencies || {}).prisma || (p.devDependencies || {}).prisma || 'latest'; \
-  require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', dependencies: { prisma: v } })); \
-  " && npm install && rm orig-package.json
+  require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', dependencies: { prisma: v }, allowScripts: { prisma: true, '@prisma/engines': true } })); \
+  " && npm install && rm orig-package.json \
+  && ls node_modules/@prisma/engines/ | grep -q schema-engine \
+  || { echo 'Prisma-Engine fehlt im Migrator (Installationsskript nicht gelaufen?)'; exit 1; }
+# allowScripts above: this package.json is generated, so the approval from the
+# project's package.json does not reach it. npm 12 blocks unapproved install
+# scripts, and without Prisma's the schema engine is missing — a container
+# without internet could then not run its migrations.
 
 # ─── Stage 4: Runner ──────────────────────────────────────────────────────────
 FROM node:26-slim AS runner
