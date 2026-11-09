@@ -10,6 +10,10 @@ ist. Das Datum liest `.github/scripts/version-check-due.mjs` (Tests:
 
 > **Nächster Check fällig ab 09.12.2026.** Aus dem Check vom 09.11.2026 nichts mehr offen:
 > Node 26 ist mit v1.10.0 umgesetzt (Trivy: 7 kritische → 0, verbleibende hohe ohne Debian-Fix).
+>
+> **Fürs nächste Release vorgemerkt:** `DEBIAN_FRONTEND=noninteractive` vor das `apt-get upgrade` der
+> Laufzeit-Stufe (Codebook `operations.md` „OS-Pakete der Basis im Image-Build patchen“, nur für diesen
+> einen Befehl, nicht als `ENV`). In der Praxis ohne Wirkung, weil ohne Terminal ohnehin nicht-interaktiv.
 
 ## Checkliste
 
