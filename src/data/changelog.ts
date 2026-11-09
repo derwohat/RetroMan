@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.2",
+    date: "09.11.2026",
+    changes: [
+      "**Aufgeräumt: Vier Programmpakete, die RetroMan gar nicht benutzt, sind entfernt** — eines für Mehrsprachigkeit (RetroMan übersetzt selbst), zwei für Bedienelemente und Symbole (die sind selbst gebaut) und eines zum Speichern von Anmeldungen in der Datenbank (Anmeldungen laufen über Tokens). Für Nutzer ändert sich nichts; das Abbild wird kleiner, und es gibt weniger fremden Code, der auf Sicherheitslücken beobachtet werden muss — eine als kritisch gemeldete fällt damit schon weg",
+    ],
+  },
+  {
     version: "1.9.1",
     date: "07.11.2026",
     changes: [
