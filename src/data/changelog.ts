@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.10.1",
+    date: "12.11.2026",
+    changes: [
+      "**Besser lesbar: Der aktive Menüpunkt in der Seitenleiste.** In zwei Farbthemen war seine Schrift zu blass für ihren Hintergrund — in „Retro 80s“ hell und „Modern“ dunkel. Dort steht sie jetzt in einem kräftigeren Pink bzw. helleren Indigo und erfüllt damit die Lesbarkeitsnorm für Menschen mit eingeschränktem Sehen. Die Markenkante am Rand bleibt, wie sie war",
+      "**Neues Aussehen: Die Reiter im Profil** (Profil · Sicherheit · Meine Tags) laufen jetzt als Leiste über die ganze Breite. Der gewählte Reiter ist eine hervorgehobene Fläche mit farbiger Schrift statt einer gefüllten Farbpille — so wie in den anderen Apps der Familie. Die Schrift ist etwas größer, und auf schmalen Bildschirmen lässt sich die Leiste seitlich schieben, statt umzubrechen",
+      "**Feinschliff:** Die gedämpfte Schrift ist in „Retro 90s“ dunkel und „Modern“ hell einen Hauch kräftiger, damit sie überall die Lesbarkeitsnorm erreicht",
+      "**Aufgeräumt:** Fünf ungenutzte Bilddateien aus der Projektvorlage sind entfernt, und das Abbild ist beim Einspielen der Sicherheitsupdates noch etwas robuster gebaut. Für Nutzer ändert sich dadurch nichts",
+    ],
+  },
+  {
     version: "1.10.0",
     date: "09.11.2026",
     changes: [

@@ -101,11 +101,23 @@ const targets = [
   // Browser tab: its own geometry, not a shrunk disc. See tabMarkSvg.
   { file: join(root, "src/app/icon.png"), size: 64, mark: tabMarkSvg, transparent: true },
   { file: join(root, "public/icon-32.png"), size: 32, mark: tabMarkSvg, transparent: true },
+  // Profile picture for Telegram and WhatsApp (Codebook product-standards.md
+  // "Symbol für Telegram und WhatsApp", Brandbook §15). Both crop to a circle;
+  // the mark's outermost point must sit at 40 % of the edge from the centre.
+  // For a disc that is a diameter of 80 %, the same as the maskable icon.
+  // Uploaded by hand, never served: it lives in docs/, not public/.
+  { file: join(root, "docs/design/icons/messenger-640.png"), size: 640, ratio: 0.80, grooves: GROOVES,
+    svgFile: join(root, "docs/design/icons/messenger.svg") },
 ];
 
 await mkdir(join(root, "public"), { recursive: true });
+await mkdir(join(root, "docs/design/icons"), { recursive: true });
 for (const t of targets) {
   const svg = t.mark ? t.mark(t.size) : discSvg(t.size, t.ratio, t.grooves);
+  if (t.svgFile) {
+    await writeFile(t.svgFile, `${svg}\n`);
+    console.log(`${t.svgFile.replace(root, ".")}  Quelle`);
+  }
   await writePng(svg, t.size, t.file, { transparent: t.transparent === true });
 }
 

@@ -39,6 +39,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-text: var(--primary-text);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -66,6 +67,13 @@
   --popover-foreground: #1a1625;
   --primary: #d4177a;
   --primary-foreground: #ffffff;
+  /* The brand colour as TEXT on the app's own surfaces (active nav row, active
+     tab). Each theme sets it, because all theme blocks sit on the same <html>
+     and a value missing in one would fall through from :root. It differs from
+     --primary only where --primary misses 4.5:1 there (Codebook,
+     product-standards.md "Aktiver Nav-Eintrag", "Reiter-Leiste"): here #d4177a
+     reaches 3.70:1 on the active nav row, #b8146a 4.64:1. */
+  --primary-text: #b8146a;
   --secondary: #f0ecf9;
   --secondary-foreground: #1a1625;
   --muted: #f5f3fa;
@@ -109,6 +117,7 @@
   --popover-foreground: #e8e6f2;
   --primary: #ff2d95;
   --primary-foreground: #0d0b1e;
+  --primary-text: #ff2d95;
   --secondary: #2a2545;
   --secondary-foreground: #e8e6f2;
   --muted: #232040;
@@ -151,6 +160,7 @@
   --popover-foreground: #000000;
   --primary: #000080;
   --primary-foreground: #ffffff;
+  --primary-text: #000080;
   --secondary: #c0c0c0;
   --secondary-foreground: #000000;
   --muted: #d4d0c8;
@@ -189,10 +199,12 @@
   --popover-foreground: #f0e6d3;
   --primary: #e94560;
   --primary-foreground: #0e0e0e;
+  --primary-text: #e94560;
   --secondary: #2a2020;
   --secondary-foreground: #f0e6d3;
   --muted: #222222;
-  --muted-foreground: #888888;
+  /* #888888 reached 4.49:1 on --muted, just under AA; #8a8a8a reaches 4.61:1. */
+  --muted-foreground: #8a8a8a;
   --accent: #f5a623;
   --accent-foreground: #0e0e0e;
   --destructive: #ef4444;
@@ -227,10 +239,12 @@
   --popover-foreground: #0f172a;
   --primary: #4f46e5;
   --primary-foreground: #ffffff;
+  --primary-text: #4f46e5;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  /* #64748b reached 4.34:1 on --muted, under AA; #606f86 reaches 4.66:1. */
+  --muted-foreground: #606f86;
   --accent: #0891b2;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
@@ -265,6 +279,8 @@
   --popover-foreground: #f8fafc;
   --primary: #6366f1;
   --primary-foreground: #0f172a;
+  /* #6366f1 as text reaches 3.61:1 on the active nav row; #818cf8 5.41:1. */
+  --primary-text: #818cf8;
   --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;

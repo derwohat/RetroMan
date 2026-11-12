@@ -35,8 +35,11 @@ export type NavGroupItem = {
 export const SUB_ROW = "flex min-h-9 w-full items-center gap-2.5 py-2 pl-9 pr-5 text-left transition-colors";
 
 const ROW = "flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors";
-const ROW_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
-const ROW_ACTIVE = "bg-primary/10 text-primary border-r-2 border-primary";
+/** Idle and active state of every nav row, shared with AppSidebar. */
+export const ROW_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
+// The edge carries the brand at full strength (a surface: 3:1 suffices); the
+// text uses --primary-text, which reaches 4.5:1 in every theme.
+export const ROW_ACTIVE = "bg-primary/10 text-primary-text border-r-2 border-primary";
 
 // ── Remembered folding ───────────────────────────────────────────────────────
 // Folded groups are stored, not open ones, so a group added later starts open

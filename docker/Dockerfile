@@ -83,13 +83,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 #
 # apt-get upgrade takes Debian's security fixes that are newer than the base
 # image, instead of waiting for its next rebuild (zlib1g on 09.11.2026).
+# DEBIAN_FRONTEND is set for that one command only, not as ENV: a package that
+# asks a question during the upgrade must not wait for an answer, and an ENV
+# would leak into the running container.
 #
 # npm and npx go: nothing in this image runs them (the entrypoint calls node
 # directly, migrations use /migrate's own prisma), and the npm bundled with
 # the base image carried the only Node-layer findings of the scan (undici,
 # brace-expansion). The migrator stage above keeps its npm; it is not shipped.
 RUN apt-get update \
-  && apt-get upgrade -y --no-install-recommends \
+  && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends \
   && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/* \
   && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx

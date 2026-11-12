@@ -233,21 +233,29 @@ export default function ProfilePage() {
         {profile && <p className="mt-1 text-sm text-muted-foreground">{profile.email}</p>}
       </div>
 
-      {/* Tab nav */}
-      <div className="flex gap-1 rounded-lg border border-border bg-muted p-1 w-fit flex-wrap">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`rounded-md px-4 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Tab bar after ImmoMan (Codebook product-standards.md "Reiter-Leiste"):
+          full width of the content area, active tab as a raised card surface
+          with brand text, no filled pill. It scrolls sideways when narrow
+          instead of wrapping. Sizes stay in rem so the tabs follow the
+          user's font size setting like every other control. */}
+      <div className="overflow-x-auto">
+        <nav aria-label={t.profile.title} className="flex w-max min-w-full gap-1 rounded-lg border border-border bg-muted p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              className={`flex-none whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "bg-card text-primary-text shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* ── PROFIL TAB ── */}

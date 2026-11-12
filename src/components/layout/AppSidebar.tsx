@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { useTranslations } from "@/components/LanguageProvider";
 import { SearchBox } from "./SearchBox";
-import { SidebarNavGroup, SUB_ROW, type NavGroupItem } from "./SidebarNavGroup";
+import { SidebarNavGroup, SUB_ROW, ROW_ACTIVE, ROW_IDLE, type NavGroupItem } from "./SidebarNavGroup";
 import { ThemeToggle } from "./ThemeToggle";
 import { VersionBanner } from "./VersionBanner";
 
@@ -227,9 +227,7 @@ export function AppSidebar({
         href={href}
         aria-current={isActive ? "page" : undefined}
         className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${
-          isActive
-            ? "bg-primary/10 text-primary border-r-2 border-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          isActive ? ROW_ACTIVE : ROW_IDLE
         }`}
       >
         <span className="shrink-0">{icon}</span>
@@ -294,11 +292,7 @@ export function AppSidebar({
               aria-current={isActive ? "page" : undefined}
               className={`${
                 collapsed ? "flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors" : SUB_ROW
-              } ${
-                isActive
-                  ? "bg-primary/10 text-primary border-r-2 border-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
+              } ${isActive ? ROW_ACTIVE : ROW_IDLE}`}
             >
               <span className="shrink-0">
                 <CategoryIcon icon={col.icon} className={collapsed ? "h-5 w-5" : "h-4 w-4"} />
@@ -322,7 +316,7 @@ export function AppSidebar({
           const href = "/favorites";
           const isActive = pathname.startsWith(href);
           return (
-            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Link href={href} aria-current={isActive ? "page" : undefined} className={`flex min-h-11 w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${isActive ? ROW_ACTIVE : ROW_IDLE}`}>
               <span className="shrink-0"><IconFavorites /></span>
               {!collapsed && <span className="flex-1 truncate text-sm">{t.nav.favorites}</span>}
               {!collapsed && counts.favorites > 0 && <span className="shrink-0 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground tabular-nums leading-none">{counts.favorites}</span>}
