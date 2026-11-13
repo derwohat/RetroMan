@@ -277,36 +277,70 @@
       "source": "src/data/changelog.ts 1.10.1, Tag v1.10.1"
     },
     {
-      "phase": "Geplant",
+      "phase": "Feinschliff und Pflege",
       "version": "1.10.2",
       "kind": "patch",
-      "status": "open",
+      "status": "done",
       "short": "Ausgewählte Knöpfe überall gut lesbar",
       "long": "Dieselbe Farbkombination, die in 1.10.1 am Menü zu blass war, steckt noch in einigen Auswahlknöpfen: Sprache, Schriftgröße, Hell/Dunkel und Videoformat. Sie bekommen denselben kräftigeren Farbton, damit sie in jedem Farbthema gut zu lesen sind.",
-      "date": "",
-      "source": "docs/Roadmap.md § 1.10.2; Nachtrag zu 1.10.1: bg-primary/10 text-primary in admin/settings, profile, ItemForm, admin/users"
+      "date": "2026-11-13",
+      "source": "docs/Roadmap.md § Erledigt 1.10.2; Tag v1.10.2; Nachtrag zu 1.10.1: bg-primary/10 text-primary in admin/settings, profile, ItemForm, admin/users"
     },
     {
-      "phase": "Geplant",
+      "phase": "Feinschliff und Pflege",
       "version": "1.10.2",
       "kind": "patch",
-      "status": "open",
+      "status": "done",
       "short": "Hinweis: Zwei-Faktor-Pflicht wirkt erst ab 1.11",
       "long": "Bis die Zwei-Faktor-Pflicht in Version 1.11 wirklich durchgesetzt wird, steht unter ihrem Schalter in den Einstellungen deutlich, dass er noch nicht wirkt. So verlässt sich kein Administrator auf einen Schutz, den es noch nicht gibt.",
-      "date": "",
-      "change": { "type": "added", "date": "2026-11-13" },
-      "source": "docs/Roadmap.md § 1.10.2 (13.11.2026); src/app/(app)/admin/settings/page.tsx:651"
+      "date": "2026-11-13",
+      "change": {
+        "type": "added",
+        "date": "2026-11-13"
+      },
+      "source": "docs/Roadmap.md § Erledigt 1.10.2; Tag v1.10.2 (13.11.2026); src/app/(app)/admin/settings/page.tsx:651"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.10.2",
+      "kind": "patch",
+      "status": "done",
+      "short": "Einstellungen werden vor dem Speichern geprüft",
+      "long": "Die Einstellungsseite für Administratoren nimmt nur noch bekannte Angaben in der richtigen Form an; ein falscher Wert wird mit einer verständlichen Meldung abgelehnt, und Links wie der Spenden-Link müssen eine echte Webadresse sein. Scheitert das Speichern einer Einstellung, sagt die Seite das jetzt und zeigt wieder den Wert, der tatsächlich gilt.",
+      "date": "2026-11-13",
+      "change": {
+        "type": "added",
+        "date": "2026-11-13"
+      },
+      "source": "docs/Roadmap.md § Erledigt 1.10.2; Tag v1.10.2 (13.11.2026); src/app/api/admin/settings/route.ts:71 ohne Allow-List"
     },
     {
       "phase": "Geplant",
-      "version": "1.10.2",
+      "version": "1.10.3",
       "kind": "patch",
       "status": "open",
-      "short": "Einstellungen werden vor dem Speichern geprüft",
-      "long": "Die Einstellungsseite für Administratoren nimmt künftig nur noch bekannte Angaben in der richtigen Form an. Ein falscher Wert wird mit einer verständlichen Meldung abgelehnt, statt einen Fehler auszulösen, und Links wie der Spenden-Link müssen eine echte Webadresse sein.",
+      "short": "Gelbe und grüne Hinweise überall lesbar",
+      "long": "Hinweise wie „Key fehlt“ oder „Noch nie angemeldet“ stehen in gelber oder grüner Schrift, die in den hellen Farbthemen kaum zu erkennen ist. Sie bekommen dieselbe Form wie der MFA-Hinweis aus 1.10.2: die Farbe an der Kante oder im Hintergrund, die Schrift gut lesbar.",
       "date": "",
-      "change": { "type": "added", "date": "2026-11-13" },
-      "source": "docs/Roadmap.md § 1.10.2 (13.11.2026); src/app/api/admin/settings/route.ts:71 ohne Allow-List"
+      "change": {
+        "type": "added",
+        "date": "2026-11-13"
+      },
+      "source": "docs/Roadmap.md § 1.10.3 (13.11.2026); text-amber-400/text-green-500 in hellen Themes 1,1–1,6:1"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.10.3",
+      "kind": "patch",
+      "status": "open",
+      "short": "Gewähltes Farbthema ohne kurzes Aufblitzen",
+      "long": "Beim Öffnen jeder Seite erscheint RetroMan kurz im dunklen Retro-80s-Look und springt erst dann in das Aussehen, das man gewählt hat. Künftig steht das gewählte Aussehen fest, bevor die Seite gezeichnet wird.",
+      "date": "",
+      "change": {
+        "type": "added",
+        "date": "2026-11-13"
+      },
+      "source": "docs/Roadmap.md § 1.10.3 (13.11.2026); src/app/layout.tsx data-theme fest, ThemeToggle erst nach Profil"
     },
     {
       "phase": "Geplant",

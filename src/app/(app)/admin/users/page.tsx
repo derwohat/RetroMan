@@ -297,7 +297,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3.5" data-label={t.adminUsers.colRole}>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase ${
                       user.role === "ADMIN"
-                        ? "border-primary/50 bg-primary/10 text-primary"
+                        ? "border-primary/50 bg-primary/10 text-primary-text"
                         : "border-border bg-muted text-muted-foreground"
                     }`}>
                       {user.role === "ADMIN" ? t.adminUsers.roleAdmin : t.adminUsers.roleUser}

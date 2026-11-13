@@ -28,8 +28,8 @@ rücken mit ihrer Version auf; erledigte und begonnene Punkte werden nie umnumme
 | Mehrere Benutzer | 0.5–0.8 | erledigt, 12.07.–11.08.2026 |
 | Weg zu Version 1.0 | 0.9–1.0 | erledigt, 21.09.–20.10.2026 |
 | Im Alltag | 1.1–1.4 | erledigt, 26.–30.10.2026 |
-| Feinschliff und Pflege | 1.5–1.10.1 | erledigt, 04.–12.11.2026 |
-| Geplant | 1.10.2–1.17 | offen |
+| Feinschliff und Pflege | 1.5–1.10.2 | erledigt, 04.–13.11.2026 <span style="color:red">(13.11.2026, 09:27)</span> |
+| Geplant | 1.10.3–1.17 | offen <span style="color:red">(13.11.2026, 09:27)</span> |
 
 ## Erledigt
 
@@ -76,42 +76,41 @@ Nur die Linie; was jede Version im Einzelnen gebracht hat, steht in
 - [x] 1.9.x — Sicherheitsupdates und monatlicher Versions-Check (1.9.2–1.9.5, 09.11.2026)
 - [x] 1.10 — Umstieg auf Node.js 26 (09.11.2026, Tag v1.10.0)
 - [x] 1.10.1 — Lesbarer aktiver Menüpunkt, Reiterleiste im Profil (12.11.2026, Tag v1.10.1)
+- [x] 1.10.2 — Korrekturversion (13.11.2026, Tag v1.10.2) <span style="color:red">(13.11.2026, 09:27)</span>
+  - Ausgewählte Knöpfe überall lesbar: `text-primary-text` an sechs Stellen; dafür ist der
+    Markentextton in Retro 90s dunkel (`#eb5870`) und Modern dunkel (`#8691f8`) eine Spur heller,
+    weil der Ton aus 1.10.1 dort auf der getönten Kartenfläche nur 4,13 bzw. 4,42 : 1 erreichte.
+    Im Browser gemessen: 4,61–7,13 : 1 in allen sechs Themes (Variante A2 aus dem
+    Abnahme-Artifact).
+  - Hinweis „Noch ohne Wirkung“ am MFA-Schalter, Kasten mit gelber Kante (Variante B2); entfällt
+    mit 1.11.
+  - Admin-Einstellungen vor dem Speichern geprüft
+    ([appSettingsInput.ts](../src/lib/settings/appSettingsInput.ts)): feste Feldliste mit Typ,
+    422 mit lesbarer Meldung, 400 bei kaputtem JSON. Dazu die Rückmeldung in der Oberfläche:
+    Scheitert das Speichern von Sprache, Schriftgröße oder MFA-Schalter, springt die Auswahl
+    zurück, und darunter steht der Grund (Text mit roter Kante, Variante C2).
 
 ## Geplant
 
 Abgeglichen am 12.11.2026 gegen den Bauplan und den Code, von Dennis am 13.11.2026 vollständig
 übernommen. Je Punkt: was heute im Code steht (Ist), was geplant ist (Soll), was vorher zu klären ist.
 
-### 1.10.2 — Korrekturversion
+### 1.10.3 — Korrekturversion <span style="color:red">(13.11.2026, 09:27)</span>
 
-- [ ] **Ausgewählte Knöpfe überall gut lesbar.**
-  - Ist: `bg-primary/10 text-primary` an sechs Stellen, dieselbe Kombination, die in 1.10.1 am
-    Menü zu blass war: [admin/settings/page.tsx:604](../src/app/(app)/admin/settings/page.tsx#L604)
-    und :633, [admin/users/page.tsx:300](../src/app/(app)/admin/users/page.tsx#L300),
-    [profile/page.tsx:284](../src/app/(app)/profile/page.tsx#L284) und :288,
-    [ItemForm.tsx:617](../src/components/items/ItemForm.tsx#L617).
-  - Soll: Text in `text-primary-text` wie der aktive Menüpunkt (`ROW_ACTIVE`,
-    [SidebarNavGroup.tsx:42](../src/components/layout/SidebarNavGroup.tsx#L42)), Kontrast in allen
-    sechs Themes ≥ 4,5:1 im Browser gemessen.
+- [ ] **Gelbe und grüne Hinweise überall lesbar.** <span style="color:red">(13.11.2026, 09:27)</span>
+  - Ist: Statusschrift in `text-amber-400` bzw. `text-green-500` (etwa „Key fehlt“, „Noch nie
+    angemeldet“, das Banner in der Benutzerverwaltung) erreicht in den hellen Themes nur
+    1,1–1,6 : 1. 13 Stellen mit `amber-*` in sechs Dateien, dazu die grünen.
+  - Soll: wie der MFA-Hinweis aus 1.10.2, die Farbe an Kante oder Fläche, die Schrift lesbar; in
+    allen sechs Themes ≥ 4,5 : 1 im Browser gemessen.
   - Designänderung: vorher per Artifact bestätigen lassen.
-- [ ] **Hinweis am Schalter „MFA für alle Benutzer erzwingen“: wirkt erst ab Version 1.11.**
-  <span style="color:red">(13.11.2026, 05:40)</span>
-  - Ist: Der Schalter wird gespeichert, aber nirgends gelesen (siehe 1.11). Ein Administrator hält
-    die Zwei-Faktor-Anmeldung für Pflicht, obwohl sie es nicht ist.
-  - Soll: Hinweistext unter dem Schalter
-    ([admin/settings/page.tsx:651](../src/app/(app)/admin/settings/page.tsx#L651)) in allen drei
-    Sprachen, bis 1.11 die Pflicht durchsetzt; mit 1.11 entfällt er wieder.
-  - Designänderung: vorher per Artifact bestätigen lassen.
-- [ ] **Admin-Einstellungen vor dem Speichern prüfen.** <span style="color:red">(13.11.2026, 05:40)</span>
-  - Ist: `PUT /api/admin/settings` übernimmt jedes Feld außer `id` und `updatedAt` ungeprüft
-    ([route.ts:71](../src/app/api/admin/settings/route.ts#L71)). Unbekannte Felder und falsche Typen
-    enden als Datenbankfehler mit Status 500, eine kaputte Anfrage ebenso (`req.json()` ohne
-    Abfangen). `donationUrl` und `githubUrl` werden ohne URL-Prüfung gespeichert. Nur für
-    Administratoren erreichbar, Risiko deshalb gering.
-  - Soll: feste Liste erlaubter Felder mit Typ, nach dem Vorbild von `validateSessionLimits`:
-    Ja/Nein-Felder nur als Boolean, `fontSize` und `interfaceLanguage` nur aus ihrer Werteliste, Links
-    nur `http(s)`. Alles andere wird mit Status 422 und einer lesbaren Meldung abgelehnt. Ohne neue
-    Abhängigkeit.
+- [ ] **Gewähltes Farbthema ohne Aufblitzen.** <span style="color:red">(13.11.2026, 09:27)</span>
+  - Ist: [layout.tsx](../src/app/layout.tsx) liefert jede Seite als `dark` mit
+    `data-theme="retro80s"` aus. Das gewählte Theme setzt erst der Umschalter in der Seitenleiste
+    ([ThemeToggle.tsx](../src/components/layout/ThemeToggle.tsx)), und der erscheint erst, wenn das
+    Profil geladen ist. Bis dahin sieht jeder den dunklen Retro-80s-Look.
+  - Soll: Theme und Hell/Dunkel stehen fest, bevor die Seite gezeichnet wird.
+  - Vorher klären: ob das Theme auf dem Handy überhaupt greift, solange die Seitenleiste zu ist.
 
 ### 1.11 — Zwei-Faktor-Pflicht durchsetzen
 
@@ -119,7 +118,8 @@ Abgeglichen am 12.11.2026 gegen den Bauplan und den Code, von Dennis am 13.11.20
   der Einstellungsseite gesetzt und gespeichert, sonst liest ihn kein Code.
 - [ ] Soll: Ist der Schalter an, führt jede Anmeldung eines Kontos ohne zweiten Faktor zuerst zur
   Einrichtung. Bis dahin sind alle anderen Seiten und Schnittstellen gesperrt, serverseitig geprüft
-  und nicht nur in der Oberfläche. Der Hinweis aus 1.10.2 entfällt.
+  und nicht nur in der Oberfläche. Der Hinweis „Noch ohne Wirkung“ aus 1.10.2 entfällt (Kommentar
+  „Remove with 1.11“ in [admin/settings/page.tsx](../src/app/(app)/admin/settings/page.tsx)).
 - [ ] Vorher: den Guide zu Middleware/Proxy in `node_modules/next/dist/docs/` lesen (siehe
   [AGENTS.md](../AGENTS.md)).
 - Grundlage: `PLAN.md:281`.

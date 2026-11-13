@@ -71,8 +71,10 @@
      tab). Each theme sets it, because all theme blocks sit on the same <html>
      and a value missing in one would fall through from :root. It differs from
      --primary only where --primary misses 4.5:1 there (Codebook,
-     product-standards.md "Aktiver Nav-Eintrag", "Reiter-Leiste"): here #d4177a
-     reaches 3.70:1 on the active nav row, #b8146a 4.64:1. */
+     product-standards.md "Aktiver Nav-Eintrag", "Reiter-Leiste") or on a
+     selected button (border-primary bg-primary/10 text-primary-text on
+     --card, since 1.10.2): here #d4177a reaches 3.70:1 on the active nav row,
+     #b8146a 4.64:1. */
   --primary-text: #b8146a;
   --secondary: #f0ecf9;
   --secondary-foreground: #1a1625;
@@ -199,7 +201,9 @@
   --popover-foreground: #f0e6d3;
   --primary: #e94560;
   --primary-foreground: #0e0e0e;
-  --primary-text: #e94560;
+  /* #e94560 as text reaches 4.13:1 on a selected button (bg-primary/10 over
+     --card); #eb5870 4.64:1. */
+  --primary-text: #eb5870;
   --secondary: #2a2020;
   --secondary-foreground: #f0e6d3;
   --muted: #222222;
@@ -279,8 +283,10 @@
   --popover-foreground: #f8fafc;
   --primary: #6366f1;
   --primary-foreground: #0f172a;
-  /* #6366f1 as text reaches 3.61:1 on the active nav row; #818cf8 5.41:1. */
-  --primary-text: #818cf8;
+  /* #6366f1 as text reaches 3.61:1 on the active nav row; #818cf8 5.41:1
+     there, but only 4.42:1 on a selected button (bg-primary/10 over --card);
+     #8691f8 4.66:1. */
+  --primary-text: #8691f8;
   --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;

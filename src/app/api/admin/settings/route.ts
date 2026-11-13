@@ -4,12 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { encrypt } from "@/lib/crypto/encryption";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
 import { validateSessionLimits } from "@/lib/auth/sessionLimits";
-
-const ENCRYPTED_FIELDS = [
-  "tmdbApiKey", "igdbClientId", "igdbSecret",
-  "discogsApiKey", "pricechartingKey", "theGamesDbKey", "mobyGamesKey",
-  "googleSearchKey", "googleSearchCx", "omdbApiKey", "comicVineKey", "googleBooksKey",
-];
+import { ENCRYPTED_FIELDS, parseSettingsUpdate } from "@/lib/settings/appSettingsInput";
 
 async function checkAdmin(): Promise<NextResponse | null> {
   if (authBypassEnabled()) return null;
@@ -44,40 +39,40 @@ export async function GET() {
   return NextResponse.json(result);
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(req: NextRequest): Promise<NextResponse> {
   const denied = await checkAdmin();
   if (denied) return denied;
 
-  const body = await req.json();
-  const data: Record<string, unknown> = {};
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Die Anfrage enthält kein gültiges JSON." }, { status: 400 });
+  }
+
+  // Security: only listed fields with the listed type get through — see
+  // src/lib/settings/appSettingsInput.ts. Nothing of a partly wrong request
+  // is written.
+  const parsed = parseSettingsUpdate(body, encrypt);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 422 });
+  }
+  const data = parsed.data;
 
   // Session deadlines are rejected here rather than clamped — the form must
   // say no to a bad value. Reading them back clamps instead, so a wrong row
   // can never lock everyone out of the sign-in path.
-  if (body.sessionIdleMinutes !== undefined || body.sessionAbsoluteHours !== undefined) {
+  if (data.sessionIdleMinutes !== undefined || data.sessionAbsoluteHours !== undefined) {
     const current = await prisma.appSettings.findUnique({
       where: { id: "singleton" },
       select: { sessionIdleMinutes: true, sessionAbsoluteHours: true },
     });
     const check = validateSessionLimits(
-      body.sessionIdleMinutes ?? current?.sessionIdleMinutes ?? 60,
-      body.sessionAbsoluteHours ?? current?.sessionAbsoluteHours ?? 12,
+      data.sessionIdleMinutes ?? current?.sessionIdleMinutes ?? 60,
+      data.sessionAbsoluteHours ?? current?.sessionAbsoluteHours ?? 12,
     );
     if (!check.ok) {
       return NextResponse.json({ error: check.error }, { status: 422 });
-    }
-  }
-
-  for (const [key, value] of Object.entries(body)) {
-    if (key === "id" || key === "updatedAt") continue;
-    if (ENCRYPTED_FIELDS.includes(key)) {
-      if (typeof value === "string" && value.length > 0) {
-        data[key] = encrypt(value);
-      } else if (value === null) {
-        data[key] = null;
-      }
-    } else {
-      data[key] = value;
     }
   }
 

@@ -281,11 +281,11 @@ export default function ProfilePage() {
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => applyDarkMode(true)}
-                className={`rounded-md border px-3 py-1.5 text-xs transition ${isDark ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                className={`rounded-md border px-3 py-1.5 text-xs transition ${isDark ? "border-primary bg-primary/10 text-primary-text" : "border-border text-muted-foreground hover:border-primary/50"}`}>
                 {t.profile.darkMode}
               </button>
               <button onClick={() => applyDarkMode(false)}
-                className={`rounded-md border px-3 py-1.5 text-xs transition ${!isDark ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                className={`rounded-md border px-3 py-1.5 text-xs transition ${!isDark ? "border-primary bg-primary/10 text-primary-text" : "border-border text-muted-foreground hover:border-primary/50"}`}>
                 {t.profile.lightMode}
               </button>
             </div>

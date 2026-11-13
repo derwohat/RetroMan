@@ -1,12 +1,24 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useTranslations } from "@/components/LanguageProvider";
 import { MailProbe } from "@/components/admin/MailProbe";
 import { SaveButton, useSaveState } from "@/components/ui/SaveButton";
 import { errorText } from "@/lib/api/errorText";
 
 const DONATION_URL = "https://paypal.me/RetroManFree";
+
+type FontSize = "small" | "medium" | "large";
+type InterfaceLanguage = "de" | "en" | "fr";
+/** The settings that apply on click, without a save button. */
+type QuickSetting = "interfaceLanguage" | "fontSize" | "requireMfa";
+
+const LANGUAGE_NAMES: Record<InterfaceLanguage, string> = { de: "Deutsch", en: "English", fr: "Français" };
+
+function applyFontSizeClass(size: FontSize): void {
+  document.documentElement.classList.remove("font-size-small", "font-size-medium", "font-size-large");
+  document.documentElement.classList.add(`font-size-${size}`);
+}
 
 type Settings = {
   discogsApiKey: boolean;
@@ -126,8 +138,9 @@ export default function AdminSettingsPage() {
   // kept per service here and win over that default.
   const [expandOverrides, setExpandOverrides] = useState<Record<string, boolean>>({});
   const [requireMfa, setRequireMfa] = useState(false);
-  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
-  const [interfaceLanguage, setInterfaceLanguage] = useState<"de" | "en" | "fr">("de");
+  const [fontSize, setFontSize] = useState<FontSize>("medium");
+  const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>("de");
+  const [settingError, setSettingError] = useState<{ field: QuickSetting; message: string } | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(60);
   const [absoluteHours, setAbsoluteHours] = useState(12);
   const [limitError, setLimitError] = useState(false);
@@ -274,12 +287,54 @@ export default function AdminSettingsPage() {
     }
   }
 
-  async function saveSetting(patch: Record<string, unknown>) {
-    await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
+  /**
+   * Saves one of the quick settings. They take effect on screen at the click,
+   * so a refused save has to be undone there and said out loud — up to 1.10.1
+   * a failure here went unnoticed and the screen showed a value that was
+   * never stored. The reason is the server's own text (errorText).
+   */
+  async function saveSetting(
+    field: QuickSetting,
+    value: string | boolean,
+    revert: () => void,
+    keptLabel: string,
+  ): Promise<void> {
+    setSettingError(null);
+    let reason: string;
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (res.ok) return;
+      reason = await errorText(res, t.common.error);
+    } catch (error) {
+      reason = error instanceof Error ? error.message : String(error);
+    }
+    revert();
+    setSettingError({
+      field,
+      message: t.settings.settingNotSaved
+        .replace("{reason}", reason.replace(/[.!]+$/, ""))
+        .replace("{value}", keptLabel),
     });
+  }
+
+  function fontLabel(size: FontSize): string {
+    return size === "small" ? t.settings.fontSmall : size === "medium" ? t.settings.fontMedium : t.settings.fontLarge;
+  }
+
+  // Codebook pattern "chip with a coloured edge": the colour sits on the edge,
+  // the text stays in the foreground tone — --destructive as text misses
+  // 4.5:1 on --card in three themes.
+  function settingErrorFor(field: QuickSetting): ReactNode {
+    if (settingError?.field !== field) return null;
+    return (
+      <p role="alert" className="mt-2 border-l-2 border-destructive pl-2 text-xs text-foreground">
+        {settingError.message}
+      </p>
+    );
   }
 
   async function saveSessionLimits(idle: number, absolute: number) {
@@ -598,18 +653,23 @@ export default function AdminSettingsPage() {
               {(["de", "en", "fr"] as const).map((lang) => (
                 <button
                   key={lang}
-                  onClick={() => { setInterfaceLanguage(lang); saveSetting({ interfaceLanguage: lang }); }}
+                  onClick={() => {
+                    const previous = interfaceLanguage;
+                    setInterfaceLanguage(lang);
+                    void saveSetting("interfaceLanguage", lang, () => setInterfaceLanguage(previous), LANGUAGE_NAMES[previous]);
+                  }}
                   className={`flex-1 rounded-md border py-2 text-xs transition flex items-center justify-center gap-1.5 ${
                     interfaceLanguage === lang
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-primary/10 text-primary-text"
                       : "border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
                   <span className="text-sm leading-none">{lang === "de" ? "🇩🇪" : lang === "en" ? "🇬🇧" : "🇫🇷"}</span>
-                  <span>{lang === "de" ? "Deutsch" : lang === "en" ? "English" : "Français"}</span>
+                  <span>{LANGUAGE_NAMES[lang]}</span>
                 </button>
               ))}
             </div>
+            {settingErrorFor("interfaceLanguage")}
           </div>
 
           <div className="border-t border-border" />
@@ -623,36 +683,60 @@ export default function AdminSettingsPage() {
                 <button
                   key={s}
                   onClick={() => {
+                    const previous = fontSize;
                     setFontSize(s);
-                    document.documentElement.classList.remove("font-size-small", "font-size-medium", "font-size-large");
-                    document.documentElement.classList.add(`font-size-${s}`);
-                    saveSetting({ fontSize: s });
+                    applyFontSizeClass(s);
+                    void saveSetting(
+                      "fontSize",
+                      s,
+                      () => { setFontSize(previous); applyFontSizeClass(previous); },
+                      fontLabel(previous),
+                    );
                   }}
                   className={`flex-1 rounded-md border py-2 text-xs transition ${
                     fontSize === s
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-primary/10 text-primary-text"
                       : "border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
-                  {s === "small" ? t.settings.fontSmall : s === "medium" ? t.settings.fontMedium : t.settings.fontLarge}
+                  {fontLabel(s)}
                 </button>
               ))}
             </div>
+            {settingErrorFor("fontSize")}
           </div>
 
           <div className="border-t border-border" />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">{t.settings.mfa}</p>
-              <p className="text-xs text-muted-foreground">{t.settings.mfaHint}</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">{t.settings.mfa}</p>
+                <p className="text-xs text-muted-foreground">{t.settings.mfaHint}</p>
+              </div>
+              <button
+                onClick={() => {
+                  const previous = requireMfa;
+                  setRequireMfa(!previous);
+                  void saveSetting(
+                    "requireMfa",
+                    !previous,
+                    () => setRequireMfa(previous),
+                    previous ? t.settings.mfaOn : t.settings.mfaOff,
+                  );
+                }}
+                className={`relative w-11 h-6 shrink-0 rounded-full transition-colors border border-border ${requireMfa ? "bg-primary" : "bg-muted"}`}
+              >
+                <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${requireMfa ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
             </div>
-            <button
-              onClick={() => { const next = !requireMfa; setRequireMfa(next); saveSetting({ requireMfa: next }); }}
-              className={`relative w-11 h-6 rounded-full transition-colors border border-border ${requireMfa ? "bg-primary" : "bg-muted"}`}
-            >
-              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${requireMfa ? "translate-x-5" : "translate-x-0"}`} />
-            </button>
+            {settingErrorFor("requireMfa")}
+            {/* Remove with 1.11: the switch is stored but nothing enforces it
+                yet (docs/Roadmap.md, 1.10.2 and 1.11). Amber only on the edge
+                and the fill — amber text misses 2:1 on the light cards. */}
+            <p className="rounded-r-md border-l-[3px] border-amber-500 bg-amber-500/8 px-3 py-2 text-xs text-foreground">
+              <span className="font-semibold">{t.settings.mfaNotEnforcedTitle}</span> {t.settings.mfaNotEnforcedBody}
+            </p>
           </div>
 
           <div className="border-t border-border" />

@@ -614,7 +614,7 @@ export function ItemForm({ collection, collectionId, item, onClose, onSaved }: P
                       onClick={() => set("videoFormat", form.videoFormat === f ? "" : f)}
                       className={`rounded-full border px-3 py-1 text-xs transition ${
                         form.videoFormat === f
-                          ? "border-primary bg-primary/10 text-primary"
+                          ? "border-primary bg-primary/10 text-primary-text"
                           : "border-border text-muted-foreground hover:border-primary hover:text-primary"
                       }`}
                     >

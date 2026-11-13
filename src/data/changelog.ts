@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.10.2",
+    date: "13.11.2026",
+    changes: [
+      "**Besser lesbar: Ausgewählte Knöpfe.** Die gewählte Sprache, Schriftgröße, Hell/Dunkel, das Videoformat und das Schild „Admin“ standen in drei Farbthemen in zu blasser Schrift. Sie verwenden jetzt denselben kräftigeren Farbton wie der aktive Menüpunkt; in „Retro 90s“ dunkel und „Modern“ dunkel ist dieser Ton dafür eine Spur heller geworden. Damit erfüllen alle sechs Farbthemen die Lesbarkeitsnorm für Menschen mit eingeschränktem Sehen",
+      "**Ehrlicher Hinweis: Der Schalter „MFA für alle Benutzer erzwingen“ wirkt noch nicht.** Er wird gespeichert, aber erst ab Version 1.11 durchgesetzt. Bis dahin steht das in einem Hinweis direkt darunter, damit sich niemand auf einen Schutz verlässt, den es noch nicht gibt",
+      "**Sicherheit: Die Einstellungen werden vor dem Speichern geprüft.** Angenommen werden nur bekannte Angaben in der richtigen Form; ein falscher Wert wird mit einer verständlichen Meldung abgelehnt, und Links müssen echte Webadressen sein. Vorher konnte ein falscher Wert einen Serverfehler auslösen. Diese Seite erreichen nur Administratoren",
+      "**Rückmeldung beim Speichern:** Scheitert das Speichern von Sprache, Schriftgröße oder MFA-Schalter, springt die Auswahl auf den gespeicherten Wert zurück, und darunter steht der Grund. Vorher blieb so ein Fehler unbemerkt, und die Seite zeigte einen Wert, der nie gespeichert war",
+    ],
+  },
+  {
     version: "1.10.1",
     date: "12.11.2026",
     changes: [
