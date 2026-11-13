@@ -1,0 +1,383 @@
+{
+  "product": {
+    "title": "RetroMan Roadmap",
+    "wordmarkTop": "",
+    "wordmark": "RetroMan",
+    "markSvg": "docs/design/icons/messenger.svg",
+    "brand": {
+      "light": {
+        "fill": "212 23 122",
+        "text": "184 20 106",
+        "edge": "184 20 106",
+        "soft": "252 231 242",
+        "sidebar": "240 236 249"
+      },
+      "dark": {
+        "fill": "255 45 149",
+        "text": "255 45 149",
+        "edge": "255 45 149",
+        "soft": "58 16 41",
+        "sidebar": "22 20 41"
+      }
+    },
+    "footer": "Quelle: die Planung im Projekt (docs/Roadmap.md), der ursprüngliche Bauplan vom Juni 2026 (PLAN.md, im Projektverlauf), die Neuerungen in der App (src/data/changelog.ts) und die veröffentlichten Versionen (Git-Tags)."
+  },
+  "asOf": "2026-11-13",
+  "items": [
+    {
+      "phase": "Grundbau",
+      "version": "0.0",
+      "kind": "preparation",
+      "status": "done",
+      "short": "Bauplan mit acht Bauabschnitten festgelegt",
+      "long": "Festgelegt wurde, was RetroMan können soll: eine einzige App für die ganze Sammlung physischer Medien – Schallplatten, CDs, Kassetten, Filme, Bücher, Comics und Spiele –, die man selbst betreibt, statt die Daten einem Anbieter zu überlassen. Einträge sollen sich per Titelsuche oder Strichcode aus öffentlichen Datenbanken füllen lassen, damit niemand zwanzig Felder von Hand abtippt.",
+      "date": "2026-06-10",
+      "source": "PLAN.md (Commit 8603482, entfernt mit 6531661)"
+    },
+    {
+      "phase": "Grundbau",
+      "version": "0.1",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Erste Fassung mit allen Grundfunktionen",
+      "long": "In einer Woche entstand die erste lauffähige Fassung: Anmeldung, Verwaltung für Administratoren, Sammlungen mit eigenen Feldern und fünf Ansichten vom Regal bis zur Tabelle. Dazu kamen die Suche in öffentlichen Datenbanken, der Strichcode-Scan mit der Handykamera, Statistiken, Import und Export, ein zweiter Faktor bei der Anmeldung (Code vom Handy) sowie Kontolöschung und Datenauskunft nach DSGVO.",
+      "date": "2026-06-16",
+      "source": "Commits 8603482, 25e6195, 4fa4c00 (Bauabschnitte 1–7), Tag 0.1.0"
+    },
+    {
+      "phase": "Grundbau",
+      "version": "0.1.x",
+      "kind": "patch",
+      "status": "done",
+      "short": "Drei Sprachen, Handy-Ansicht und mehr Datenquellen",
+      "long": "Die Oberfläche gibt es seitdem auf Deutsch, Englisch und Französisch, und sie lässt sich auf dem Handy bedienen. Weitere Datenbanken für Musik, Filme und Bücher kamen dazu, und Angaben lassen sich später erneut aus der Quelle holen. Die Wunschliste wurde bewusst wieder entfernt (Versionen 0.1.2 bis 0.1.9).",
+      "date": "2026-06-19",
+      "label": "Folgestufe",
+      "source": "Commits v0.1.2 (0d52fcb) bis v0.1.9, 17.–19.06.2026"
+    },
+    {
+      "phase": "Grundbau",
+      "version": "0.2",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Suche nach Jahr, Tags, Shop und Lagerort",
+      "long": "Die Suche findet Einträge nicht mehr nur über den Titel, sondern auch über Strichcode, Erscheinungsjahr, Schlagworte (Tags), den Laden, in dem gekauft wurde, und den Lagerort. So findet man etwa alles, was an einem bestimmten Ort steht.",
+      "date": "2026-06-19",
+      "source": "Commit v0.2.0, 19.06.2026"
+    },
+    {
+      "phase": "Grundbau",
+      "version": "0.3",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Drei Farbthemen: Retro 80s, Retro 90s, Modern",
+      "long": "Jede Person wählt das Aussehen selbst: das neonfarbene „Retro 80s“, das an alte Windows-Rechner erinnernde „Retro 90s“ oder ein schlichtes „Modern“, jeweils hell oder dunkel.",
+      "date": "2026-06-19",
+      "source": "Commit v0.3.0, 19.06.2026; src/app/globals.css"
+    },
+    {
+      "phase": "Grundbau",
+      "version": "0.4",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Strichcode-Scanner funktioniert auf dem Handy",
+      "long": "Der Scanner mit der Handykamera lief anfangs nur am Rechner zuverlässig. Seit dieser Version öffnet er auf Handys die Kamera, erkennt den Strichcode auf der Hülle und füllt den Eintrag aus (Versionen 0.4.0 bis 0.4.4).",
+      "date": "2026-06-23",
+      "source": "Commits v0.4.0–v0.4.4, 23.06.2026"
+    },
+    {
+      "phase": "Mehrere Benutzer",
+      "version": "0.5",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Eigene Sammlungen und Tags für jede Person",
+      "long": "Jede Person verwaltet ihre Sammlungen und Schlagworte jetzt für sich, unabhängig von den anderen; die Reihenfolge lässt sich mit der Maus ziehen. Nach einem Update zeigt RetroMan einmal, was neu ist.",
+      "date": "2026-07-12",
+      "source": "src/data/changelog.ts 0.5.0"
+    },
+    {
+      "phase": "Mehrere Benutzer",
+      "version": "0.6",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Benutzerverwaltung mit Einmal-Passwort und Erstanmeldung",
+      "long": "Nur ein Administrator legt neue Konten an. Er bekommt dafür ein Einmal-Passwort, das die neue Person bei der ersten Anmeldung ändern muss, und sieht, wer sich noch nie angemeldet hat. Außerdem kamen Google Books als weitere Bücherquelle und die automatische Abmeldung nach längerer Untätigkeit dazu (Versionen 0.6.0 bis 0.6.6).",
+      "date": "2026-07-12",
+      "source": "src/data/changelog.ts 0.6.0–0.6.6"
+    },
+    {
+      "phase": "Mehrere Benutzer",
+      "version": "0.7",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Neue Sammlung direkt anlegen, Zähler im Menü",
+      "long": "Eine neue Sammlung entsteht direkt auf der Seite statt in einem eigenen Fenster, und die Seitenleiste zeigt sofort, wie viele Einträge jede Sammlung hat. Die Musiksuche erkennt Interpret und Albumtitel zuverlässiger, und der Browser-Tab trägt das RetroMan-Zeichen (Versionen 0.7.0 bis 0.7.8).",
+      "date": "2026-07-13",
+      "source": "src/data/changelog.ts 0.7.0–0.7.8"
+    },
+    {
+      "phase": "Mehrere Benutzer",
+      "version": "0.8",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Anmeldung mit Benutzername statt E-Mail-Adresse",
+      "long": "Wie in allen Apps der Familie meldet man sich mit einem Benutzernamen an; die E-Mail-Adresse bleibt als Angabe im Konto. Bestehende Konten bekamen ihren Namen automatisch. Später kam ein Hinweis in der Seitenleiste dazu, sobald eine neue Version bereitsteht (Versionen 0.8.0 bis 0.8.2).",
+      "date": "2026-08-11",
+      "source": "src/data/changelog.ts 0.8.0–0.8.2"
+    },
+    {
+      "phase": "Weg zu Version 1.0",
+      "version": "0.9",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Passwort vergessen: neuer Zugang per E-Mail",
+      "long": "Wer sein Passwort vergessen hat, fordert auf der Anmeldeseite einen Link per E-Mail an. Er gilt eine Stunde und nur einmal; danach werden alle noch offenen Anmeldungen des Kontos beendet.",
+      "date": "2026-09-21",
+      "source": "src/data/changelog.ts 0.9.0"
+    },
+    {
+      "phase": "Weg zu Version 1.0",
+      "version": "0.10",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Stärkerer Passwortschutz und Sperre nach Fehlversuchen",
+      "long": "Passwörter werden mit einem moderneren Verfahren gespeichert (Argon2id), ohne dass jemand sein Passwort ändern muss. Nach fünf falschen Versuchen wird ein Konto vorübergehend gesperrt, und fehlt eine wichtige Einstellung, bleibt die App verschlossen statt offen. RetroMan lässt sich außerdem wie eine App auf den Startbildschirm legen (Versionen 0.10.0 und 0.10.1).",
+      "date": "2026-09-21",
+      "source": "src/data/changelog.ts 0.10.0–0.10.1"
+    },
+    {
+      "phase": "Weg zu Version 1.0",
+      "version": "1.0",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Erste stabile Version",
+      "long": "Jede Löschung fragt jetzt nach und nennt vorher mit Zahlen, was alles mitgeht. Der Mailversand lässt sich in den Einstellungen testen, die Verwaltung ist auf dem Handy bedienbar, und wie lange eine Anmeldung gültig bleibt, ist einstellbar. Zwei Fehler, die eine frische Installation am Starten hinderten, wurden noch am selben Tag behoben (1.0.1 und 1.0.2).",
+      "date": "2026-10-20",
+      "source": "src/data/changelog.ts 1.0.0–1.0.2, Tag v1.0.0"
+    },
+    {
+      "phase": "Im Alltag",
+      "version": "1.1",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Kaufdatum, Strichcode-Eingabe und Schutz vor Datenverlust",
+      "long": "Einträge mit Kaufdatum ließen sich vorher gar nicht speichern; das ist behoben, und das Datum lässt sich ohne Punkte eintippen. Ein eingetippter Strichcode startet die Suche selbst, und wer ein Formular mit ungespeicherten Eingaben schließt, wird gefragt. Außerdem prüft die App jetzt, was beim Speichern geschickt wird – vorher ließ sich ein Eintrag unter fremdem Konto anlegen.",
+      "date": "2026-10-26",
+      "source": "src/data/changelog.ts 1.1.0"
+    },
+    {
+      "phase": "Im Alltag",
+      "version": "1.2",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Anmeldung über beide Wege, Installationsanleitung",
+      "long": "RetroMan lässt sich jetzt über die interne Adresse und über die verschlüsselte Adresse von außen benutzen; vorher kam man über einen der beiden Wege nicht hinein. Dazu gibt es endlich eine Installationsanleitung, und eine frische Installation startet auch ohne Internetzugang (Versionen 1.2.0 bis 1.2.3).",
+      "date": "2026-10-27",
+      "source": "src/data/changelog.ts 1.2.0–1.2.3"
+    },
+    {
+      "phase": "Im Alltag",
+      "version": "1.3",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Neues Gesicht und sichere Installation",
+      "long": "Das Zeichen sitzt groß über der Seite, und die Rillen der Schallplatte laufen pulsierend nach außen. Administratoren können wieder Benutzer anlegen (dem Formular fehlte ein Feld), das iPhone schlägt beim Passwortwechsel ein starkes Passwort vor, und die Installation bricht ab, wenn ein Pflichtwert fehlt, statt halb zu starten.",
+      "date": "2026-10-29",
+      "source": "src/data/changelog.ts 1.3.0"
+    },
+    {
+      "phase": "Im Alltag",
+      "version": "1.4",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Bilder nur noch nach Anmeldung erreichbar",
+      "long": "Bis dahin ließen sich Bilder ohne Anmeldung hochladen, löschen und ansehen – diese Lücke ist geschlossen. Auf einem NAS (Netzwerkspeicher) scheiterte jeder Bild-Upload ohne Meldung; jetzt richtet der Start die Rechte selbst ein oder nennt den genauen Befehl (Versionen 1.4.0 und 1.4.1).",
+      "date": "2026-10-30",
+      "source": "src/data/changelog.ts 1.4.0–1.4.1"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.5",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Alle Einstellungen an einer Stelle",
+      "long": "Statt eines eigenen Verwaltungsbereichs mit zweiter Seitenleiste gibt es einen Block „Einstellungen“ im Hauptmenü. Die Schriften liefert RetroMan selbst aus, statt sie bei Google zu holen – so geht keine Besucheradresse an Dritte. Die Bremse gegen massenhafte Anmeldeversuche zählt jetzt auch hinter einem vorgeschalteten Server richtig.",
+      "date": "2026-11-04",
+      "source": "src/data/changelog.ts 1.5.0–1.5.1"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.6",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Einladung per E-Mail und sichere Kontoverwaltung",
+      "long": "Neue Konten werden per E-Mail eingeladen, sobald ein Mailserver eingerichtet ist; die eingeladene Person setzt ihr Passwort selbst, der Administrator sieht keines mehr. Gesperrte Konten lassen sich vorzeitig entsperren, „Überall abmelden“ beendet alle Anmeldungen eines Kontos, und niemand kann sich mehr versehentlich selbst die Rechte entziehen. Hinter der Anmeldekarte liegt jetzt eine Schallplatte (Versionen 1.6.0 bis 1.6.3).",
+      "date": "2026-11-04",
+      "source": "src/data/changelog.ts 1.6.0–1.6.3"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.7",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Zugangsschlüssel für Datenbanken per Knopf prüfen",
+      "long": "Für die angebundenen Datenbanken (etwa Discogs oder TMDB) hinterlegt der Administrator Zugangsschlüssel. Ein Knopf „Prüfen“ fragt jetzt probeweise an und zeigt die Antwort des Dienstes – ein falscher Schlüssel fällt sofort auf statt Wochen später als „kein Cover gefunden“.",
+      "date": "2026-11-04",
+      "source": "src/data/changelog.ts 1.7.0"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.8",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Seitenleiste folgt sofort, Gruppen bleiben zugeklappt",
+      "long": "Wer Sammlungen umsortiert, anlegt oder umbenennt, sieht das sofort in der Seitenleiste, ohne neu zu laden. Zugeklappte Menügruppen bleiben zugeklappt, und das Umsortieren nimmt nur noch die eigenen Sammlungen an. Ein Fehler, durch den die erste Anmeldung nach einem Neustart zurück auf die Anmeldeseite springen konnte, ist behoben (1.8.1).",
+      "date": "2026-11-04",
+      "source": "src/data/changelog.ts 1.8.0–1.8.1"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.9",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Status „CIB“, verstellbare Karten, aufgeräumte Tags",
+      "long": "Neu ist der Zustand „CIB“ (geöffnet, aber vollständig mit Verpackung und Anleitung). Die Karten der Sammlungsübersicht lassen sich in fünf Größen zeigen, und Sammlungen wie Schlagworte haben je genau einen Ort in den Einstellungen. Zwei Lücken, über die ein Administrator fremde Sammlungen oder private Schlagworte anderer ändern konnte, sind geschlossen (Versionen 1.9.0 und 1.9.1).",
+      "date": "2026-11-07",
+      "source": "src/data/changelog.ts 1.9.0–1.9.1"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.9.x",
+      "kind": "patch",
+      "status": "done",
+      "short": "Sicherheitsupdates und monatlicher Versions-Check",
+      "long": "Alle verwendeten Bausteine wurden auf reparierte Stände gebracht: Vorher waren in ihnen 33 bekannte Sicherheitslücken offen, danach keine mehr. Seitdem wird jeden Monat geprüft, ob es Updates gibt, und RetroMan erinnert selbst daran, wenn der Check fällig ist (Versionen 1.9.2 bis 1.9.5).",
+      "date": "2026-11-09",
+      "label": "Folgestufe",
+      "source": "src/data/changelog.ts 1.9.2–1.9.5, docs/Versionspflege.md"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.10",
+      "kind": "milestone",
+      "status": "done",
+      "short": "Umstieg auf Node.js 26 für Sicherheitsupdates",
+      "long": "Die Laufzeitumgebung, auf der RetroMan läuft (Node.js), bekam in der alten Version seit April keine Sicherheitsupdates mehr. Mit Node.js 26 sind die kritischen Lücken im Abbild verschwunden, und diese Version wird bis April 2029 gepflegt. Für Nutzer ändert sich nichts.",
+      "date": "2026-11-09",
+      "source": "src/data/changelog.ts 1.10.0, Tag v1.10.0"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.10.1",
+      "kind": "patch",
+      "status": "done",
+      "short": "Besser lesbares Menü, neue Reiter im Profil",
+      "long": "Der gerade gewählte Menüpunkt war in zwei Farbthemen zu blass; er erfüllt jetzt überall die Lesbarkeitsnorm für Menschen mit eingeschränktem Sehen. Die Reiter im Profil laufen als Leiste über die ganze Breite, wie in den anderen Apps der Familie.",
+      "date": "2026-11-12",
+      "source": "src/data/changelog.ts 1.10.1, Tag v1.10.1"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.10.2",
+      "kind": "patch",
+      "status": "open",
+      "short": "Ausgewählte Knöpfe überall gut lesbar",
+      "long": "Dieselbe Farbkombination, die in 1.10.1 am Menü zu blass war, steckt noch in einigen Auswahlknöpfen: Sprache, Schriftgröße, Hell/Dunkel und Videoformat. Sie bekommen denselben kräftigeren Farbton, damit sie in jedem Farbthema gut zu lesen sind.",
+      "date": "",
+      "source": "docs/Roadmap.md § 1.10.2; Nachtrag zu 1.10.1: bg-primary/10 text-primary in admin/settings, profile, ItemForm, admin/users"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.10.2",
+      "kind": "patch",
+      "status": "open",
+      "short": "Hinweis: Zwei-Faktor-Pflicht wirkt erst ab 1.11",
+      "long": "Bis die Zwei-Faktor-Pflicht in Version 1.11 wirklich durchgesetzt wird, steht unter ihrem Schalter in den Einstellungen deutlich, dass er noch nicht wirkt. So verlässt sich kein Administrator auf einen Schutz, den es noch nicht gibt.",
+      "date": "",
+      "change": { "type": "added", "date": "2026-11-13" },
+      "source": "docs/Roadmap.md § 1.10.2 (13.11.2026); src/app/(app)/admin/settings/page.tsx:651"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.10.2",
+      "kind": "patch",
+      "status": "open",
+      "short": "Einstellungen werden vor dem Speichern geprüft",
+      "long": "Die Einstellungsseite für Administratoren nimmt künftig nur noch bekannte Angaben in der richtigen Form an. Ein falscher Wert wird mit einer verständlichen Meldung abgelehnt, statt einen Fehler auszulösen, und Links wie der Spenden-Link müssen eine echte Webadresse sein.",
+      "date": "",
+      "change": { "type": "added", "date": "2026-11-13" },
+      "source": "docs/Roadmap.md § 1.10.2 (13.11.2026); src/app/api/admin/settings/route.ts:71 ohne Allow-List"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.11",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Zwei-Faktor-Pflicht für alle Konten durchsetzen",
+      "long": "In den Einstellungen gibt es einen Schalter „MFA für alle Benutzer erzwingen“. Er wird gespeichert, wirkt aber bisher nicht: Niemand wird zur Einrichtung des zweiten Faktors (Code vom Handy) aufgefordert. Künftig führt RetroMan bei eingeschaltetem Schalter jedes Konto ohne zweiten Faktor nach der Anmeldung zuerst zur Einrichtung.",
+      "date": "",
+      "source": "PLAN.md:281 (AppSettings.requireMfa); src/app/(app)/admin/settings/page.tsx:651, im Code sonst nirgends gelesen"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.12",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Gelöschte Konten nach 30 Tagen endgültig entfernen",
+      "long": "Wer sein Konto löscht, wird bisher nur ausgeblendet; Sammlung und persönliche Angaben bleiben unbegrenzt gespeichert. Geplant ist eine Frist von 30 Tagen, in der sich ein Versehen rückgängig machen lässt, danach wird alles endgültig gelöscht. Dazu kommt eine Seite, die in einfachen Worten erklärt, was RetroMan speichert.",
+      "date": "",
+      "source": "PLAN.md:293 und DSGVO-Abschnitt (/privacy); src/app/api/me/delete/route.ts:20 setzt nur deletedAt"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.13",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Strengere Sicherheitsregeln für den Browser",
+      "long": "RetroMan sagt dem Browser künftig genau, woher eine Seite Programmcode und Bilder laden darf, und bei verschlüsselter Verbindung, dass er nie unverschlüsselt zurückkehren soll (Fachbegriffe: CSP und HSTS). Das erschwert Angriffe, bei denen fremder Code in eine Seite geschmuggelt wird.",
+      "date": "",
+      "source": "PLAN.md:343 (Security Headers CSP, HSTS); next.config.ts:4 ohne beide"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.14",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Cover und Treffer passend zur eigenen Region",
+      "long": "Spiele und Filme haben je nach Land eine andere Hülle, etwa die europäische statt der amerikanischen Fassung. Die Suche soll die eigene Region zuerst zeigen und andere aufklappbar dahinter, je Sammlung umstellbar – etwa für eine Sammlung mit US-Importen. Für Spiele kommt MobyGames als weitere Cover-Quelle dazu.",
+      "date": "",
+      "source": "PLAN.md:47 und :63 (Regionen); prisma/schema.prisma:99 und :371, Felder ohne Verwendung"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.15",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Marktwert der Spiele über PriceCharting",
+      "long": "PriceCharting kennt aktuelle Marktpreise für Spiele, auch für europäische Fassungen. RetroMan holt den Wert zu jedem Spiel und zeigt in der Statistik, was die Sammlung heute wert ist – neben dem, was sie gekostet hat.",
+      "date": "",
+      "blockedBy": "braucht einen Zugang zu PriceCharting (Schlüssel)",
+      "source": "PLAN.md:39 (Pricecharting) und Statistiken (Gesamtwert); src/app/api/admin/settings/route.ts:10 speichert den Schlüssel, nichts liest ihn"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.16",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Import aus Tabellen mit Spaltenzuordnung",
+      "long": "Wer seine Sammlung bisher in einer Tabelle geführt hat (Excel, CSV), soll sie direkt übernehmen können: RetroMan zeigt die Spalten der Datei und lässt zuordnen, welche Spalte welches Feld ist. Bisher nimmt der Import nur sein eigenes Format an.",
+      "date": "",
+      "source": "PLAN.md:258 (CSV mit Spalten-Mapping-Dialog); src/app/api/import/route.ts nur JSON"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.17",
+      "kind": "milestone",
+      "status": "open",
+      "short": "Foto der Grading-Hülle hochladen",
+      "long": "Bewertete Sammlerstücke stecken in einer versiegelten Hülle mit Note (Grading, etwa von WATA oder VGA). Die Note lässt sich schon eintragen; dazu kommt ein Foto der Hülle als Nachweis.",
+      "date": "",
+      "source": "PLAN.md:249 (Foto des Cases); prisma/schema.prisma:345 caseImagePath ohne Verwendung"
+    }
+  ]
+}
