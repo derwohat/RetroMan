@@ -47,6 +47,12 @@ jobs:
       - name: Test version-check script
         run: node --test .github/scripts/version-check-due.test.mjs
 
+      # Guards what lets a session past the second factor: the proof, and the
+      # lockout on the code guesses. The runner strips the types of the .ts
+      # imports itself (Node 24+).
+      - name: Test second-factor guards
+        run: node --test src/lib/auth/mfaProof.test.mjs src/lib/auth/lockout.test.mjs
+
       - name: Validate Prisma schema
         run: npx prisma validate
         env:

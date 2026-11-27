@@ -1,6 +1,6 @@
 # RetroMan — Roadmap
 
-Stand: 13.11.2026 · Grundlage: der ursprüngliche Bauplan vom Juni 2026 (`PLAN.md`, mit Commit
+Stand: 27.11.2026 · Grundlage: der ursprüngliche Bauplan vom Juni 2026 (`PLAN.md`, mit Commit
 6531661 entfernt, lesbar mit `git show 6531661^:PLAN.md`), [changelog.ts](../src/data/changelog.ts)
 und die Git-Tags.
 
@@ -28,8 +28,8 @@ rücken mit ihrer Version auf; erledigte und begonnene Punkte werden nie umnumme
 | Mehrere Benutzer | 0.5–0.8 | erledigt, 12.07.–11.08.2026 |
 | Weg zu Version 1.0 | 0.9–1.0 | erledigt, 21.09.–20.10.2026 |
 | Im Alltag | 1.1–1.4 | erledigt, 26.–30.10.2026 |
-| Feinschliff und Pflege | 1.5–1.10.2 | erledigt, 04.–13.11.2026 <span style="color:red">(13.11.2026, 09:27)</span> |
-| Geplant | 1.10.3–1.17 | offen <span style="color:red">(13.11.2026, 09:27)</span> |
+| Feinschliff und Pflege | 1.5–1.10.3 | erledigt, 04.–27.11.2026 <span style="color:red">(13.11.2026, 09:27)</span> <span style="color:red">(27.11.2026, 15:12)</span> |
+| Geplant | 1.10.4–1.17 | offen <span style="color:red">(13.11.2026, 09:27)</span> <span style="color:red">(27.11.2026, 15:12)</span> |
 
 ## Erledigt
 
@@ -89,13 +89,30 @@ Nur die Linie; was jede Version im Einzelnen gebracht hat, steht in
     422 mit lesbarer Meldung, 400 bei kaputtem JSON. Dazu die Rückmeldung in der Oberfläche:
     Scheitert das Speichern von Sprache, Schriftgröße oder MFA-Schalter, springt die Auswahl
     zurück, und darunter steht der Grund (Text mit roter Kante, Variante C2).
+- [x] 1.10.3 — Sicherheitskorrektur Zwei-Faktor-Anmeldung (27.11.2026, Version 1.10.3) <span style="color:red">(27.11.2026, 15:12)</span>
+  - Lücke geschlossen: Der `jwt`-Callback übernahm `mfaPending` aus dem Update des Browsers, die
+    Verify-Route legte keinen Nachweis ab; mit dem Passwort allein ließ sich der Code überspringen
+    (Codebook `security.md`, Prüfung vom 17.11.2026). Jetzt stellt die Route nach einem gültigen Code
+    einen HMAC-Nachweis aus, gebunden an Nutzer und Sitzungs-ID (`sid`), und nur er hebt den
+    Wartezustand auf ([mfaProof.ts](../src/lib/auth/mfaProof.ts)).
+  - Kontosperre für Codes: falsche Codes zählen auf demselben Zähler wie falsche Passwörter, fünf
+    Fehlversuche sperren 15 Minuten, verdoppelnd bis 24 Stunden; gesperrte Konten werden nicht
+    geprüft ([lockout.ts](../src/lib/auth/lockout.ts), [totpCheck.ts](../src/lib/auth/totpCheck.ts)).
+    Gilt für `verify`, `disable` und `setup`, die als Teil von `/api/auth` im Proxy öffentlich sind
+    und deshalb jede für sich schützen müssen; `disable` und `setup` lehnen Sitzungen im
+    Wartezustand ab. Bei Konten mit zweitem Faktor setzt erst der richtige Code den Zähler zurück,
+    nicht schon das Passwort.
+  - Zwei Tests mit `node --test` in der CI (`mfaProof.test.mjs`, `lockout.test.mjs`).
+  - Bewusst nicht Teil dieser Version, weiter offen aus demselben Codebook-Abschnitt: Cookie und
+    JWT tragen fest `maxAge` 168 Stunden statt der Restlaufzeit, und `lastSeen` gleitet nicht bei
+    jeder Anfrage (`src/proxy.ts`).
 
 ## Geplant
 
 Abgeglichen am 12.11.2026 gegen den Bauplan und den Code, von Dennis am 13.11.2026 vollständig
 übernommen. Je Punkt: was heute im Code steht (Ist), was geplant ist (Soll), was vorher zu klären ist.
 
-### 1.10.3 — Korrekturversion <span style="color:red">(13.11.2026, 09:27)</span>
+### 1.10.4 — Korrekturversion <span style="color:red">(13.11.2026, 09:27)</span> <span style="color:red">(27.11.2026, 15:12)</span> (war 1.10.3, rückt für die Sicherheitskorrektur auf)
 
 - [ ] **Gelbe und grüne Hinweise überall lesbar.** <span style="color:red">(13.11.2026, 09:27)</span>
   - Ist: Statusschrift in `text-amber-400` bzw. `text-green-500` (etwa „Key fehlt“, „Noch nie

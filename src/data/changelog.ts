@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.10.3",
+    date: "27.11.2026",
+    changes: [
+      "**Sicherheit: Der zweite Schritt der Anmeldung ließ sich überspringen.** Wer das Passwort eines Kontos mit Zwei-Faktor-Anmeldung kannte, konnte den Code vom Handy umgehen. Das ist behoben: Der Server stellt erst nach einem richtigen Code einen Nachweis aus, und nur mit diesem Nachweis gilt die Anmeldung als abgeschlossen",
+      "**Sicherheit: Falsche Codes werden gezählt und führen zur Sperre.** Bisher konnte man den sechsstelligen Code beliebig oft probieren. Jetzt zählt jeder falsche Code auf dem Konto, so wie ein falsches Passwort: Nach fünf Fehlversuchen ist das Konto 15 Minuten gesperrt, jede weitere Sperre dauert doppelt so lange, höchstens 24 Stunden. Das gilt für die Anmeldung, für das Ausschalten und für das Einrichten der Zwei-Faktor-Anmeldung. Während der Sperre wird gar nicht geprüft, ob ein Code gestimmt hätte",
+      "**Hinweis:** Ein Konto mit Zwei-Faktor-Anmeldung wird beim Passwort-Login nicht mehr entsperrt, sondern erst nach einem richtigen Code. Sonst hätte jeder, der das Passwort kennt, bei jeder Anmeldung neue Versuche gehabt. Wer sich beim Einrichten fünfmal vertippt, wartet also 15 Minuten",
+    ],
+  },
+  {
     version: "1.10.2",
     date: "13.11.2026",
     changes: [

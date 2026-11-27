@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { verifySync } from "otplib";
 import { tryDecrypt } from "@/lib/crypto/encryption";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { checkTotp, codeRejection } from "@/lib/auth/totpCheck";
 
 async function getUserId(): Promise<string | null> {
   if (authBypassEnabled()) {
@@ -11,6 +11,10 @@ async function getUserId(): Promise<string | null> {
     return user?.id ?? null;
   }
   const session = await auth();
+  // SECURITY: /api/auth is a public path in the proxy, so nothing in front of
+  // this route stops a session that has only passed the password. Such a
+  // session has no business changing the second factor.
+  if (session?.user?.mfaPending) return null;
   return session?.user?.id ?? null;
 }
 
@@ -37,8 +41,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = verifySync({ token, secret, epochTolerance: 30 });
-  if (!result.valid) return NextResponse.json({ error: "Ungültiger Code." }, { status: 400 });
+  // SECURITY: this takes a code as well, so it is a second place to guess one.
+  // Same account counter and lock as the sign-in step.
+  const rejection = codeRejection(await checkTotp(userId, token, secret), "Ungültiger Code.");
+  if (rejection) return rejection;
 
   await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: false, mfaSecret: null } });
   return NextResponse.json({ success: true });

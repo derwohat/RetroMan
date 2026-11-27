@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { verifySync } from "otplib";
 import { tryDecrypt } from "@/lib/crypto/encryption";
+import { checkTotp, codeRejection } from "@/lib/auth/totpCheck";
+import { issueMfaProof } from "@/lib/auth/mfaProof";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -31,8 +32,27 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = verifySync({ token, secret, epochTolerance: 30 });
-  if (!result.valid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
+  // SECURITY: counted on the account and locked after repeated misses, so the
+  // code cannot be guessed. The same check guards disable and setup.
+  const rejection = codeRejection(
+    await checkTotp(session.user.id, token, secret),
+    "Ungültiger Code. Bitte erneut versuchen.",
+  );
+  if (rejection) return rejection;
 
-  return NextResponse.json({ success: true });
+  // The proof is the only thing that lets the session leave the pending state;
+  // the browser hands it back through the session update, where the jwt
+  // callback checks it. A session without an id predates this and must sign in
+  // again rather than be waved through.
+  if (!session.user.sid) {
+    return NextResponse.json(
+      { error: "Die Sitzung ist veraltet. Bitte melden Sie sich erneut an." },
+      { status: 409 },
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    proof: issueMfaProof(session.user.id, session.user.sid),
+  });
 }

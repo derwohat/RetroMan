@@ -39,9 +39,16 @@ export default function VerifyMfaPage() {
       return;
     }
 
-    // Clear mfaPending in the JWT, then hard-redirect so the proxy
-    // reads the fresh cookie instead of the stale client-side session
-    await update({ mfaPending: false });
+    // Hand the server's proof back; the jwt callback lifts mfaPending only if
+    // it checks out. Then hard-redirect so the proxy reads the fresh cookie
+    // instead of the stale client-side session.
+    const { proof } = (await res.json().catch(() => ({}))) as { proof?: string };
+    if (!proof) {
+      setError(t.auth.invalidCode);
+      setLoading(false);
+      return;
+    }
+    await update({ mfaProof: proof });
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full navigation drops the stale client session; router.push would keep it
     window.location.href = "/";
   }

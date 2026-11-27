@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { generateSecret, generateURI, verifySync } from "otplib";
+import { generateSecret, generateURI } from "otplib";
 import QRCode from "qrcode";
 import { encrypt, tryDecrypt } from "@/lib/crypto/encryption";
 import { authBypassEnabled } from "@/lib/auth/devBypass";
+import { checkTotp, codeRejection } from "@/lib/auth/totpCheck";
 
 async function getUserId(): Promise<string | null> {
   if (authBypassEnabled()) {
@@ -12,6 +13,10 @@ async function getUserId(): Promise<string | null> {
     return user?.id ?? null;
   }
   const session = await auth();
+  // SECURITY: /api/auth is a public path in the proxy, so nothing in front of
+  // this route stops a session that has only passed the password. Such a
+  // session has no business changing the second factor.
+  if (session?.user?.mfaPending) return null;
   return session?.user?.id ?? null;
 }
 
@@ -65,8 +70,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = verifySync({ token, secret, epochTolerance: 30 });
-  if (!result.valid) return NextResponse.json({ error: "Ungültiger Code. Bitte erneut versuchen." }, { status: 400 });
+  // SECURITY: for an account that already has a second factor this checks the
+  // real secret, so it is a code oracle like the others — same counter and lock.
+  const rejection = codeRejection(
+    await checkTotp(userId, token, secret),
+    "Ungültiger Code. Bitte erneut versuchen.",
+  );
+  if (rejection) return rejection;
 
   await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: true } });
   return NextResponse.json({ success: true });

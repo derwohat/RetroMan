@@ -20,9 +20,13 @@ declare module "next-auth" {
       mustChangePassword: boolean;
       mfaEnabled: boolean;
       mfaPending?: boolean;
+      /** Per-sign-in id the MFA proof is bound to; absent on tokens from before it existed. */
+      sid?: string;
     };
   }
   interface JWT {
+    /** Per-sign-in id the MFA proof is bound to. */
+    sid?: string;
     id: string;
     username: string;
     role: string;

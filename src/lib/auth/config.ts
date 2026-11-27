@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import NextAuth from "next-auth";
 import { CredentialsSignin } from "next-auth";
 import type { NextRequest } from "next/server";
@@ -7,6 +8,8 @@ import { hashPassword, needsRehash, verifyPassword } from "@/lib/auth/password";
 import { isSecureConnection } from "@/lib/auth/cookieBinding";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionLimits } from "@/lib/auth/sessionLimits";
+import { verifyMfaProof } from "@/lib/auth/mfaProof";
+import { lockAfterFailure } from "@/lib/auth/lockout";
 import { rateLimit } from "@/lib/rateLimit";
 import { clientAddress } from "@/lib/clientAddress";
 import "@/lib/auth/types";
@@ -25,16 +28,8 @@ class AccountLockedError extends CredentialsSignin {
 // far enough out that normal use never reaches it; an IP limit counting every
 // request (successes included) means five correct sign-ins lock you out, and
 // everyone behind one address shares the budget.
-const LOCK_THRESHOLD = 5;
-const BASE_LOCK_MS = 15 * 60_000;
-const MAX_LOCK_MS = 24 * 60 * 60_000;
+// The lock rules themselves live in lockout.ts, shared with the code step.
 const IP_FLOOD_LIMIT = 30;
-
-/** Doubles per further block, capped, so repeat offenders wait progressively longer. */
-function lockDurationMs(failedAttempts: number): number {
-  const blocks = Math.floor(failedAttempts / LOCK_THRESHOLD) - 1;
-  return Math.min(BASE_LOCK_MS * 2 ** Math.max(0, blocks), MAX_LOCK_MS);
-}
 
 // In production: any JWT issued before this server process started is
 // rejected → forces re-login after a restart. In dev: always 0 so HMR saves
@@ -119,6 +114,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
         // would restart on every refresh and never bite.
         token.sessionStart = Math.floor(Date.now() / 1000);
         token.lastSeen = token.sessionStart;
+        // Random per sign-in; the MFA proof is bound to it so a proof from one
+        // session is worthless in any other.
+        token.sid = randomUUID();
         return token;
       }
       // Reject any token issued before this server started (forces re-login after restart)
@@ -165,10 +163,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
         token.role = current.role;
         token.mustChangePassword = current.mustChangePassword;
       }
-      // Allow client to clear mfaPending after TOTP verification or mustChangePassword after PW change
-      if (trigger === "update" && session) {
-        if (typeof session.mfaPending === "boolean") token.mfaPending = session.mfaPending;
-        if (typeof session.mustChangePassword === "boolean") token.mustChangePassword = session.mustChangePassword;
+      // SECURITY: `session` here is whatever the browser sent to update its
+      // own token, so nothing in it is believed. The pending second factor is
+      // lifted only by the proof /api/auth/mfa/verify issues after checking a
+      // code, bound to this user and this session. The earlier version took
+      // `mfaPending` straight from the browser, which let the password alone
+      // skip the code. mustChangePassword is not taken from it either: the
+      // database value above is the only source (and is re-applied on every
+      // request, so a value from the browser could not have stuck anyway).
+      if (trigger === "update" && token.mfaPending === true) {
+        const proof = (session as { mfaProof?: unknown } | null | undefined)?.mfaProof;
+        if (
+          typeof token.id === "string" &&
+          typeof token.sid === "string" &&
+          verifyMfaProof(proof, token.id, token.sid)
+        ) {
+          token.mfaPending = false;
+        }
       }
       return token;
     },
@@ -180,6 +191,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
         session.user.mustChangePassword = token.mustChangePassword as boolean;
         session.user.mfaEnabled = token.mfaEnabled as boolean;
         session.user.mfaPending = token.mfaPending as boolean;
+        // Not a secret: the proof it is bound to needs the server key as well.
+        session.user.sid = token.sid as string | undefined;
       }
       return session;
     },
@@ -227,18 +240,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => ({
             where: { id: user.id },
             data: {
               failedLoginAttempts: attempts,
-              lockedUntil:
-                attempts >= LOCK_THRESHOLD
-                  ? new Date(Date.now() + lockDurationMs(attempts))
-                  : null,
+              lockedUntil: lockAfterFailure(attempts, Date.now()),
             },
           });
           return null;
         }
 
         // A successful sign-in clears the counter, so someone who mistypes a
-        // few times and then gets it right starts fresh.
-        if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+        // few times and then gets it right starts fresh. Not yet for an account
+        // with a second factor: the password alone is not a finished sign-in,
+        // and clearing here would hand a password holder a fresh budget of code
+        // guesses on every login. The code step clears it instead.
+        if (!user.mfaEnabled && (user.failedLoginAttempts > 0 || user.lockedUntil)) {
           await prisma.user.update({
             where: { id: user.id },
             data: { failedLoginAttempts: 0, lockedUntil: null },

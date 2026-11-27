@@ -22,7 +22,7 @@
     },
     "footer": "Quelle: die Planung im Projekt (docs/Roadmap.md), der ursprüngliche Bauplan vom Juni 2026 (PLAN.md, im Projektverlauf), die Neuerungen in der App (src/data/changelog.ts) und die veröffentlichten Versionen (Git-Tags)."
   },
-  "asOf": "2026-11-13",
+  "asOf": "2026-11-27",
   "items": [
     {
       "phase": "Grundbau",
@@ -315,8 +315,36 @@
       "source": "docs/Roadmap.md § Erledigt 1.10.2; Tag v1.10.2 (13.11.2026); src/app/api/admin/settings/route.ts:71 ohne Allow-List"
     },
     {
-      "phase": "Geplant",
+      "phase": "Feinschliff und Pflege",
       "version": "1.10.3",
+      "kind": "patch",
+      "status": "done",
+      "short": "Sicherheitslücke bei der Zwei-Faktor-Anmeldung geschlossen",
+      "long": "Wer das Passwort eines Kontos mit Zwei-Faktor-Anmeldung kannte, konnte den zweiten Schritt, den Code vom Handy, überspringen. Jetzt stellt der Server erst nach einem richtigen Code einen Nachweis aus, und nur mit diesem Nachweis gilt die Anmeldung als abgeschlossen.",
+      "date": "2026-11-27",
+      "change": {
+        "type": "added",
+        "date": "2026-11-27"
+      },
+      "source": "src/data/changelog.ts 1.10.3; docs/Roadmap.md § Erledigt 1.10.3; Codebook security.md (Prüfung 17.11.2026); src/lib/auth/mfaProof.ts"
+    },
+    {
+      "phase": "Feinschliff und Pflege",
+      "version": "1.10.3",
+      "kind": "patch",
+      "status": "done",
+      "short": "Falsche Codes führen zur Sperre des Kontos",
+      "long": "Den sechsstelligen Code konnte man bisher beliebig oft probieren. Jetzt zählt jeder falsche Code wie ein falsches Passwort: Nach fünf Fehlversuchen ist das Konto 15 Minuten gesperrt, jede weitere Sperre dauert doppelt so lange, höchstens 24 Stunden. Das gilt bei der Anmeldung sowie beim Ein- und Ausschalten der Zwei-Faktor-Anmeldung.",
+      "date": "2026-11-27",
+      "change": {
+        "type": "added",
+        "date": "2026-11-27"
+      },
+      "source": "src/data/changelog.ts 1.10.3; docs/Roadmap.md § Erledigt 1.10.3; src/lib/auth/lockout.ts, totpCheck.ts"
+    },
+    {
+      "phase": "Geplant",
+      "version": "1.10.4",
       "kind": "patch",
       "status": "open",
       "short": "Gelbe und grüne Hinweise überall lesbar",
@@ -326,11 +354,11 @@
         "type": "added",
         "date": "2026-11-13"
       },
-      "source": "docs/Roadmap.md § 1.10.3 (13.11.2026); text-amber-400/text-green-500 in hellen Themes 1,1–1,6:1"
+      "source": "docs/Roadmap.md § 1.10.4 (13.11.2026); text-amber-400/text-green-500 in hellen Themes 1,1–1,6:1"
     },
     {
       "phase": "Geplant",
-      "version": "1.10.3",
+      "version": "1.10.4",
       "kind": "patch",
       "status": "open",
       "short": "Gewähltes Farbthema ohne kurzes Aufblitzen",
@@ -340,7 +368,7 @@
         "type": "added",
         "date": "2026-11-13"
       },
-      "source": "docs/Roadmap.md § 1.10.3 (13.11.2026); src/app/layout.tsx data-theme fest, ThemeToggle erst nach Profil"
+      "source": "docs/Roadmap.md § 1.10.4 (13.11.2026); src/app/layout.tsx data-theme fest, ThemeToggle erst nach Profil"
     },
     {
       "phase": "Geplant",
