@@ -351,8 +351,9 @@
       "long": "Hinweise wie „Key fehlt“ oder „Noch nie angemeldet“ stehen in gelber oder grüner Schrift, die in den hellen Farbthemen kaum zu erkennen ist. Sie bekommen dieselbe Form wie der MFA-Hinweis aus 1.10.2: die Farbe an der Kante oder im Hintergrund, die Schrift gut lesbar.",
       "date": "",
       "change": {
-        "type": "added",
-        "date": "2026-11-13"
+        "type": "moved",
+        "date": "2026-11-27",
+        "from": "1.10.3"
       },
       "source": "docs/Roadmap.md § 1.10.4 (13.11.2026); text-amber-400/text-green-500 in hellen Themes 1,1–1,6:1"
     },
@@ -365,8 +366,9 @@
       "long": "Beim Öffnen jeder Seite erscheint RetroMan kurz im dunklen Retro-80s-Look und springt erst dann in das Aussehen, das man gewählt hat. Künftig steht das gewählte Aussehen fest, bevor die Seite gezeichnet wird.",
       "date": "",
       "change": {
-        "type": "added",
-        "date": "2026-11-13"
+        "type": "moved",
+        "date": "2026-11-27",
+        "from": "1.10.3"
       },
       "source": "docs/Roadmap.md § 1.10.4 (13.11.2026); src/app/layout.tsx data-theme fest, ThemeToggle erst nach Profil"
     },
